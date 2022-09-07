@@ -1,4 +1,4 @@
-TOPNAME = top
+TOPNAME = mux42b
 NXDC_FILES = constr/top.nxdc
 INC_PATH ?=
 
