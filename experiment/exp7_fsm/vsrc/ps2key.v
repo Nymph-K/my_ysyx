@@ -28,7 +28,7 @@ module ps2key (
         end
         else begin
             if ( ready ) begin // read to output next data
-                if(read_next == 1'b0) //read next data
+                if(read_next == 1'b1) //read next data
                 begin
                     r_ptr <= r_ptr + 3'b1;
                     if(w_ptr==(r_ptr+1'b1)) //empty
@@ -41,7 +41,8 @@ module ps2key (
                     (ps2_dat)       &&  // stop bit
                     (^buffer[9:1])) begin      // odd  parity
                     fifo[w_ptr] <= buffer[8:1];  // kbd scan code
-                    $display("%x", buffer[8:1]);
+				    $display("===================");
+                    $display("%H", buffer[8:1]);
                     w_ptr <= w_ptr+3'b1;
                     ready <= 1'b1;
                     overflow <= overflow | (r_ptr == (w_ptr + 3'b1));
@@ -55,5 +56,7 @@ module ps2key (
         end
     end
     assign data = fifo[r_ptr]; //always set output data
+
+
 
 endmodule //ps2key_plus
