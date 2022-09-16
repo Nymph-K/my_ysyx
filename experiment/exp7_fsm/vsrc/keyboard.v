@@ -74,6 +74,7 @@ module keyboard (
 					default: $write("default\t");
 				endcase
 				$display("buff = %H %H %H < %H", data_buffer[2], data_buffer[1], data_buffer[0], data);
+				$display("w_ptr = %d, ascii_ready = %b, ascii = %c", w_ptr, ascii_ready, ascii_fifo[w_ptr]);
 			end
 	end
 
@@ -295,6 +296,7 @@ module keyboard (
 	wire ascii_read_next;
 	wire shift_push = (data_buffer[1] == `KEY_LSHIFT) || (data_buffer[1] == `KEY_RSHIFT);
     wire [15:0] ascii_code = code_table[data_buffer[0]];
+
 	always @(posedge clk or negedge rstn) begin
 		if (~rstn) begin
 			r_ptr <= 0;
@@ -336,13 +338,6 @@ module keyboard (
 							w_ptr <= w_ptr+3'b1;
 							ascii_ready <= 1'b1;
 						end
-					// 	if ({data_buffer[1],data_buffer[0]} == `KEY_RALT) ascii_fifo[w_ptr] <= 0;//not write
-					// 	if ({data_buffer[1],data_buffer[0]} == `KEY_RCTRL) ascii_fifo[w_ptr] <= 0;//not write
-					// end else begin
-					// 	if(data_buffer[0] == `KEY_LALT) ascii_fifo[w_ptr] <= 0;//not write
-					// 	if(data_buffer[0] == `KEY_LCTRL) ascii_fifo[w_ptr] <= 0;//not write
-					// 	if(data_buffer[0] == `KEY_LSHIFT) ascii_fifo[w_ptr] <= 0;//not write
-					// 	if(data_buffer[0] == `KEY_RSHIFT) ascii_fifo[w_ptr] <= 0;//not write
 					end else if(data_buffer[0] != `KEY_LALT &&
 								data_buffer[0] != `KEY_LCTRL &&
 								data_buffer[0] != `KEY_LSHIFT &&
