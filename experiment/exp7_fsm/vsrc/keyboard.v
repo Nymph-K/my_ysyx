@@ -12,9 +12,10 @@ module keyboard (
 	output reg led_alt
 );
 	wire rstn = ~rst;
-	wire read_next = ready;
-	reg [7:0] data_buffer [2:0];
+	wire read_next = 1'b1;
+	reg [7:0] data_buffer [3:0];
 	wire ready;
+	reg	ready_delay;
 	wire overflow;
 	wire [7:0] data;
 
@@ -23,14 +24,15 @@ module keyboard (
 	reg [7:0] key_ascii;
 	reg [7:0] key_code;
 
-	reg [4: 0] CS, NS;
-	parameter [4:0] //one hot
-		ERROR = 	5'b00000,
-		IDLE = 		5'b00001,
-		ARROW = 	5'b00010,
-		RELEASE = 	5'b00100,
-		SINGLE = 	5'b01000,
-		MULTIPLE = 	5'b10000;
+	reg [5: 0] CS, NS;
+	parameter [5:0] //one hot
+		ERROR = 	6'b000000,
+		IDLE = 		6'b000001,
+		ARROW = 	6'b000010,
+		RELEASE = 	6'b000100,
+		SINGLE = 	6'b001000,
+		MULTIPLE = 	6'b010000,
+		MUL_RLS = 	6'b100000;
 
 	//key scan code
 	`define KEY_LSHIFT	8'h12
@@ -54,55 +56,56 @@ module keyboard (
 			CS <= IDLE;
 		else 
 			CS <= NS;
-			if(NS != CS) begin
-				case (CS)
-					ERROR:	 $write("CS = ERROR\t");
-					IDLE:	 $write("CS = IDLE\t");
-					ARROW:	 $write("CS = ARROW\t");
-					RELEASE: $write("CS = RELEASE\t");
-					SINGLE:  $write("CS = SINGLE\t");
-					MULTIPLE:$write("CS = MULTIPLE\t");
-					default: $write("default\t");
-				endcase
-				case (NS)
-					ERROR:	 $write("NS = ERROR\t");
-					IDLE:	 $write("NS = IDLE\t");
-					ARROW:	 $write("NS = ARROW\t");
-					RELEASE: $write("NS = RELEASE\t");
-					SINGLE:  $write("NS = SINGLE\t");
-					MULTIPLE:$write("NS = MULTIPLE\t");
-					default: $write("default\t");
-				endcase
-				$display("buff = %H %H %H < %H", data_buffer[2], data_buffer[1], data_buffer[0], data);
-				$display("w_ptr = %d, ascii_ready = %b, ascii = %c", w_ptr, ascii_ready, ascii_fifo[w_ptr]);
-			end
+			// if(NS != CS) begin
+			// 	case (CS)
+			// 		ERROR:	 $write("CS = ERROR\t");
+			// 		IDLE:	 $write("CS = IDLE\t");
+			// 		ARROW:	 $write("CS = ARROW\t");
+			// 		RELEASE: $write("CS = RELEASE\t");
+			// 		SINGLE:  $write("CS = SINGLE\t");
+			// 		MULTIPLE:$write("CS = MULTIPLE\t");
+			// 		default: $write("default\t");
+			// 	endcase
+			// 	case (NS)
+			// 		ERROR:	 $write("NS = ERROR\t");
+			// 		IDLE:	 $write("NS = IDLE\t");
+			// 		ARROW:	 $write("NS = ARROW\t");
+			// 		RELEASE: $write("NS = RELEASE\t");
+			// 		SINGLE:  $write("NS = SINGLE\t");
+			// 		MULTIPLE:$write("NS = MULTIPLE\t");
+			// 		default: $write("default\t");
+			// 	endcase
+			// 	$display("buff = %H %H %H < %H", data_buffer[2], data_buffer[1], data_buffer[0], data);
+			// 	$display("w_ptr = %d, ascii_ready = %b, ascii = %c", w_ptr, ascii_ready, ascii_fifo[w_ptr]);
+			// end
 	end
 
 	always @(*) begin
-		NS = 5'bxxx;
+		NS = 6'bxxx;
 		case (CS)
 			IDLE:begin
-				if (read_next == 1'b1)
+				if (ready)
 					if (data == 8'hE0) NS = ARROW;	//push arrow key
 					else NS = SINGLE;//push other key
 				else NS = IDLE;
 			end
 
 			ARROW:begin
-				if (read_next == 1'b1) begin
-					if (data == 8'h75 || data == 8'h72 || data == 8'h6B || data == 8'h74)
-						if (data_buffer[1] != 8'hF0) NS = SINGLE;	//push arrow key
-						else NS = IDLE;		//release arrow key
-					else NS = IDLE;
+				if (ready) begin
+					if (data == 8'hF0) NS = RELEASE;		//release arrow key
+					else begin
+						if (data == 8'h75 || data == 8'h72 || data == 8'h6B || data == 8'h74) NS = SINGLE;	//push arrow key
+						else NS = IDLE;
+					end
 				end
-				else NS = IDLE;
+				else NS = ARROW;
 			end
 
 			RELEASE:begin
-				if (read_next == 1'b1) begin
-					if (data == 8'hE0) begin
-						NS = ARROW;
-					end else if (data == data_buffer[1]) begin
+				if (ready) begin
+					if (data_buffer[1] == 8'hE0 && data == data_buffer[2]) begin		//release arrow key
+						NS = IDLE;
+					end else if (data == data_buffer[1]) begin		//release normal key
 						NS = IDLE;
 					end else NS = RELEASE;
 				end else begin
@@ -111,10 +114,10 @@ module keyboard (
 			end
 
 			SINGLE:begin
-				if (read_next == 1'b1) begin
+				if (ready) begin
 					if (data != data_buffer[0]) begin	//push other key, prevent long push
 						if (data != 8'hF0) begin
-							if(data == 8'hE0 || data_buffer[0] == 8'hE0) NS = SINGLE;
+							if(data == 8'hE0) NS = ARROW;
 							else NS = MULTIPLE;//push other key
 						end
 						else NS = RELEASE;
@@ -125,15 +128,19 @@ module keyboard (
 			end
 
 			MULTIPLE:begin
-				if (read_next == 1'b1) begin
-					if (data_buffer[0] == 8'hF0) begin
-						if( data == data_buffer[2] || data == data_buffer[1])
-							NS = SINGLE;	//release one of 2 key
-						else NS = MULTIPLE;	//release one of 3 or more key
-					end
+				if (ready) begin
+					if (data == 8'hF0) NS = MUL_RLS;
 					else NS = MULTIPLE;
 				end
 				else NS = MULTIPLE;
+			end
+			
+			MUL_RLS:begin
+				if (ready) begin
+					if (data == data_buffer[1] || data == data_buffer[2]) NS = SINGLE;
+					else NS = MULTIPLE;
+				end
+				else NS = MUL_RLS;
 			end
 
 			ERROR: NS = IDLE;
@@ -146,62 +153,63 @@ module keyboard (
 
 	always @(posedge clk or negedge rstn) begin
 		if (~rstn) begin
-			//read_next <= 0;
+			ready_delay <= 0;
 			data_buffer[0] <= 0;
 			data_buffer[1] <= 0;
 			data_buffer[2] <= 0;
 		end else begin
-			//read_next <= ready;
-			if (read_next == 1'b1) begin
+			ready_delay <= ready;
+			if (ready == 1'b1) begin
 				case (CS)
 					IDLE:begin
 						//if (data != data_buffer[0]) begin	//prevent long push
-							{data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[1], data_buffer[0], data};
+							{data_buffer[3], data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[2], data_buffer[1], data_buffer[0], data};
 						//end
 					end
 
 					ARROW:begin
 						if (data != data_buffer[0]) begin	//prevent long push
-							{data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[1], data_buffer[0], data};
+							{data_buffer[3], data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[2], data_buffer[1], data_buffer[0], data};
 						end
 					end
 
 					RELEASE:begin
 						if (data != data_buffer[0]) begin	//prevent long push
-							{data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[1], data_buffer[0], data};
+							{data_buffer[3], data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[2], data_buffer[1], data_buffer[0], data};
 						end
 					end
 
 					SINGLE:begin
 						if (data != data_buffer[0]) begin	//prevent long push
-							{data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[1], data_buffer[0], data};
+							{data_buffer[3], data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[2], data_buffer[1], data_buffer[0], data};
 						end
 					end
 
 					MULTIPLE:begin
 						if (data != data_buffer[0]) begin	//prevent long push
-							if (data_buffer[0] == 8'hF0) begin
-								if (data == data_buffer[1]) begin
-									{data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[1], data_buffer[0], data_buffer[2]};//release second key
-								end else if (data == data_buffer[2]) begin
-									{data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[1], data_buffer[0], data_buffer[1]};//release first key
-								end else begin
-									{data_buffer[2], data_buffer[1], data_buffer[0]} <= {data, data_buffer[2], data_buffer[1]};//release third key
-								end
-							end else
-								{data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[1], data_buffer[0], data};
+							{data_buffer[3], data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[2], data_buffer[1], data_buffer[0], data};
+						end
+					end
+
+					MUL_RLS:begin
+						if (data != data_buffer[0]) begin	//prevent long push
+							if (data == data_buffer[1]) begin
+								{data_buffer[3], data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[1], data_buffer[0], data_buffer[3], data_buffer[2]};//release second key
+							end else if (data == data_buffer[2]) begin
+								{data_buffer[3], data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[2], data_buffer[0], data_buffer[3], data_buffer[1]};//release first key
+							end else begin
+								{data_buffer[3], data_buffer[2], data_buffer[1], data_buffer[0]} <= {data_buffer[3], data_buffer[0], data_buffer[2], data_buffer[1]};//release third key
+							end
 						end
 					end
 
 					ERROR:begin
-						//read_next <= 0;
 						data_buffer[0] <= 0;
 						data_buffer[1] <= 0;
 						data_buffer[2] <= 0;
 					end
 
 					default:begin
-						//read_next <= 0;
 						data_buffer[0] <= 0;
 						data_buffer[1] <= 0;
 						data_buffer[2] <= 0;
@@ -235,6 +243,29 @@ module keyboard (
 					led_ctrl <= 0;
 					led_shift <= 0;
 				end
+				
+				ARROW:begin
+					en_key_cnt <= 1;
+					en_key_ascii <= 0;
+					en_key_code <= 0;
+					if(NS == SINGLE) key_cnt <= key_cnt + 1;
+					key_ascii <= 0;
+					key_code <= 0;
+					led_alt <= 0;
+					led_ctrl <= 0;
+					led_shift <= 0;
+				end
+				
+				RELEASE:begin
+					en_key_cnt <= 1;
+					en_key_ascii <= 0;
+					en_key_code <= 0;
+					key_ascii <= 0;
+					key_code <= 0;
+					led_alt <= 0;
+					led_ctrl <= 0;
+					led_shift <= 0;
+				end
 
 				SINGLE:begin
 					en_key_cnt <= 1;
@@ -261,6 +292,17 @@ module keyboard (
 					if(data_buffer[1] == `KEY_LALT  || data_buffer[0] == `KEY_LALT) 	led_alt <= 1; 	else led_alt <= 0;
 					if(data_buffer[1] == `KEY_LCTRL || data_buffer[0] == `KEY_LCTRL) 	led_ctrl <= 1; 	else led_ctrl <= 0;
 					if(data_buffer[1] == `KEY_LSHIFT || data_buffer[0] == `KEY_LSHIFT) 	led_shift <= 1; else led_shift <= 0;
+				end
+				
+				MUL_RLS:begin
+					en_key_cnt <= 1;
+					en_key_ascii <= 0;
+					en_key_code <= 0;
+					key_ascii <= 0;
+					key_code <= 0;
+					led_alt <= 0;
+					led_ctrl <= 0;
+					led_shift <= 0;
 				end
 
 				ERROR:begin
@@ -311,45 +353,46 @@ module keyboard (
                         ascii_ready <= 1'b0;
                 end
 			end
-			if (read_next == 1'b1) begin
+			if (ready_delay) begin
 				if (CS==SINGLE) begin
 					if (data_buffer[1] == 8'hE0) begin
 						if ({data_buffer[1],data_buffer[0]} == `KEY_UP) begin
 							ascii_fifo[w_ptr] <= `ASCII_KEY_UP;
-							$display("↑");
+							$display("KEY = ↑");
 							w_ptr <= w_ptr+3'b1;
 							ascii_ready <= 1'b1;
 						end
 						if ({data_buffer[1],data_buffer[0]} == `KEY_DOWN) begin
 							ascii_fifo[w_ptr] <= `ASCII_KEY_DOWN;
-							$display("↓");
+							$display("KEY = ↓");
 							w_ptr <= w_ptr+3'b1;
 							ascii_ready <= 1'b1;
 						end
 						if ({data_buffer[1],data_buffer[0]} == `KEY_LEFT) begin
 							ascii_fifo[w_ptr] <= `ASCII_KEY_LEFT;
-							$display("←");
+							$display("KEY = ←");
 							w_ptr <= w_ptr+3'b1;
 							ascii_ready <= 1'b1;
 						end
 						if ({data_buffer[1],data_buffer[0]} == `KEY_RIGHT) begin
 							ascii_fifo[w_ptr] <= `ASCII_KEY_RIGHT;
-							$display("→");
+							$display("KEY = →");
 							w_ptr <= w_ptr+3'b1;
 							ascii_ready <= 1'b1;
 						end
 					end else if(data_buffer[0] != `KEY_LALT &&
 								data_buffer[0] != `KEY_LCTRL &&
 								data_buffer[0] != `KEY_LSHIFT &&
-								data_buffer[0] != `KEY_RSHIFT) begin
+								data_buffer[0] != `KEY_RSHIFT &&
+								data_buffer[0] != 8'hE0) begin
 						ascii_fifo[w_ptr] <=  ascii_code[15:8];
-						$display("%c",ascii_fifo[w_ptr]);
+						$display("KEY = %c", ascii_code[15:8]);
                     	w_ptr <= w_ptr+3'b1;
                     	ascii_ready <= 1'b1;
 					end
 				end else if (CS==MULTIPLE)begin
 					ascii_fifo[w_ptr] <= shift_push ? ascii_code[7:0] : ascii_code[15:8];
-					$display("%c",ascii_fifo[w_ptr]);
+					$display("KEY = %c", shift_push ? ascii_code[7:0] : ascii_code[15:8]);
 					w_ptr <= w_ptr+3'b1;
 					ascii_ready <= 1'b1;
 				end

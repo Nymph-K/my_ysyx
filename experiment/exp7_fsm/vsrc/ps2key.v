@@ -41,8 +41,8 @@ module ps2key (
                     (ps2_dat)       &&  // stop bit
                     (^buffer[9:1])) begin      // odd  parity
                     fifo[w_ptr] <= buffer[8:1];  // kbd scan code
-				    $display("===================");
-                    $display("%H", buffer[8:1]);
+				    // $display("===================");
+                    // $display("%H", buffer[8:1]);
                     w_ptr <= w_ptr+3'b1;
                     ready <= 1'b1;
                     overflow <= overflow | (r_ptr == (w_ptr + 3'b1));
