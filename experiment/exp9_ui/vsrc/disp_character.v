@@ -20,7 +20,7 @@ module disp_character (
 	localparam SCREEN_WIDTH = 640;
 	localparam SCREEN_HEIGHT = 480;
 	localparam SCREEN_HISTORY = 3;//keep 2 pages of history
-	localparam SCREEN_COL = 70;
+	localparam SCREEN_COL = 71;
 	localparam SCREEN_LIN = 30;
 
 	localparam KEY_UP = 	8'h01;
@@ -30,12 +30,12 @@ module disp_character (
 	localparam KEY_BACKSPACE = 8'h08;
 	localparam KEY_ENTER = 8'h0D;
 
-	reg [7:0] disp_ram [SCREEN_COL * SCREEN_LIN * SCREEN_HISTORY - 1 : 0];//display ram fifo[6300-1:0]
+	reg [7:0] disp_ram [SCREEN_COL * SCREEN_LIN * SCREEN_HISTORY - 1 : 0];//display ram fifo[6390-1:0]
 	wire [7:0] disp_ascii;
 	reg	[6:0] start_line, end_line;//0-89
-	wire [6:0] x_axis;//0-69
+	wire [6:0] x_axis;//0-70
 	wire [4:0] y_axis;//0-29
-	reg [6:0] x_cursor;//0-69
+	reg [6:0] x_cursor;//0-70
 	reg [4:0] y_cursor;//0-29
 	reg [3:0] blink_cnt;//0-31
 	reg blink;
@@ -115,7 +115,7 @@ module disp_character (
 						disp_ram[wt_ram_addr] <= 0;
 						read_next <= 1;
 					end else begin
-						if(x_cursor == 69) begin//auto enter
+						if(x_cursor == 70) begin//auto enter
 							disp_ram[wt_ram_addr] <= KEY_ENTER;
 							read_next <= 0;
 						end else begin
@@ -162,8 +162,11 @@ module disp_character (
 							y_cursor <= y_cursor + 1;
 						end else begin
 							if (start_line != 89) begin
-								if ((start_line + 29) < 90 && (start_line + 29) != end_line) start_line <= start_line + 1;
-								if ((start_line + 29) >= 90 && (start_line - 61) != end_line) start_line <= start_line + 1;
+								if ((start_line + 30) < 90) begin
+									if ((start_line + 30) != end_line) start_line <= start_line + 1;
+								end else begin
+									if ((start_line - 60) != end_line) start_line <= start_line + 1;
+								end
 							end else begin
 								if(end_line != 29) start_line <= 0;
 							end
@@ -174,7 +177,7 @@ module disp_character (
 						if (x_cursor != 0) begin
 							x_cursor <= x_cursor - 1;
 						end else begin
-							x_cursor <= 69;
+							x_cursor <= 70;
 							if (y_cursor != 0) begin
 								y_cursor <= y_cursor - 1;
 							end else begin
@@ -188,7 +191,7 @@ module disp_character (
 					end
 
 					KEY_RIGHT:begin
-						if (x_cursor != 69) begin
+						if (x_cursor != 70) begin
 							x_cursor <= x_cursor + 1;
 						end else begin
 							x_cursor <= 0;
@@ -196,8 +199,11 @@ module disp_character (
 								y_cursor <= y_cursor + 1;
 							end else begin
 								if (start_line != 89) begin
-									if ((start_line + 29) < 90 && (start_line + 29) != end_line) start_line <= start_line + 1;
-									if ((start_line + 29) >= 90 && (start_line - 61) != end_line) start_line <= start_line + 1;
+									if ((start_line + 30) < 90) begin
+										if ((start_line + 30) != end_line) start_line <= start_line + 1;
+									end else begin
+										if ((start_line - 60) != end_line) start_line <= start_line + 1;
+									end
 								end else begin
 									if(end_line != 29) start_line <= 0;
 								end
@@ -212,17 +218,21 @@ module disp_character (
 						end else begin
 							if (start_line != 89) begin
 								start_line <= start_line + 1;
-								if ((start_line + 29) < 90 && (start_line + 29) == end_line) end_line <= end_line + 1;
-								if ((start_line + 29) >= 90 && (start_line - 61) == end_line) end_line <= end_line + 1;
+								if ((start_line + 30) < 90) begin
+									if ((start_line + 30) == end_line) end_line <= end_line + 1;
+								end else begin
+									if ((start_line - 60) == end_line) end_line <= end_line + 1;
+								end
 							end else begin
 								start_line <= 0;
-								if(end_line != 29) end_line <= end_line + 1;
+								if(end_line == 29) end_line <= end_line + 1;
 							end
+							$display("start=%d\tend = =%d", start_line, end_line);
 						end
 					end
 
 					default:begin
-						if (x_cursor != 69) begin
+						if (x_cursor != 70) begin
 							x_cursor <= x_cursor + 1;
 						end else begin
 							x_cursor <= 0;
@@ -231,12 +241,16 @@ module disp_character (
 							end else begin
 								if (start_line != 89) begin
 									start_line <= start_line + 1;
-									if ((start_line + 29) < 90 && (start_line + 29) == end_line) end_line <= end_line + 1;
-									if ((start_line + 29) >= 90 && (start_line - 61) == end_line) end_line <= end_line + 1;
+									if ((start_line + 30) < 90) begin
+										if ((start_line + 30) == end_line) end_line <= end_line + 1;
+									end else begin
+										if ((start_line - 60) == end_line) end_line <= end_line + 1;
+									end
 								end else begin
 									start_line <= 0;
-									if(end_line != 29) end_line <= end_line + 1;
+									if(end_line == 29) end_line <= end_line + 1;
 								end
+								$display("start=%d\tend = =%d", start_line, end_line);
 							end
 						end
 					end

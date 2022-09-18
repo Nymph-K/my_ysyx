@@ -3,7 +3,7 @@ module add2xy (
     input rst,
 	input [9:0]  h_addr,
 	input [9:0]  v_addr,
-	output reg [6:0] x_axis,//0-69
+	output reg [6:0] x_axis,//0-70
 	output [4:0] y_axis,//0-29
 	output [3:0] line,//0-15
 	output [3:0] col//0-8
