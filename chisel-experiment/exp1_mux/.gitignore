@@ -1,0 +1,14 @@
+*.*
+*
+!*/
+!Makefile
+!*.mk
+!*.scala
+!*.v
+!*.cc
+!*.cpp
+!.gitignore
+!README.md
+target/
+test_run_dir/
+project/
