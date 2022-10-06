@@ -13,5 +13,5 @@ class Mux extends Module {
 
 object Mux extends App {
 	println("Generating the Mux hardware")
-	(new chisel3.stage.ChiselStage).emitVerilog(new Mux(), Array("--target-dir", "./verilog/exp1_mux"))
+	(new chisel3.stage.ChiselStage).emitVerilog(new Mux(), Array("--target-dir", "./vsrc/exp1_mux"))
 }

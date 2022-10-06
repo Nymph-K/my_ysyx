@@ -2,7 +2,9 @@
 *
 !*/
 !Makefile
+!build.sbt
 !*.mk
+!*.[cSh]
 !*.scala
 !*.v
 !*.cc
@@ -10,5 +12,6 @@
 !.gitignore
 !README.md
 target/
+build/
 test_run_dir/
 project/
