@@ -1,0 +1,17 @@
+*.*
+*
+!*/
+!Makefile
+!build.sbt
+!*.mk
+!*.[cSh]
+!*.scala
+!*.v
+!*.cc
+!*.cpp
+!.gitignore
+!README.md
+target/
+build/
+test_run_dir/
+project/
