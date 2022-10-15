@@ -1,10 +1,10 @@
-TOPNAME = disp_pic
+TOPNAME = VgaImg
 NXDC_FILES = constr/top.nxdc
 INC_PATH ?=
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc  \
-				-O3 --x-assign fast --x-initial fast --noassert
+				-O3 --x-assign fast --x-initial fast --noassert #--trace
 
 BUILD_DIR = ./build
 OBJ_DIR = $(BUILD_DIR)/obj_dir
@@ -20,7 +20,7 @@ $(SRC_AUTO_BIND): $(NXDC_FILES)
 	python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $^ $@
 
 # project source
-VSRCS = $(shell find $(abspath ./vsrc) -name "*.v")
+VSRCS = $(shell find $(abspath ./vsrc/*) -name "*.v")
 CSRCS = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
 CSRCS += $(SRC_AUTO_BIND)
 
@@ -53,3 +53,11 @@ sim: $(BIN)
 .PHONY: default clean run sim
 
 include ../../Makefile
+
+initdir:
+	mkdir -p ./src/main/scala/
+	mkdir -p ./src/test/scala/
+	mkdir -p ./verilog
+
+hdl:
+	sbt run

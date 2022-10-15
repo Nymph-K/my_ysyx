@@ -1,11 +1,11 @@
 #include <nvboard.h>
-#include <Vdisp_pic_40.h>
+#include <Vdisp_pic.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 static TOP_NAME dut;
 
-void nvboard_bind_all_pins(Vdisp_pic_40* top);
+void nvboard_bind_all_pins(TOP_NAME* top);
 
 static void single_cycle() {
   dut.clk = 0; dut.eval();

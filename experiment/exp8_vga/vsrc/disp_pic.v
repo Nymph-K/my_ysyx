@@ -1,7 +1,6 @@
 module disp_pic (
     input clk,
     input rst,
-    output VGA_CLK,
     output VGA_HSYNC,
     output VGA_VSYNC,
     output VGA_BLANK_N,
@@ -9,8 +8,6 @@ module disp_pic (
     output [7:0] VGA_G,
     output [7:0] VGA_B
 );
-
-	assign VGA_CLK = clk;
 
 	wire [9:0] h_addr;
 	wire [9:0] v_addr;
