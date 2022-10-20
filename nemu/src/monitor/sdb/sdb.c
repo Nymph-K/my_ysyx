@@ -18,6 +18,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
+#include <memory/paddr.h>
 
 static int is_batch_mode = false;
 
@@ -54,6 +55,70 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
+static int cmd_si(char *args) {
+  if (args == NULL) { 
+    cpu_exec(1);
+    return 0;
+  }else{
+    uint32_t step_num;
+    char *arg;
+    arg = strtok(args, " ");
+    if(strtok(NULL, " ") == NULL){
+      sscanf(arg, "%u", &step_num);
+      cpu_exec(step_num);
+      return 0;
+    }else{
+      printf("Too many arguments!\n");
+      return -1;
+    }
+  }
+}
+
+static int cmd_info(char *args) {
+  if (args == NULL) { 
+      printf("Too few arguments!\n");
+      return -1;
+  }else{
+    char arg;
+    sscanf(args, "%c", &arg);
+    if(arg == 'r'){
+      isa_reg_display();
+      return 0;
+    }else if(arg == 'w'){
+      printf("To do!\n");
+      return -1;
+    }else{
+      printf("Argument illegal!\n");
+      return -1;
+    }
+  }
+}
+
+static int cmd_x(char *args) {
+  if (args == NULL) { 
+    printf("Too few arguments!\n");
+    return -1;
+  }else{
+    uint32_t num;
+    uint32_t addr;
+    char *arg;
+    arg = strtok(args, " ");
+    sscanf(arg, "%u", &num);
+    arg = strtok(NULL, " ");
+    if(arg == NULL){
+      printf("Too few arguments!\n");
+      return -1;
+    }else{
+      sscanf(arg, "%x", &addr);
+      for (uint32_t i = 0; i < num; i++)
+      {
+        printf("[0x%08x] = 0x%08lx\n", addr + i*4, paddr_read(addr + i*4, 4));
+      }
+      return 0;
+    }
+  }
+}
+
 static struct {
   const char *name;
   const char *description;
@@ -62,6 +127,9 @@ static struct {
   { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
+  { "si", "Single step execute the program.\t arg: N. Example: \n(nemu) si 10", cmd_si },
+  { "info", "Print program status.\t arg: r|w. Example: \n(nemu) info r", cmd_info },
+  { "x", "Scan memory.\t arg: N EXPR. Example: \n(nemu) x 10 $esp", cmd_x },
 
   /* TODO: Add more commands */
 
