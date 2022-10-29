@@ -15,7 +15,7 @@
 
 #include <common.h>
 
-#define TEST_EXPRESSION 1
+#define TEST_EXPRESSION 0
 
 
 #if TEST_EXPRESSION
@@ -70,8 +70,8 @@ void test_expression(void)
     resultout = expr(buf, &success);
     //printf("resultout = %u, success = %d\n", resultout, success);
     if(resultin != resultout || !success){
-      fprintf(fout, "in = 0x%x, out = 0x%x, %s\n", resultin, resultout, buf);
-      printf("len = %u, str = %s\n", strlen(buf), buf);
+      fprintf(fout, "faild! in = 0x%x, out = 0x%x, %s\n", resultin, resultout, buf);
+      //printf("len = %u, str = %s\n", strlen(buf), buf);
     }
     else{
       fprintf(fout, "success! \n");

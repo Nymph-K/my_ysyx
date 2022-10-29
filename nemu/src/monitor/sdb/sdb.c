@@ -69,7 +69,7 @@ static int cmd_si(char *args) {
       return 0;
     }else{
       printf("Too many arguments!\n");
-      return -1;
+      return 1;
     }
   }
 }
@@ -77,7 +77,7 @@ static int cmd_si(char *args) {
 static int cmd_info(char *args) {
   if (args == NULL) { 
       printf("Too few arguments!\n");
-      return -1;
+      return 1;
   }else{
     char arg;
     sscanf(args, "%c", &arg);
@@ -85,11 +85,11 @@ static int cmd_info(char *args) {
       isa_reg_display();
       return 0;
     }else if(arg == 'w'){
-      printf("To do!\n");
-      return -1;
+      info_wp();
+      return 0;
     }else{
       printf("Argument illegal!\n");
-      return -1;
+      return 1;
     }
   }
 }
@@ -97,7 +97,7 @@ static int cmd_info(char *args) {
 static int cmd_x(char *args) {
   if (args == NULL) { 
     printf("Too few arguments!\n");
-    return -1;
+    return 1;
   }else{
     uint32_t num;
     uint32_t addr;
@@ -107,7 +107,7 @@ static int cmd_x(char *args) {
     arg = strtok(NULL, " ");
     if(arg == NULL){
       printf("Too few arguments!\n");
-      return -1;
+      return 1;
     }else{
       sscanf(arg, "%x", &addr);
       for (uint32_t i = 0; i < num; i++)
@@ -119,6 +119,61 @@ static int cmd_x(char *args) {
   }
 }
 
+static int cmd_p(char *args) {
+  if (args == NULL) { 
+    printf("Too few arguments!\n");
+    return 1;
+  }else{
+    uint64_t result;
+    bool success;
+    result = expr(args, &success);
+    if(success){
+      printf("%lu\n", result);
+      return 0;
+    }
+    else{
+      printf("Expression evaluation failed!\n");
+      return 1;
+    }
+  }
+}
+
+static int cmd_w(char *args) {
+  if (args == NULL) { 
+    printf("Too few arguments!\n");
+    return 1;
+  }else{
+    int no = new_wp(args);
+    if(no != -1){
+      //uint64_t result = get_LastResultNo(no);
+      printf("Set watch point success!\n");
+      return 0;
+    }
+    else{
+      printf("Set watch point failed!\n");
+      return 1;
+    }
+  }
+}
+
+static int cmd_d(char *args) {
+  if (args == NULL) { 
+    printf("Too few arguments!\n");
+    return 1;
+  }else{
+    int num;
+    char *arg;
+    arg = strtok(args, " ");
+    sscanf(arg, "%d", &num);
+    if (free_no(num)){
+      printf("wp%d deleted success!\n", num);
+      return 0;}
+    else{
+      printf("wp%d deleted faild!\n", num);
+      return 1;}
+  }
+}
+
 static struct {
   const char *name;
   const char *description;
@@ -127,9 +182,12 @@ static struct {
   { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-  { "si", "Single step execute the program.\t arg: N. Example: \n(nemu) si 10", cmd_si },
-  { "info", "Print program status.\t arg: r|w. Example: \n(nemu) info r", cmd_info },
-  { "x", "Scan memory.\t arg: N EXPR. Example: \n(nemu) x 10 $esp", cmd_x },
+  { "si", "Single step execute the program.\t arg: N. Example: (nemu) si 10", cmd_si },
+  { "info", "Print program status.\t arg: r|w. Example: (nemu) info r", cmd_info },
+  { "x", "Scan memory.\t arg: N EXPR. Example: (nemu) x 10 $esp", cmd_x },
+  { "p", "Expression evaluation.\t arg: EXPR. Example: (nemu) p $esp", cmd_p },
+  { "w", "Set watch point.\t arg: EXPR. Example: (nemu) w $esp", cmd_w },
+  { "d", "Delete watch point.\t arg: N. Example: (nemu) d 2", cmd_d },
 
   /* TODO: Add more commands */
 

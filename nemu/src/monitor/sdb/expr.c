@@ -21,10 +21,10 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ, TK_NUM
-
-  /* TODO: Add more token types */
-
+  TK_NOTYPE = 256, TK_EQ, TK_NEQ, TK_GE, TK_LE, TK_SR, TK_SL, 
+                   TK_NUM, TK_HEX, TK_REG, 
+                   TK_AND, TK_OR,
+                   TK_NEGATIVE = 256 + '-', TK_DEREF = 256 + '*', TK_ADDRESS = 256 + '&'
 };
 
 static struct rule {
@@ -36,15 +36,32 @@ static struct rule {
    * Pay attention to the precedence level of different rules.
    */
 
-  {" +", TK_NOTYPE},    // spaces
-  {"==", TK_EQ},        // equal
-  {"[0-9]+", TK_NUM},      // decimal number, float
-  {"\\+", '+'},         // plus
-  {"-", '-'},           // subtract
-  {"\\*", '*'},         // multiply
-  {"/", '/'},           // ivide
-  {"\\(", '('},         // left bracket
-  {"\\)", ')'},         // right bracket
+  {" +", TK_NOTYPE},      // spaces
+  {"==", TK_EQ},          // equal
+  {"!=", TK_NEQ},         // not equal
+  {">=", TK_GE},          //greater or equal
+  {"<=", TK_LE},          //less or equal
+  {">>", TK_SR},          //shift right
+  {"<<", TK_SL},          //shift left
+  {"0x[0-9a-f]+", TK_HEX},// hex number
+  {"[0-9]+", TK_NUM},     // decimal number
+  {"\\$[\\$0agprst][0-9acp]{0,2}", TK_REG},// register
+  {"&&", TK_AND},         // and
+  {"\\|\\|", TK_OR},      // or
+  {"!", '!'},             // not
+  {">", '>'},             //greater
+  {"<", '<'},             //less
+  {"\\+", '+'},           // plus
+  {"-", '-'},             // subtract, negative
+  {"\\*", '*'},           // multiply, dereference
+  {"/", '/'},             // ivide
+  {"%", '%'},            // mod
+  {"\\(", '('},           // left bracket
+  {"\\)", ')'},           // right bracket
+  {"&", '&'},             // boolean and, address
+  {"\\|", '|'},           // boolean or
+  {"~", '~'},             // boolean reverse
+  {"\\^", '^'},           // boolean xor
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -60,7 +77,7 @@ void init_regex() {
   int ret;
 
   for (i = 0; i < NR_REGEX; i ++) {
-    ret = regcomp(&re[i], rules[i].regex, REG_EXTENDED);
+    ret = regcomp(&re[i], rules[i].regex, REG_EXTENDED | REG_ICASE);
     if (ret != 0) {
       regerror(ret, &re[i], error_msg, 128);
       panic("regex compilation failed: %s\n%s", error_msg, rules[i].regex);
@@ -103,10 +120,14 @@ static bool make_token(char *e) {
          */
 
         switch (rules[i].token_type) {
-          case '+': case '-': case '*': case '/': case '(': case ')': case TK_EQ:
-            tokens[nr_token].type = rules[i].token_type;
+          case '-': case '*': case '&':
+            if(nr_token != 0 && (tokens[nr_token-1].type == TK_NUM || tokens[nr_token-1].type == ')'))//binary operator = num 'op' expression || (...) 'op' expression; 
+                    //unary operator = others
+              tokens[nr_token].type = rules[i].token_type;  //binary
+            else tokens[nr_token].type = rules[i].token_type + 256; //unary
             nr_token ++;
             break;
+
           case TK_NUM:
             if(substr_len < MAX_STR_LEN) {
               tokens[nr_token].type = rules[i].token_type;
@@ -116,13 +137,41 @@ static bool make_token(char *e) {
             }else{//length >= MAX_STR_LEN, str => uint32 => str
               uint32_t num;
               tokens[nr_token].type = rules[i].token_type;
-              sscanf(substr_start, "%u%*s", &num);
+              sscanf(substr_start, "%u", &num);
               sprintf(tokens[nr_token].str, "%u", num);
               printf("Number too long!\n");
               return false;
             }
+            break;
 
-          default: /*TODO()*/;//space not save
+          case TK_HEX:
+            if(substr_len < MAX_STR_LEN) {
+              tokens[nr_token].type = rules[i].token_type;
+              strncpy(tokens[nr_token].str, substr_start, substr_len);
+              tokens[nr_token].str[substr_len] = '\0';
+              nr_token ++;
+            }else{//length >= MAX_STR_LEN, str => uint32 => str
+              uint32_t num;
+              tokens[nr_token].type = rules[i].token_type;
+              sscanf(substr_start, "0x%x", &num);
+              sprintf(tokens[nr_token].str, "0x%u", num);
+              printf("Number too long!\n");
+              return false;
+            }
+            break;
+
+          case TK_REG:
+            tokens[nr_token].type = rules[i].token_type;
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0';
+            nr_token ++;
+            break;
+
+          case TK_NOTYPE:;break; //space not save
+
+          default:
+            tokens[nr_token].type = rules[i].token_type;
+            nr_token ++;
         }
 
         break;
@@ -139,11 +188,8 @@ static bool make_token(char *e) {
     printf("Expression too long!\n");
     return false;
   }
-  
-
   return true;
 }
-
 
 
 bool check_parentheses(uint16_t p, uint16_t q) {
@@ -166,6 +212,8 @@ bool check_parentheses(uint16_t p, uint16_t q) {
 #define UNSIGNED_CALCU 0//1: 在计算过程中就使用的无符号. 0: 在计算过程中使用有符号计算仅将最终结果转换为无符号
 #define SHORT_CIRCUIT_OPERATOR 1
 
+word_t paddr_read(paddr_t addr, int len);
+
 uint32_t eval(uint16_t p, uint16_t q, bool *success) {
   if (p > q) {
     /* Bad expression */
@@ -179,7 +227,18 @@ uint32_t eval(uint16_t p, uint16_t q, bool *success) {
      * Return the value of the number.
      */
     uint32_t num;
-    sscanf(tokens[p].str, "%u", &num);
+    if (tokens[p].type == TK_NUM)
+      sscanf(tokens[p].str, "%u", &num);
+    else if(tokens[p].type == TK_HEX)
+      sscanf(tokens[p].str, "%x", &num);
+    else if(tokens[p].type == TK_REG){
+      num = isa_reg_str2val(tokens[p].str + 1, success);//remove $
+      if(*success == false) return -1;
+      }
+    else{
+        printf("Unsupported numeric type!\n");
+        *success = false;
+        return -1;}
     *success = true;
     return num;
   }
@@ -187,7 +246,6 @@ uint32_t eval(uint16_t p, uint16_t q, bool *success) {
     /* The expression is surrounded by a matched pair of parentheses.
      * If that is the case, just throw away the parentheses.
      */
-    //printf("check_parentheses = true");
     return eval(p + 1, q - 1, success);
   }
   else {
@@ -196,98 +254,261 @@ uint32_t eval(uint16_t p, uint16_t q, bool *success) {
     {
       switch (tokens[i].type)
       {
-      case '+':
-        op = i;
-        break;
+        case TK_DEREF: case TK_ADDRESS: case '!': case '~': case TK_NEGATIVE:
+          if(tokens[op].type != TK_OR && tokens[op].type != TK_AND 
+          && tokens[op].type != '|' && tokens[op].type != '^' && tokens[op].type != '&'
+          && tokens[op].type != TK_EQ && tokens[op].type != TK_NEQ
+          && tokens[op].type != '>' && tokens[op].type != '<' 
+          && tokens[op].type != TK_GE && tokens[op].type != TK_LE
+          && tokens[op].type != TK_SL && tokens[op].type != TK_SR
+          && tokens[op].type != '+' && tokens[op].type != '-'
+          && tokens[op].type != '*' && tokens[op].type != '/' && tokens[op].type != '%') 
+            op = i;
+          break;
 
-      case '-': //minus = num - expression || (...) - expression; negative = others
-        if(tokens[i-1].type == TK_NUM || tokens[i-1].type == ')')
+        case '*': case '/': case '%':
+          if(tokens[op].type != TK_OR && tokens[op].type != TK_AND 
+          && tokens[op].type != '|' && tokens[op].type != '^' && tokens[op].type != '&'
+          && tokens[op].type != TK_EQ && tokens[op].type != TK_NEQ
+          && tokens[op].type != '>' && tokens[op].type != '<' 
+          && tokens[op].type != TK_GE && tokens[op].type != TK_LE
+          && tokens[op].type != TK_SL && tokens[op].type != TK_SR
+          && tokens[op].type != '+' && tokens[op].type != '-') 
+            op = i;
+          break;
+
+        case '+': case '-': 
+          if(tokens[op].type != TK_OR && tokens[op].type != TK_AND 
+          && tokens[op].type != '|' && tokens[op].type != '^' && tokens[op].type != '&'
+          && tokens[op].type != TK_EQ && tokens[op].type != TK_NEQ
+          && tokens[op].type != '>' && tokens[op].type != '<' 
+          && tokens[op].type != TK_GE && tokens[op].type != TK_LE
+          && tokens[op].type != TK_SL && tokens[op].type != TK_SR) 
+            op = i;
+          break;
+        
+        case TK_SL: case TK_SR: 
+          if(tokens[op].type != TK_OR && tokens[op].type != TK_AND 
+          && tokens[op].type != '|' && tokens[op].type != '^' && tokens[op].type != '&'
+          && tokens[op].type != TK_EQ && tokens[op].type != TK_NEQ
+          && tokens[op].type != '>' && tokens[op].type != '<' 
+          && tokens[op].type != TK_GE && tokens[op].type != TK_LE) 
+            op = i;
+          break;
+
+        case '>': case '<': case TK_GE: case TK_LE: 
+          if(tokens[op].type != TK_OR && tokens[op].type != TK_AND 
+          && tokens[op].type != '|' && tokens[op].type != '^' && tokens[op].type != '&'
+          && tokens[op].type != TK_EQ && tokens[op].type != TK_NEQ) 
+            op = i;
+          break;
+        
+        case TK_EQ: case TK_NEQ: 
+          if(tokens[op].type != TK_OR && tokens[op].type != TK_AND 
+          && tokens[op].type != '|' && tokens[op].type != '^' && tokens[op].type != '&') 
+            op = i;
+          break;
+
+        case '&': 
+          if(tokens[op].type != TK_OR && tokens[op].type != TK_AND 
+          && tokens[op].type != '|' && tokens[op].type != '^') 
+            op = i;
+          break;
+
+        case '^': 
+          if(tokens[op].type != TK_OR && tokens[op].type != TK_AND && tokens[op].type != '|') 
+            op = i;
+          break;
+
+        case '|': 
+          if(tokens[op].type != TK_OR && tokens[op].type != TK_AND) 
+            op = i;
+          break;
+        
+        case TK_AND:
+          if(tokens[op].type != TK_OR) op = i;
+          break;
+        
+        case TK_OR:
           op = i;
-        break;
-      
-      case '*': case '/': 
-        if(tokens[op].type != '+' && tokens[op].type != '-') op = i;
-        break;
+          break;
 
-      case '(':
-        int16_t cnt;
-        i++;
-        for (cnt = 1; cnt > 0 && i <= q; i++)//match right bracket ')'
-        {
-          if (tokens[i].type == '(') cnt += 1;
-          else if(tokens[i].type == ')') cnt -= 1;
-        }
-        i--;
-        if (cnt != 0 && i <= q)//brackets mismatch
-        {
+        case '(':
+          int16_t cnt;
+          i++;
+          for (cnt = 1; cnt > 0 && i <= q; i++)//match right bracket ')'
+          {
+            if (tokens[i].type == '(') cnt += 1;
+            else if(tokens[i].type == ')') cnt -= 1;
+          }
+          i--;
+          if (cnt != 0 && i <= q)//brackets mismatch
+          {
+            *success = false;
+            printf("Illegal expression! file: %s line: %d p=%d,i=%d,q=%d,cnt=%d\n", __FILE__, __LINE__, p, i, q, cnt);
+            printf("tokens[i].type=%c\n", tokens[i].type);
+            return -1;
+          }
+          //printf(",i=%d ",i);
+          break;
+
+        case ')'://brackets mismatch
           *success = false;
-          printf("Illegal expression! file: %s line: %d p=%d,i=%d,q=%d,cnt=%d\n", __FILE__, __LINE__, p, i, q, cnt);
-          printf("tokens[i].type=%c\n", tokens[i].type);
+          printf("Brackets mismatch! file: %s line: %d p=%d,i=%d,q=%d\n", __FILE__, __LINE__, p, i, q);
           return -1;
-        }
-        //printf(",i=%d ",i);
-        break;
+          break;
 
-      case ')'://brackets mismatch
-        *success = false;
-        printf("Brackets mismatch! file: %s line: %d p=%d,i=%d,q=%d\n", __FILE__, __LINE__, p, i, q);
-        return -1;
-        break;
-
-      default:
-        break;
+        default:
+          break;
       }
     }
 
     //printf("p=%d,op=%d,q=%d\n", p, op, q);
     uint32_t val1 = 0, val2 = 0;
-    if (op == p && tokens[op].type == '-')// negative expression
+    bool success1 = true, success2 = true;
+    if (op != p)// is not unary operator: - * & ~ !
     {
-      val1 = 0;
+      val1 = eval(p, op - 1, &success1);
     }
-    else
-    {
-      val1 = eval(p, op - 1, success);
-      if (*success == false) return -1;
-    }
-#if SHORT_CIRCUIT_OPERATOR 
-    if(tokens[op].type == '*' && val1 == 0)
-    {
-      val2 = 0;
-    }
-    else
-    {
-      val2 = eval(op + 1, q, success);
-      if (*success == false) return -1;
-    }
-#else
-    val2 = eval(op + 1, q, success);
-    if (*success == false) return -1;
-#endif
+    val2 = eval(op + 1, q, &success2);
+    *success = success1 & success2;
 
     switch (tokens[op].type) {
-      case '+': 
-        *success = true;
-        return MUXONE(UNSIGNED_CALCU, val1 + val2, (signed)val1 + (signed)val2);
+      case TK_NEGATIVE: 
+        return MUXONE(UNSIGNED_CALCU, -val2, -(signed)val2);
         break;
-      case '-': 
-        *success = true;
-        return MUXONE(UNSIGNED_CALCU, val1 - val2, (signed)val1 - (signed)val2);
+
+      case '!': 
+        return MUXONE(UNSIGNED_CALCU, !val2, !(signed)val2);
         break;
+
+      case '~': 
+        return MUXONE(UNSIGNED_CALCU, ~val2, ~(signed)val2);
+        break;
+
+      case TK_DEREF:
+        //return *(uint32_t *)val2;
+        return paddr_read(val2, 4);
+        break;
+
+      case TK_ADDRESS:
+        return 0;//&val2;
+        break;
+
       case '*': 
-        *success = true;
-        return MUXONE(UNSIGNED_CALCU, val1 * val2, (signed)val1 * (signed)val2);
+          #if SHORT_CIRCUIT_OPERATOR 
+                if (val1 == 0 || val2 == 0)
+                {
+                  *success = true;
+                  return 0;
+                }
+                else
+                {
+                  return MUXONE(UNSIGNED_CALCU, val1 * val2, (signed)val1 * (signed)val2);
+                }
+          #else
+                return MUXONE(UNSIGNED_CALCU, val1 * val2, (signed)val1 * (signed)val2);
+          #endif
         break;
+
       case '/': 
+          #if SHORT_CIRCUIT_OPERATOR 
+            if (val1 == 0)
+            {
+              *success = true;
+              return 0;
+            }
+            else
+            {
+              if( val2 == 0 )
+              {
+                *success = false;
+                printf("Divided by zero! %s %d\n", __FILE__, __LINE__);
+                return -1;
+              }
+              return MUXONE(UNSIGNED_CALCU, val1 / val2, (signed)val1 / (signed)val2);
+            }
+          #else
+            if( val2 == 0 )
+            {
+              *success = false;
+              printf("Divided by zero! %s %d\n", __FILE__, __LINE__);
+              return -1;
+            }
+            return MUXONE(UNSIGNED_CALCU, val1 / val2, (signed)val1 / (signed)val2);
+          #endif
+        break;
+
+      case '%': 
         if( val2 == 0 )
         {
           *success = false;
           printf("Divided by zero! %s %d\n", __FILE__, __LINE__);
-          return -2;
+          return -1;
         }
-        *success = true;
-        return MUXONE(UNSIGNED_CALCU, val1 / val2, (signed)val1 / (signed)val2);
+        return MUXONE(UNSIGNED_CALCU, val1 % val2, (signed)val1 % (signed)val2);
         break;
+
+      case '+': 
+        return MUXONE(UNSIGNED_CALCU, val1 + val2, (signed)val1 + (signed)val2);
+        break;
+
+      case '-': 
+        return MUXONE(UNSIGNED_CALCU, val1 - val2, (signed)val1 - (signed)val2);
+        break;
+
+      case TK_SL: 
+        return MUXONE(UNSIGNED_CALCU, val1 << val2, (signed)val1 << (signed)val2);
+        break;
+
+      case TK_SR: 
+        return MUXONE(UNSIGNED_CALCU, val1 >> val2, (signed)val1 >> (signed)val2);
+        break;
+
+      case '<': 
+        return MUXONE(UNSIGNED_CALCU, val1 < val2, (signed)val1 < (signed)val2);
+        break;
+
+      case '>': 
+        return MUXONE(UNSIGNED_CALCU, val1 > val2, (signed)val1 > (signed)val2);
+        break;
+
+      case TK_GE: 
+        return MUXONE(UNSIGNED_CALCU, val1 >= val2, (signed)val1 >= (signed)val2);
+        break;
+
+      case TK_LE: 
+        return MUXONE(UNSIGNED_CALCU, val1 <= val2, (signed)val1 <= (signed)val2);
+        break;
+
+      case TK_EQ: 
+        return MUXONE(UNSIGNED_CALCU, val1 == val2, (signed)val1 == (signed)val2);
+        break;
+
+      case TK_NEQ: 
+        return MUXONE(UNSIGNED_CALCU, val1 != val2, (signed)val1 != (signed)val2);
+        break;
+
+      case '&': 
+        return MUXONE(UNSIGNED_CALCU, val1 & val2, (signed)val1 & (signed)val2);
+        break;
+
+      case '^': 
+        return MUXONE(UNSIGNED_CALCU, val1 ^ val2, (signed)val1 ^ (signed)val2);
+        break;
+
+      case '|': 
+        return MUXONE(UNSIGNED_CALCU, val1 | val2, (signed)val1 | (signed)val2);
+        break;
+
+      case TK_AND: 
+        return MUXONE(UNSIGNED_CALCU, val1 && val2, (signed)val1 && (signed)val2);
+        break;
+
+      case TK_OR: 
+        return MUXONE(UNSIGNED_CALCU, val1 || val2, (signed)val1 || (signed)val2);
+        break;
+
       default: 
         *success = false;
         assert(0);

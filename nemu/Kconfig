@@ -1,5 +1,11 @@
 mainmenu "NEMU Configuration Menu"
 
+config WATCHPOINT
+  bool "Scan Watchpoint every cycle"
+  default n
+  help
+    Every time the CPU executes an instruction, it scans the watchpoints.
+
 choice
   prompt "Base ISA"
   default ISA_riscv32
