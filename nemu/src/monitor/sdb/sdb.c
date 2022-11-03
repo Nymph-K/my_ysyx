@@ -74,6 +74,7 @@ static int cmd_si(char *args) {
   }
 }
 
+void info_wp(void);
 static int cmd_info(char *args) {
   if (args == NULL) { 
       printf("Too few arguments!\n");
@@ -138,6 +139,7 @@ static int cmd_p(char *args) {
   }
 }
 
+int new_wp(char * expression);
 static int cmd_w(char *args) {
   if (args == NULL) { 
     printf("Too few arguments!\n");
@@ -156,6 +158,7 @@ static int cmd_w(char *args) {
   }
 }
 
+bool free_no(int no);
 static int cmd_d(char *args) {
   if (args == NULL) { 
     printf("Too few arguments!\n");

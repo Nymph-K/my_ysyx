@@ -125,7 +125,6 @@ int new_wp(char * expression)
   {
     WP * tmp = frontPop(&free_);
     if (tmp == NULL) return-1;
-    bool success;
     strncpy(tmp->exp, expression, EXP_SIZE);
     tmp->next = NULL;
     frontPush(&head, tmp);
