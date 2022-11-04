@@ -24,7 +24,8 @@
 
 enum {
   TYPE_I, TYPE_U, TYPE_S,
-  TYPE_N, TYPE_J, // none
+  TYPE_N, TYPE_J, TYPE_R, 
+  TYPE_B, // none
 };
 
 #define src1R(n) do { *src1 = R(n); } while (0)
@@ -37,7 +38,8 @@ enum {
 static word_t immI(uint32_t i) { return SEXT(BITS(i, 31, 20), 12); }
 static word_t immU(uint32_t i) { return SEXT(BITS(i, 31, 12), 20) << 12; }
 static word_t immS(uint32_t i) { return (SEXT(BITS(i, 31, 25), 7) << 5) | BITS(i, 11, 7); }
-static word_t immJ(uint32_t i) { return (SEXT(BITS(i, 31, 31), 1) << 20) | BITS(i, 19, 12) << 12 | BITS(i, 20, 20) << 11 | BITS(i, 30, 21) << 1 | 1; }
+static word_t immJ(uint32_t i) { return (SEXT(BITS(i, 31, 31), 1) << 20) | BITS(i, 19, 12) << 12 | BITS(i, 20, 20) << 11 | BITS(i, 30, 21) << 1; }
+static word_t immB(uint32_t i) { return (SEXT(BITS(i, 31, 31), 1) << 12) | BITS(i, 7, 7) << 11 | BITS(i, 30, 25) << 5 | BITS(i, 11, 8) << 1; }
 
 static void decode_operand(Decode *s, word_t *dest, word_t *src1, word_t *src2, int type) {
   uint32_t i = s->isa.inst.val;
@@ -46,10 +48,12 @@ static void decode_operand(Decode *s, word_t *dest, word_t *src1, word_t *src2, 
   int rs2 = BITS(i, 24, 20);
   destR(rd);
   switch (type) {
-    case TYPE_I: src1R(rs1);     src2I(immI(i)); break;
+    case TYPE_I: src1R(rs1); src2I(immI(i)); break;
     case TYPE_U: src1I(immU(i)); break;
     case TYPE_S: destI(immS(i)); src1R(rs1); src2R(rs2); break;
     case TYPE_J: src1I(immJ(i)); break;
+    case TYPE_R: destR(rd); src1R(rs1); src2R(rs2); break;
+    case TYPE_B: destI(immB(i)); src1R(rs1); src2R(rs2); break;
     default:  break;
   }
 }
@@ -74,10 +78,19 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 000 ????? 00100 11", addi   , I, R(dest) = src1 + src2);
   INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, R(dest) = s->pc + 4; s->dnpc = s->pc + src1);
   INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, R(dest) = s->pc + 4; s->dnpc = (src2 + src1) & ~1);
+  INSTPAT("??????? ????? ????? 010 ????? 00000 11", lw     , I, R(dest) = Mr(src1 + src2, 4));
+  INSTPAT("0000000 ????? ????? 000 ????? 01110 11", addw   , R, R(dest) = src1 + src2);
+  INSTPAT("0000000 ????? ????? 000 ????? 00110 11", addiw  , I, R(dest) = src1 + src2);
+  INSTPAT("0100000 ????? ????? 000 ????? 01100 11", sub    , R, R(dest) = src1 - src2);
+  INSTPAT("??????? ????? ????? 011 ????? 00100 11", sltiu  , I, R(dest) = (uint32_t)src1 < (uint32_t)src2 ? 1 : 0);
+  INSTPAT("??????? ????? ????? 010 ????? 00100 11", slti   , I, R(dest) = src1 < src2 ? 1 : 0);
+  INSTPAT("??????? ????? ????? 000 ????? 11000 11", beq    , B, if(src1 == src2) s->dnpc = s->pc + dest);
+  INSTPAT("??????? ????? ????? 001 ????? 11000 11", bne    , B, if(src1 != src2) s->dnpc = s->pc + dest);
 
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
   INSTPAT_END();
 
+/////////////////////////////////////64 bits cut to 32 bits///////////////////////////////////
   R(0) = 0; // reset $zero to 0
 
   return 0;
