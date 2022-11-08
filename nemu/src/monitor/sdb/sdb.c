@@ -129,7 +129,7 @@ static int cmd_p(char *args) {
     bool success;
     result = expr(args, &success);
     if(success){
-      printf("%lu\n", result);
+      printf(" = 0x%-8lx = %lu\n", result, result);
       return 0;
     }
     else{
