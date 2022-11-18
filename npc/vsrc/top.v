@@ -20,16 +20,15 @@ module top(
 	assign mem_data = (mem_w) ? wdata : `XLEN'bZ;
 	assign mem_dlen = funct3;
 
-	wire [4:0] rd1_index, rd2_index, wt_index;
 	wire wen;
 	wire [`XLEN-1:0] wt_data, rdata1, rdata2;
 	wire [`XLEN-1:0] dnpc;
 	GIR i_gir(
 	  .clk(clk),
 	  .rst(rst),
-	  .rd1_index(rd1_index),
-	  .rd2_index(rd2_index),
-	  .wt_index(wt_index),
+	  .rd1_index(rs1),
+	  .rd2_index(rs2),
+	  .wt_index(rd),
 	  .wen(wen),
 	  .wdata(wt_data),
 	  .rdata1(rdata1),

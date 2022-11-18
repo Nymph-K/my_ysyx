@@ -252,9 +252,9 @@ module EXU (
 		})
 	);
 
-	assign mem_w = opcode == `STORE;
-	assign mem_r = opcode == `LOAD;
-	assign wdata = mem_w ? src2 : `XLEN'b0;
+	assign mem_w = (opcode == `STORE) ? 1'b1 : 1'b0;
+	assign mem_r = (opcode == `LOAD) ? 1'b1 : 1'b0;;
+	assign wdata = (mem_w == 1'b1) ? src2 : `XLEN'b0;
 	assign mem_addr = mem_w || mem_r ? alu_result : `XLEN'b0;
 	wire [`XLEN-1:0] ld_data;
 	MuxKeyWithDefault #(7, 3, `XLEN) i_ld_data (
