@@ -3,6 +3,8 @@
 `ifndef IDU_V
 `define IDU_V
 
+import "DPI-C" function void stopCPU();
+
 `include "top.v"
 
 `define LOAD			7'b0000011		//LOAD
@@ -34,6 +36,7 @@
 `define RESERVED_2		7'b1110111		//reserved
 `define CUSTOM_3		7'b1111011		//custom-3/rv128
 
+
 module IDU (
 	input  clk,
 	input  rst,
@@ -47,8 +50,8 @@ module IDU (
 	output [4:0] rs1,
 	output [4:0] rs2,
 	output [4:0] rd,
-	input  [`XLEN-1:0] rdata1,
-	input  [`XLEN-1:0] rdata2
+	input  [`XLEN-1:0] x_rs1,
+	input  [`XLEN-1:0] x_rs2
 );
 	localparam TYPE_R  = 3'd0;
 	localparam TYPE_I  = 3'd1;
@@ -67,7 +70,7 @@ module IDU (
 
 	wire [2:0] inst_type;
 	
-	MuxKeyWithDefault #(28, 7, 3) i_type (
+	MuxKeyWithDefault #(28, 7, 3) u_inst_type (
 		.out(inst_type),
 		.key(opcode),
 		.default_out(3'd0),
@@ -103,7 +106,7 @@ module IDU (
 		})
 	);
 
-	MuxKeyWithDefault #(6, 3, `XLEN) i_imm (
+	MuxKeyWithDefault #(6, 3, `XLEN) u_imm (
 		.out(imm),
 		.key(inst_type),
 		.default_out(`XLEN'b0),
@@ -117,33 +120,40 @@ module IDU (
 		})
 	);
 
-	MuxKeyWithDefault #(6, 3, `XLEN) i_src1 (
+	MuxKeyWithDefault #(6, 3, `XLEN) u_src1 (
 		.out(src1),
 		.key(inst_type),
 		.default_out(`XLEN'b0),
 		.lut({
-			TYPE_R, rdata1, 
-			TYPE_I, rdata1, 
-			TYPE_S, rdata1, 
-			TYPE_B, rdata1, 
+			TYPE_R, x_rs1, 
+			TYPE_I, x_rs1, 
+			TYPE_S, x_rs1, 
+			TYPE_B, x_rs1, 
 			TYPE_U, `XLEN'b0, 
 			TYPE_J, `XLEN'b0
 		})
 	);
 
-	MuxKeyWithDefault #(6, 3, `XLEN) i_src2 (
+	MuxKeyWithDefault #(6, 3, `XLEN) u_src2 (
 		.out(src2),
 		.key(inst_type),
 		.default_out(`XLEN'b0),
 		.lut({
-			TYPE_R, rdata2, 
+			TYPE_R, x_rs2, 
 			TYPE_I, `XLEN'b0, 
-			TYPE_S, rdata2, 
-			TYPE_B, rdata2, 
+			TYPE_S, x_rs2, 
+			TYPE_B, x_rs2, 
 			TYPE_U, `XLEN'b0, 
 			TYPE_J, `XLEN'b0
 		})
 	);
+
+	localparam ebreak = 32'b00000000000100000000000001110011;
+	always @(*) begin
+		if(inst == ebreak) begin
+			stopCPU();
+		end
+	end
 
 endmodule //IDU
 

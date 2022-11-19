@@ -19,13 +19,13 @@ module EXU (
 	input  [`XLEN-1:0] src2,
 	input  [`XLEN-1:0] imm,
 	output rd_wen,
-	output [`XLEN-1:0] rd_data,
+	output [`XLEN-1:0] x_rd,
 
 	output mem_r,
 	output mem_w,
 	output [`XLEN-1:0] mem_addr,
-	input  [`XLEN-1:0] rdata, //ld_data
-	output [`XLEN-1:0] wdata, //st_data
+	input  [`XLEN-1:0] mem_rdata, //ld_data
+	output [`XLEN-1:0] mem_wdata, //st_data
 
 	input  [`XLEN-1:0] pc,
 	output [`XLEN-1:0] dnpc
@@ -96,7 +96,7 @@ module EXU (
 	localparam CSRRCI	= 3'b111;
 
 	wire [`LEN_SEL-1:0] alu_sel;
-	MuxKeyWithDefault #(11, 7, `LEN_SEL) i_alu_sel (
+	MuxKeyWithDefault #(11, 7, `LEN_SEL) u_alu_sel (
 		.out(alu_sel),
 		.key(opcode),
 		.default_out(`SEL_AOS),
@@ -120,7 +120,7 @@ module EXU (
 	wire [`XLEN-1:0] alu_a, alu_b;
 	wire [`XLEN-1:0] alu_result;
 	wire alu_sub_sra;
-	MuxKeyWithDefault #(11, 7, `XLEN) i_alu_a (
+	MuxKeyWithDefault #(11, 7, `XLEN) u_alu_a (
 		.out(alu_a),
 		.key(opcode),
 		.default_out(`XLEN'b0),
@@ -140,7 +140,7 @@ module EXU (
 			`OP_32,		src1
 		})
 	);
-	MuxKeyWithDefault #(11, 7, `XLEN) i_alu_b (
+	MuxKeyWithDefault #(11, 7, `XLEN) u_alu_b (
 		.out(alu_b),
 		.key(opcode),
 		.default_out(`XLEN'b0),
@@ -160,7 +160,7 @@ module EXU (
 			`OP_32,		(funct3 != SLLW && funct3 != (SRAW & SRLW)) ? src2 : {{(`XLEN-5){1'b0}}, src2[4:0]}
 		})
 	);
-	MuxKeyWithDefault #(11, 7, 1) i_alu_sub_sra (
+	MuxKeyWithDefault #(11, 7, 1) u_alu_sub_sra (
 		.out(alu_sub_sra),
 		.key(opcode),
 		.default_out(1'b0),
@@ -181,7 +181,7 @@ module EXU (
 		})
 	);
 	wire alu_cout, alu_zero, alu_smaller, alu_overflow, alu_equal;
-	ALU i_alu (
+	ALU u_alu (
 		.sel(alu_sel),
 		.a(alu_a),
 		.b(alu_b),
@@ -198,7 +198,7 @@ module EXU (
 	assign dnpc_sum = dnpc_base + dnpc_offs;
 	assign dnpc = opcode != `JALR ? dnpc_sum : {dnpc_sum[`XLEN-1:1], 1'b0};
 	wire branch_con;//branch condition is true or false
-	MuxKeyWithDefault #(11, 7, `XLEN) i_dnpc_base (
+	MuxKeyWithDefault #(11, 7, `XLEN) u_dnpc_base (
 		.out(dnpc_base),
 		.key(opcode),
 		.default_out(pc),
@@ -218,7 +218,7 @@ module EXU (
 			`OP_32,		pc
 		})
 	);
-	MuxKeyWithDefault #(11, 7, `XLEN) i_dnpc_offs (
+	MuxKeyWithDefault #(11, 7, `XLEN) u_dnpc_offs (
 		.out(dnpc_offs),
 		.key(opcode),
 		.default_out(`XLEN'd4),
@@ -238,7 +238,7 @@ module EXU (
 			`OP_32,		`XLEN'd4
 		})
 	);
-	MuxKeyWithDefault #(6, 3, 1) i_branch_con (
+	MuxKeyWithDefault #(6, 3, 1) u_branch_con (
 		.out(branch_con),
 		.key(funct3),
 		.default_out(1'b0),
@@ -254,25 +254,25 @@ module EXU (
 
 	assign mem_w = (opcode == `STORE) ? 1'b1 : 1'b0;
 	assign mem_r = (opcode == `LOAD) ? 1'b1 : 1'b0;;
-	assign wdata = (mem_w == 1'b1) ? src2 : `XLEN'b0;
+	assign mem_wdata = (mem_w == 1'b1) ? src2 : `XLEN'b0;
 	assign mem_addr = mem_w || mem_r ? alu_result : `XLEN'b0;
 	wire [`XLEN-1:0] ld_data;
-	MuxKeyWithDefault #(7, 3, `XLEN) i_ld_data (
+	MuxKeyWithDefault #(7, 3, `XLEN) u_ld_data (
 		.out(ld_data),
 		.key(funct3),
 		.default_out(`XLEN'b0),
 		.lut({
-			LB, {{(`XLEN-8){rdata[7]}}, rdata[7:0]},
-			LH,	{{(`XLEN-16){rdata[15]}}, rdata[15:0]},
-			LW,	{{(`XLEN-32){rdata[31]}}, rdata[31:0]},
-			LBU,{{(`XLEN-8){1'b0}}, rdata[7:0]},
-			LHU,{{(`XLEN-16){1'b0}}, rdata[15:0]},
-			LWU,{{(`XLEN-32){1'b0}}, rdata[31:0]},
-			LD,	{{(`XLEN-64){rdata[63]}}, rdata[63:0]}
+			LB, {{(`XLEN-8){mem_rdata[7]}}, mem_rdata[7:0]},
+			LH,	{{(`XLEN-16){mem_rdata[15]}}, mem_rdata[15:0]},
+			LW,	{{(`XLEN-32){mem_rdata[31]}}, mem_rdata[31:0]},
+			LBU,{{(`XLEN-8){1'b0}}, mem_rdata[7:0]},
+			LHU,{{(`XLEN-16){1'b0}}, mem_rdata[15:0]},
+			LWU,{{(`XLEN-32){1'b0}}, mem_rdata[31:0]},
+			LD,	{{(`XLEN-64){mem_rdata[63]}}, mem_rdata[63:0]}
 		})
 	);
 
-	MuxKeyWithDefault #(11, 7, 1) i_rd_wen (
+	MuxKeyWithDefault #(11, 7, 1) u_rd_wen (
 		.out(rd_wen),
 		.key(opcode),
 		.default_out(1'b0),
@@ -292,8 +292,8 @@ module EXU (
 			`OP_32,		1'b1
 		})
 	);
-	MuxKeyWithDefault #(11, 7, `XLEN) i_rd_data (
-		.out(rd_data),
+	MuxKeyWithDefault #(11, 7, `XLEN) u_rd_data (
+		.out(x_rd),
 		.key(opcode),
 		.default_out(`XLEN'b0),
 		.lut({

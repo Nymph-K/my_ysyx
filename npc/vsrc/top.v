@@ -10,29 +10,33 @@ module top(
 	input  [31:0] inst,
 	output mem_r,
 	output mem_w,
-	output [2:0] mem_dlen,
-	inout  [`XLEN-1:0] mem_data,
+	output [1:0] mem_dlen,
+	//inout  [`XLEN-1:0] mem_data,
+	input  [`XLEN-1:0] mem_rdata,
+	output [`XLEN-1:0] mem_wdata,
 	output [`XLEN-1:0] mem_addr,
-	output [`XLEN-1:0] pc
+	output [`XLEN-1:0] pc,
+	output [`XLEN-1:0] dnpc
 );
-	wire [`XLEN-1:0] rdata, wdata;
-	assign rdata = (mem_r) ? mem_data : `XLEN'b0;
-	assign mem_data = (mem_w) ? wdata : `XLEN'bZ;
-	assign mem_dlen = funct3;
+	//wire [`XLEN-1:0] mem_rdata, mem_wdata;
+	//assign mem_rdata = (mem_r) ? mem_data : `XLEN'b0;
+	//assign mem_data = (mem_w) ? mem_wdata : `XLEN'bZ;
+	assign mem_dlen = funct3[1:0];
 
-	wire wen;
-	wire [`XLEN-1:0] wt_data, rdata1, rdata2;
-	wire [`XLEN-1:0] dnpc;
-	GIR i_gir(
+	wire [4:0] rs1, rs2, rd;
+	wire rd_wen;
+	wire [`XLEN-1:0] x_rd, x_rs1, x_rs2;
+	//wire [`XLEN-1:0] dnpc;
+	GIR u_gir(
 	  .clk(clk),
 	  .rst(rst),
-	  .rd1_index(rs1),
-	  .rd2_index(rs2),
-	  .wt_index(rd),
-	  .wen(wen),
-	  .wdata(wt_data),
-	  .rdata1(rdata1),
-	  .rdata2(rdata2),
+	  .rs1(rs1),
+	  .rs2(rs2),
+	  .rd(rd),
+	  .rd_wen(rd_wen),
+	  .x_rd(x_rd),
+	  .x_rs1(x_rs1),
+	  .x_rs2(x_rs2),
 	  .dnpc(dnpc),
 	  .pc(pc)
 	);
@@ -41,8 +45,7 @@ module top(
 	wire [2:0] funct3;
 	wire [6:0] funct7;
 	wire [`XLEN-1:0] src1, src2, imm;
-	wire [4:0] rs1, rs2, rd;
-	IDU i_idu(
+	IDU u_idu(
 		.clk(clk),
 		.rst(rst),
 		.inst(inst),
@@ -55,12 +58,12 @@ module top(
 		.rs1(rs1),
 		.rs2(rs2),
 		.rd(rd),
-		.rdata1(rdata1),
-		.rdata2(rdata2)
+		.x_rs1(x_rs1),
+		.x_rs2(x_rs2)
 	);
 
 
-	EXU i_exu (
+	EXU u_exu (
 		.clk(clk),
 		.rst(rst),
 		.inst(inst),
@@ -70,13 +73,13 @@ module top(
 		.src1(src1),
 		.src2(src2),
 		.imm(imm),
-		.rd_wen(wen),
-		.rd_data(wt_data),
+		.rd_wen(rd_wen),
+		.x_rd(x_rd),
 		.mem_r(mem_r),
 		.mem_w(mem_w),
 		.mem_addr(mem_addr),
-		.rdata(rdata), //ld_data
-		.wdata(wdata), //st_data
+		.mem_rdata(mem_rdata), //ld_data
+		.mem_wdata(mem_wdata), //st_data
 		.pc(pc),
 		.dnpc(dnpc)
 );

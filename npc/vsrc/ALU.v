@@ -38,7 +38,7 @@ module ALU (
 	assign overflow = (a[`XLEN-1] == b[`XLEN-1]) && (a[`XLEN-1] != adder_out[`XLEN-1]);
 	assign smaller = adder_out[`XLEN-1] ^ overflow;
 
-	full_adder i_full_adder (
+	full_adder u_full_adder (
 		.a(a),
 		.b(tmp_b),
 		.cin(sub),
@@ -46,7 +46,7 @@ module ALU (
 		.cout(cout)
 	);
 
-	MuxKeyWithDefault #(8, `LEN_SEL, `XLEN) i_result (
+	MuxKeyWithDefault #(8, `LEN_SEL, `XLEN) u_result (
 		.out(result),
 		.key(sel),
 		.default_out(`XLEN'b0),
