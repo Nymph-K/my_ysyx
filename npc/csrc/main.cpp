@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define WAVE_TRACE 1
 #define STACK_DP 40960
 #define NUM_INST (u_int64_t)-1
 
@@ -22,7 +23,6 @@ void stopCPU(void)
 static VerilatedContext* contextp = new VerilatedContext;
 static TOP_NAME* dut = new TOP_NAME{contextp};
 
-#define WAVE_TRACE 1
 #if WAVE_TRACE
 #include "verilated.h"
 #include "verilated_vcd_c.h"
