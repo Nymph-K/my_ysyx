@@ -17,6 +17,7 @@
 #include <cpu/decode.h>
 #include <cpu/difftest.h>
 #include <locale.h>
+#include <cpu/ringbuf.h>
 
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
@@ -35,11 +36,15 @@ void device_update();
 int scan_wp(void);
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
-  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
+  #if CONFIG_IRINGBUF_LEN
+  ringBufWrite(&iringbuf, _this->logbuf);
+  #else
+  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }//ITRACE_COND see nemu/Makefile:line 48
+  #endif
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
-#ifdef CONFIG_WATCHPOINT
+#ifdef CONFIG_WATCHPOINT// 1 for c, y for makefile
   if(scan_wp()) nemu_state.state = NEMU_STOP;
 #endif
 }
@@ -117,6 +122,14 @@ void cpu_exec(uint64_t n) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 
     case NEMU_END: case NEMU_ABORT:
+      #if CONFIG_IRINGBUF_LEN
+        Log("trace %d instractions:", ringBufLen(&iringbuf));
+        const char *log_str;
+        while(!ringBufEmpty(&iringbuf)){
+          log_str = ringBufRead(&iringbuf);
+          Log("%s", log_str);
+        }
+      #endif
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
