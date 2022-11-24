@@ -122,12 +122,20 @@ void cpu_exec(uint64_t n) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 
     case NEMU_END: case NEMU_ABORT:
+      #if CONFIG_MRINGBUF_LEN
+        Log("trace %d mem access:", ringBufLen(&mringbuf));
+        const char *mlog_str;
+        while(!ringBufEmpty(&mringbuf)){
+          mlog_str = ringBufRead(&mringbuf);
+          _Log("%s\n", mlog_str);
+        }
+      #endif
       #if CONFIG_IRINGBUF_LEN
         Log("trace %d instractions:", ringBufLen(&iringbuf));
-        const char *log_str;
+        const char *ilog_str;
         while(!ringBufEmpty(&iringbuf)){
-          log_str = ringBufRead(&iringbuf);
-          Log("%s", log_str);
+          ilog_str = ringBufRead(&iringbuf);
+          _Log("%s\n", ilog_str);
         }
       #endif
       Log("nemu: %s at pc = " FMT_WORD,
