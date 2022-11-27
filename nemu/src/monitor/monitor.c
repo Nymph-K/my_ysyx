@@ -23,8 +23,13 @@ void init_difftest(char *ref_so_file, long img_size, int port);
 void init_device();
 void init_sdb();
 void init_disasm(const char *triple);
-#if CONFIG_IRINGBUF_LEN
+
+#if CONFIG_IRINGBUF_DEPTH
 void ringBufInit(void);
+#endif
+#if CONFIG_FRINGBUF_DEPTH
+int  init_elf(char const *file_name);
+static char *elf_file = NULL;
 #endif
 
 static void welcome() {
@@ -76,15 +81,17 @@ static int parse_args(int argc, char *argv[]) {
     {"diff"     , required_argument, NULL, 'd'},
     {"port"     , required_argument, NULL, 'p'},
     {"help"     , no_argument      , NULL, 'h'},
+    {"ftrace"   , optional_argument, NULL, 'f'},
     {0          , 0                , NULL,  0 },
   };
   int o;
-  while ( (o = getopt_long(argc, argv, "-bhl:d:p:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-bhl:d:p:f::", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
       case 'l': log_file = optarg; break;
       case 'd': diff_so_file = optarg; break;
+      case 'f': elf_file = optarg; break;
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);
@@ -92,6 +99,7 @@ static int parse_args(int argc, char *argv[]) {
         printf("\t-l,--log=FILE           output log to FILE\n");
         printf("\t-d,--diff=REF_SO        run DiffTest with reference REF_SO\n");
         printf("\t-p,--port=PORT          run DiffTest with port PORT\n");
+        printf("\t-f,--ftrace=FILE          run function trace with FILE\n");
         printf("\n");
         exit(0);
     }
@@ -136,8 +144,12 @@ void init_monitor(int argc, char *argv[]) {
     MUXDEF(CONFIG_ISA_riscv64, "riscv64", "bad")))) "-pc-linux-gnu"
   ));
 
-  #if CONFIG_IRINGBUF_LEN
+  #if CONFIG_IRINGBUF_DEPTH
   ringBufInit();
+  #endif
+  #if CONFIG_FRINGBUF_DEPTH
+  if(init_elf(elf_file) == -1)
+    init_elf(img_file);
   #endif
 
   /* Display welcome message. */

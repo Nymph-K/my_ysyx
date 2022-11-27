@@ -18,6 +18,7 @@
 #include <cpu/difftest.h>
 #include <locale.h>
 #include <cpu/ringbuf.h>
+#include <elf_pars.h>
 
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
@@ -36,7 +37,7 @@ void device_update();
 int scan_wp(void);
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
-  #if CONFIG_IRINGBUF_LEN
+  #if CONFIG_IRINGBUF_DEPTH
   ringBufWrite(&iringbuf, _this->logbuf);
   #else
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }//ITRACE_COND see nemu/Makefile:line 48
@@ -73,6 +74,34 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst.val, ilen);
+
+  #if CONFIG_FRINGBUF_DEPTH
+    callBuf cb;
+    if(strncmp(p, "jalr", 4) == 0){
+      cb.dnpc_fndx = is_func_start(s->dnpc | 0xffffffff00000000);
+      if (cb.dnpc_fndx  != -1)
+      {
+        cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
+        cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+        ringBufWrite(&fringbuf, &cb);
+      }
+    }
+    else if(strncmp(p, "jal", 3) == 0){
+      cb.dnpc_fndx = is_func_start(s->dnpc | 0xffffffff00000000);
+      if (cb.dnpc_fndx  != -1)
+      {
+        cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
+        cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+        ringBufWrite(&fringbuf, &cb);
+      }
+    }
+    else if(strncmp(p, "ret", 3) == 0){
+      cb.dnpc_fndx = get_func_ndx(s->dnpc | 0xffffffff00000000);
+      cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+      cb.c_r = 'r'; cb.pc = s->pc; cb.dnpc = s->dnpc;
+      ringBufWrite(&fringbuf, &cb);
+    }
+  #endif
 #endif
 }
 
@@ -122,7 +151,15 @@ void cpu_exec(uint64_t n) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 
     case NEMU_END: case NEMU_ABORT:
-      #if CONFIG_MRINGBUF_LEN
+      #if CONFIG_IRINGBUF_DEPTH
+        Log("trace %d instractions:", ringBufLen(&iringbuf));
+        const char *ilog_str;
+        while(!ringBufEmpty(&iringbuf)){
+          ilog_str = ringBufRead(&iringbuf);
+          _Log("%s\n", ilog_str);
+        }
+      #endif
+      #if CONFIG_MRINGBUF_DEPTH
         Log("trace %d mem access:", ringBufLen(&mringbuf));
         const char *mlog_str;
         while(!ringBufEmpty(&mringbuf)){
@@ -130,12 +167,23 @@ void cpu_exec(uint64_t n) {
           _Log("%s\n", mlog_str);
         }
       #endif
-      #if CONFIG_IRINGBUF_LEN
-        Log("trace %d instractions:", ringBufLen(&iringbuf));
-        const char *ilog_str;
-        while(!ringBufEmpty(&iringbuf)){
-          ilog_str = ringBufRead(&iringbuf);
-          _Log("%s\n", ilog_str);
+      #if CONFIG_FRINGBUF_DEPTH
+        Log("trace %d function call:", ringBufLen(&fringbuf));
+        callBuf *cb;
+        int fun_depth = 1;
+        while(!ringBufEmpty(&fringbuf)){
+          cb = ringBufRead(&fringbuf);
+          if(cb->c_r == 'c')
+            fun_depth++;
+          _Log("0x%08lx -> 0x%08lx: %s", cb->pc, cb->dnpc, cb->c_r == 'c' ? "call " : "ret  ");
+          for (size_t i = 0; i < fun_depth; i++)
+          {
+            _Log("    ");
+          }
+          _Log("%s -> %s\n", get_func_name_ndx(cb->pc_fndx), get_func_name_ndx(cb->dnpc_fndx));
+          
+          if(cb->c_r == 'r')
+            fun_depth = fun_depth == 0 ? 0 : fun_depth - 1;
         }
       #endif
       Log("nemu: %s at pc = " FMT_WORD,

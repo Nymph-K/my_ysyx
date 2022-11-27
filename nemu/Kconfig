@@ -147,25 +147,35 @@ config ITRACE
   bool "Enable instruction tracer"
   default y
 
-config MTRACE
-  depends on TRACE
-  bool "Enable memory tracer"
-  default n
-
-config MRINGBUF_LEN
-  depends on MTRACE
-  int "Trace last n memory access when not 0"
-  default 16
-
 config ITRACE_COND
   depends on ITRACE
   string "Only trace instructions when the condition is true"
   default "true"
 
-config IRINGBUF_LEN
+config IRINGBUF_DEPTH
   depends on ITRACE_COND="true"
   int "Trace last n instructions when not 0"
   default 16
+
+config MTRACE
+  depends on TRACE
+  bool "Enable memory tracer"
+  default y
+
+config MRINGBUF_DEPTH
+  depends on MTRACE
+  int "Trace last n memory access when not 0"
+  default 16
+
+config FTRACE
+  depends on TRACE
+  bool "Enable function call tracer"
+  default y
+
+config FRINGBUF_DEPTH
+  depends on FTRACE
+  int "Trace last n function calls and returns when not 0"
+  default 64
 
 config DIFFTEST
   depends on TARGET_NATIVE_ELF

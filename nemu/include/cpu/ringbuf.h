@@ -3,27 +3,40 @@
 
 #include <common.h>
 
-#if CONFIG_IRINGBUF_LEN
+#if CONFIG_IRINGBUF_DEPTH|CONFIG_MRINGBUF_DEPTH
 
+#define LOG_LEN 128
+#define FTC_WIDTH sizeof(callBuf)
 
-struct ringBuf
+typedef struct
 {
     bool   full;
 	size_t head;
 	size_t tail;
-	size_t size;
-	char (*logbuffer)[128];//pointer -> array[0-127]
-};
+	size_t width;
+	size_t depth;
+	void *tracebuf;
+} ringBuf;
 
-extern struct ringBuf iringbuf;
-extern struct ringBuf mringbuf;
+typedef struct
+{
+    char c_r;//call or return
+	vaddr_t pc;
+	vaddr_t dnpc;
+	int pc_fndx;
+	int dnpc_fndx;
+} callBuf;
+
+extern ringBuf iringbuf;
+extern ringBuf mringbuf;
+extern ringBuf fringbuf;
 
 void ringBufInit(void);
-char *ringBufRead(struct ringBuf *ringbuf);
-void ringBufWrite(struct ringBuf *ringbuf, char *str);
-int ringBufLen(struct ringBuf *ringbuf);
-bool ringBufEmpty(struct ringBuf *ringbuf);
-bool ringBufFull(struct ringBuf *ringbuf);
+void *ringBufRead(ringBuf *ringbuf);
+void ringBufWrite(ringBuf *ringbuf, void *data);
+int ringBufLen(ringBuf *ringbuf);
+bool ringBufEmpty(ringBuf *ringbuf);
+bool ringBufFull(ringBuf *ringbuf);
 
 #endif//CONFIG_RINGBUF_LEN
 
