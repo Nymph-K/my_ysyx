@@ -101,6 +101,15 @@ static void exec_once(Decode *s, vaddr_t pc) {
       cb.c_r = 'r'; cb.pc = s->pc; cb.dnpc = s->dnpc;
       ringBufWrite(&fringbuf, &cb);
     }
+    else if(strncmp(p, "jr", 2) == 0){
+      cb.dnpc_fndx = is_func_start(s->dnpc | 0xffffffff00000000);
+      if (cb.dnpc_fndx  != -1)
+      {
+        cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
+        cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+        ringBufWrite(&fringbuf, &cb);
+      }
+    }
   #endif
 #endif
 }
@@ -180,7 +189,10 @@ void cpu_exec(uint64_t n) {
           {
             _Log("    ");
           }
-          _Log("%s -> %s\n", get_func_name_ndx(cb->pc_fndx), get_func_name_ndx(cb->dnpc_fndx));
+          if(cb->c_r == 'c')
+            _Log("%s -> %s\n", get_func_name_ndx(cb->pc_fndx), get_func_name_ndx(cb->dnpc_fndx));
+          else
+            _Log("%s <- %s\n", get_func_name_ndx(cb->dnpc_fndx), get_func_name_ndx(cb->pc_fndx));
           
           if(cb->c_r == 'r')
             fun_depth = fun_depth == 0 ? 0 : fun_depth - 1;

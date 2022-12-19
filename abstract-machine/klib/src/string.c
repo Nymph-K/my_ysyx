@@ -125,23 +125,48 @@ void *memset(void *s, int c, size_t n) {
   return s;
 }
 
-void *memmove(void *dst, const void *src, size_t n) {
-  assert(dst != NULL && src != NULL) ;
+// void *memmove(void *dst, const void *src, size_t n) {
+//   assert(dst != NULL && src != NULL) ;
 
-  size_t i;
-  uint8_t *d = dst;
-  const uint8_t *s = src;
+//   size_t i;
+//   uint8_t *d = dst;
+//   const uint8_t *s = src;
+  
+//   if(d == s) return dst;
+//   if(d < s){
+//     for (i = 0 ; i < n; i++)
+//       d[i] = s[i];
+//   }
+//   else{
+//     for (i = n-1 ; i >= 0; i--)
+//       d[i] = s[i];
+//   }
 
-  if(d < s){
-    for (i = 0 ; i < n; i++)
-      d[i] = s[i];
-  }
-  else{
-    for (i = n-1 ; i >= 0; i--)
-      d[i] = s[i];
-  }
+//   return dst;
+// }
+void* memmove(void* dst,const void* src,size_t count)
+{
+    assert(NULL !=src && NULL !=dst);
+    char* tmpdst = (char*)dst;
+    char* tmpsrc = (char*)src;
 
-  return dst;
+    if (tmpdst <= tmpsrc || tmpdst >= tmpsrc + count)
+    {
+        while(count--)
+        {
+            *tmpdst++ = *tmpsrc++; 
+        }
+    }
+    else
+    {
+        tmpdst = tmpdst + count - 1;
+        tmpsrc = tmpsrc + count - 1;
+        while(count--)
+        {
+            *tmpdst-- = *tmpsrc--;
+        }
+    }
+    return dst; 
 }
 
 void *memcpy(void *out, const void *in, size_t n) {
