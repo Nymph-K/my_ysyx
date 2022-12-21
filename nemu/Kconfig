@@ -175,7 +175,7 @@ config FTRACE
 config FRINGBUF_DEPTH
   depends on FTRACE
   int "Trace last n function calls and returns when not 0"
-  default 64
+  default 16
 
 config DIFFTEST
   depends on TARGET_NATIVE_ELF

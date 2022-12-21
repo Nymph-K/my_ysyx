@@ -35,6 +35,22 @@ int  atoi(const char *nptr)
         return (int)atol(nptr);
 }
 
+int myIsspace(char c)
+{
+    if(c =='\t'|| c =='\n'|| c ==' ' || c =='\v' || c =='\f' || c =='\r')
+        return 1;
+    else
+        return 0;
+}
+
+int myIsdigit(char c)
+{
+    if('0' <= c && c <= '9')
+        return 1;
+    else
+        return 0;
+}
+
 long  atol(const char *nptr)
 {
         int c;              /* 当前要转换的字符(一个一个字符转换成数字) */
@@ -42,7 +58,7 @@ long  atol(const char *nptr)
         int sign;           /* 标志转换结果是否带负号*/
  
         /*跳过空格，空格不进行转换*/
-        while ( isspace((int)(unsigned char)*nptr) )
+        while ( myIsspace(*nptr) )
             ++nptr;
  
         c = (int)(unsigned char)*nptr++;//获取一个字符准备转换 
@@ -52,7 +68,7 @@ long  atol(const char *nptr)
  
         total = 0;//设置转换结果为0 
  
-        while (isdigit(c)) {//如果字符是数字 
+        while (myIsdigit(c)) {//如果字符是数字 
             total = 10 * total + (c - '0');     /* 根据ASCII码将字符转换为对应的数字，并且乘10累积到结果 */
             c = (int)(unsigned char)*nptr++;    /* 取下一个字符 */
         }

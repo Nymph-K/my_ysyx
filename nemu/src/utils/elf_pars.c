@@ -1,6 +1,6 @@
 #include <elf_pars.h>
 
-#define DEUBG_PRINTF 1
+#define DEUBG_PRINTF 0
 #if DEUBG_PRINTF
 #define debug_printf(format, ...) printf(format, ##__VA_ARGS__)
 #else

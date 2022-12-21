@@ -1,4 +1,5 @@
 TOPNAME = top
+ALL ?=
 NXDC_FILES = constr/top.nxdc
 INC_PATH ?=
 
@@ -48,7 +49,7 @@ clean:
 sim: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	@echo "**************sim***************"
-	@$^
+	@$^ $(ALL)
 
 
 .PHONY: default clean run sim
