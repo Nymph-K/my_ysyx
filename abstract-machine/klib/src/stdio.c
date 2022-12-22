@@ -172,24 +172,23 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
           break;
         case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
           width = atoi(fmt);   /* width */
-          while (*fmt >= '0' && *fmt <= '9')
-            fmt++;
+          while (*fmt >= '0' && *fmt <= '9') fmt++;
           break;
         case '*':
           width = va_arg(ap, int);   /* width */
           fmt++;
           break;
         case '.':              /* precision */
-          if (fmt[1] == '*')
+          fmt++;
+          if (*fmt == '*')
           {
             precision = va_arg(ap, int);
-            fmt += 2;
+            fmt++;
           }
           else
           {
-            precision = atoi(++fmt);
-            while (*fmt >= '0' && *fmt <= '9')
-            fmt++;
+            precision = atoi(fmt);
+            while (*fmt >= '0' && *fmt <= '9') fmt++;
           }
           pad_zero = false;
           break;

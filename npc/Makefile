@@ -1,5 +1,6 @@
 TOPNAME = top
-ALL ?=
+#ALL ?= $(basename $(notdir $(shell find /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/tests/. -name "*.c")))Makefile
+IMG ?= $(abspath $(shell find /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/. -name "*-riscv64-npc.bin"))
 NXDC_FILES = constr/top.nxdc
 INC_PATH ?=
 
@@ -31,7 +32,7 @@ include $(NVBOARD_HOME)/scripts/nvboard.mk
 
 # rules for verilator
 INCFLAGS = $(addprefix -I, $(INC_PATH))
-CFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\""
+CFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -g
 LDFLAGS += -lSDL2 -lSDL2_image
 
 $(BIN): $(VSRCS) $(CSRCS) $(NVBOARD_ARCHIVE)
@@ -48,9 +49,13 @@ clean:
 
 sim: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	@echo "**************sim***************"
-	@$^ $(ALL)
+	@echo "**************sim ***************"
+	@$^ $(IMG)
 
+run: $(BIN)
+	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
+	@echo "**************run***************"
+	@$^ $(IMG)
 
 .PHONY: default clean run sim
 

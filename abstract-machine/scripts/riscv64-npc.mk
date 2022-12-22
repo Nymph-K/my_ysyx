@@ -1,5 +1,6 @@
 include $(AM_HOME)/scripts/isa/riscv64.mk
 
+
 AM_SRCS := riscv/npc/start.S \
            riscv/npc/trm.c \
            riscv/npc/ioe.c \
@@ -20,3 +21,6 @@ image: $(IMAGE).elf
 	@$(OBJDUMP) -d $(IMAGE).elf > $(IMAGE).txt
 	@echo + OBJCOPY "->" $(IMAGE_REL).bin
 	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(IMAGE).elf $(IMAGE).bin
+
+run: image
+	make  -C $(NPC_HOME) -s -f $(NPC_HOME)/Makefile IMG=$(IMAGE).bin $(MAKECMDGOALS)
