@@ -2,7 +2,7 @@ TOPNAME = top
 #ALL ?= $(basename $(notdir $(shell find /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/tests/. -name "*.c")))Makefile
 IMG ?= $(abspath $(shell find /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/. -name "*-riscv64-npc.bin"))
 NXDC_FILES = constr/top.nxdc
-INC_PATH ?=
+INC_PATH += $(abspath ./include/)
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc  \
@@ -35,12 +35,17 @@ INCFLAGS = $(addprefix -I, $(INC_PATH))
 CFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -g
 LDFLAGS += -lSDL2 -lSDL2_image
 
+override ARGS ?= --log=$(BUILD_DIR)/npc-log.txt
+//override ARGS += $(ARGS_DIFF)
+NEMU_EXEC := $(BIN) $(ARGS) $(IMG)
+
 $(BIN): $(VSRCS) $(CSRCS) $(NVBOARD_ARCHIVE)
 	@rm -rf $(OBJ_DIR)
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		--top-module $(TOPNAME) $^ \
 		$(addprefix -CFLAGS , $(CFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS)) \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN))
+
 
 all: default
 
@@ -50,12 +55,13 @@ clean:
 sim: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	@echo "**************sim ***************"
-	@$^ $(IMG)
+	$(NEMU_EXEC)
+
 
 run: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	@echo "**************run***************"
-	@$^ $(IMG)
+	$(NEMU_EXEC)
 
 .PHONY: default clean run sim
 

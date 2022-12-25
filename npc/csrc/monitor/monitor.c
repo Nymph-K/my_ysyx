@@ -141,12 +141,7 @@ void init_monitor(int argc, char *argv[]) {
   /* Initialize the simple debugger. */
   init_sdb();
 
-  IFDEF(CONFIG_ITRACE, init_disasm(
-    MUXDEF(CONFIG_ISA_x86,     "i686",
-    MUXDEF(CONFIG_ISA_mips32,  "mipsel",
-    MUXDEF(CONFIG_ISA_riscv32, "riscv32",
-    MUXDEF(CONFIG_ISA_riscv64, "riscv64", "bad")))) "-pc-linux-gnu"
-  ));
+  IFDEF(CONFIG_ITRACE, init_disasm("riscv64-pc-linux-gnu"));
 
   #if CONFIG_IRINGBUF_DEPTH | CONFIG_MRINGBUF_DEPTH | CONFIG_FRINGBUF_DEPTH
   ringBufInit();
