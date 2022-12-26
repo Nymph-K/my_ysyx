@@ -52,6 +52,35 @@ static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static int difftest_port = 1234;
 
+char base_name[50];//base_name: dummy
+char abso_name[100];//Absolute path
+int load_bin(char *bin_file){
+  FILE *binFile = NULL;
+  if(bin_file[0] == '/'){
+    //Absolute path: /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/dummy-riscv64-npc.bin
+    strcpy(abso_name, bin_file);
+    strcpy(base_name, strrchr(bin_file, '/')+1);
+    size_t j = strlen(base_name) - 16;
+    base_name[j] = '\0';
+  } else {
+    // base_name: dummy
+    strcpy(base_name, bin_file);
+    strcpy(abso_name, "/home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/");
+    strcat(abso_name, bin_file);
+    strcat(abso_name, "-riscv64-npc.bin");
+  }
+  binFile = fopen(abso_name, "rb");
+  if(binFile != NULL){
+    fread(mem_data, 1, STACK_DP, binFile);
+    fclose(binFile);
+    return 0;
+  }else{
+    printf("NO such file: %s !\n", abso_name);
+    fclose(binFile);
+    return 1;
+  }
+}
+
 static long load_img() {
   if (img_file == NULL) {
     Log("No image is given. Use the default build-in image.");

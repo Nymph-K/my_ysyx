@@ -13,17 +13,11 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <isa.h>
-#include <memory/paddr.h>
+#include <common.h>
+#ifndef CONFIG_TARGET_AM
+#include <time.h>
+#endif
 
-word_t vaddr_ifetch(vaddr_t addr, int len) {
-  return inst_fetch(addr, len);
-}
-
-word_t vaddr_read(vaddr_t addr, int len) {
-  return paddr_read(addr, len);
-}
-
-void vaddr_write(vaddr_t addr, int len, word_t data) {
-  paddr_write(addr, len, data);
+void init_rand() {
+  srand(MUXDEF(CONFIG_TARGET_AM, 0, time(0)));
 }
