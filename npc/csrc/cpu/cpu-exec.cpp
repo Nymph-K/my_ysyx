@@ -4,7 +4,8 @@
 
 #include <paddr.h>
 #include <reg.h>
-
+#include <ringbuf.h>
+#include <elf_pars.h>
 //void nvboard_bind_all_pins(TOP_NAME* dut);
 
 static VerilatedContext* contextp = new VerilatedContext;
@@ -197,14 +198,14 @@ void cpu_exec(uint64_t n) {
   g_timer += timer_end - timer_start;
 
   switch (npc_state.state) {
-    case NPC_RUNNING: npc_state.state = NPC_STOP; break;
+    case NPC_RUNNING: {npc_state.state = NPC_STOP; break;}
 
-    case NPC_END: case NPC_ABORT:
+    case NPC_END: case NPC_ABORT:{
       #if CONFIG_IRINGBUF_DEPTH
         Log("trace %d instractions:", ringBufLen(&iringbuf));
         const char *ilog_str;
         while(!ringBufEmpty(&iringbuf)){
-          ilog_str = ringBufRead(&iringbuf);
+          ilog_str = (const char*)ringBufRead(&iringbuf);
           _Log("%s\n", ilog_str);
         }
       #endif
@@ -212,7 +213,7 @@ void cpu_exec(uint64_t n) {
         Log("trace %d mem access:", ringBufLen(&mringbuf));
         const char *mlog_str;
         while(!ringBufEmpty(&mringbuf)){
-          mlog_str = ringBufRead(&mringbuf);
+          mlog_str = (const char*)ringBufRead(&mringbuf);
           _Log("%s\n", mlog_str);
         }
       #endif
@@ -221,7 +222,7 @@ void cpu_exec(uint64_t n) {
         callBuf *cb;
         int fun_depth = 1;
         while(!ringBufEmpty(&fringbuf)){
-          cb = ringBufRead(&fringbuf);
+          cb = (callBuf *)ringBufRead(&fringbuf);
           if(cb->c_r == 'c')
             fun_depth++;
           _Log("0x%08lx -> 0x%08lx: %s", cb->pc, cb->dnpc, cb->c_r == 'c' ? "call " : "ret  ");
@@ -244,7 +245,8 @@ void cpu_exec(uint64_t n) {
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           npc_state.halt_pc);
       // fall through
-    case NPC_QUIT: statistic();
+    }
+    case NPC_QUIT: {statistic();}
   }
 }
 

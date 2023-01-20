@@ -10,11 +10,11 @@
 
 #if CONFIG_IRINGBUF_DEPTH
 ringBuf iringbuf;
-static char ilogbuffer[CONFIG_IRINGBUF_DEPTH*LOG_LEN] = {0};
+static uint8_t ilogbuffer[CONFIG_IRINGBUF_DEPTH*LOG_LEN] = {0};
 #endif
 #if CONFIG_MRINGBUF_DEPTH
 ringBuf mringbuf;
-static char mlogbuffer[CONFIG_MRINGBUF_DEPTH*LOG_LEN] = {0};
+static uint8_t mlogbuffer[CONFIG_MRINGBUF_DEPTH*LOG_LEN] = {0};
 #endif
 #if CONFIG_FRINGBUF_DEPTH
 ringBuf fringbuf;
@@ -64,13 +64,13 @@ void *ringBufRead(ringBuf *ringbuf)
 	}
     ringbuf->head = H_NEXT_BUF(ringbuf);
     ringbuf->full = false;
-    return ringbuf->tracebuf+ret*ringbuf->width;
+    return (uint8_t *)(ringbuf->tracebuf)+ret*ringbuf->width;//pointer of type ‘void *’ used in arithmetic
 }
 
 /*往环形缓冲区写数据*/
 void ringBufWrite(ringBuf *ringbuf, void *data)
 {
-    memcpy(ringbuf->tracebuf+ringbuf->tail*ringbuf->width, data, ringbuf->width);
+    memcpy((uint8_t *)(ringbuf->tracebuf)+ringbuf->tail*ringbuf->width, data, ringbuf->width);//pointer of type ‘void *’ used in arithmetic
     ringbuf->tail = T_NEXT_BUF(ringbuf);
     if (ringbuf->full)
     {

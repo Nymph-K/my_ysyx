@@ -13,6 +13,7 @@ BUILD_DIR = ./build
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 BIN = $(BUILD_DIR)/$(TOPNAME)
 
+
 default: $(BIN)
 
 $(shell mkdir -p $(BUILD_DIR))
@@ -32,8 +33,8 @@ include $(NVBOARD_HOME)/scripts/nvboard.mk
 
 # rules for verilator
 INCFLAGS = $(addprefix -I, $(INC_PATH))
-CFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -g
-LDFLAGS += -lSDL2 -lSDL2_image -lreadline
+CFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -g $(shell llvm-config --cxxflags) -fPIE
+LDFLAGS += -lSDL2 -lSDL2_image -lreadline -ldl $(shell llvm-config --libs)
 
 override ARGS ?= --log=$(BUILD_DIR)/npc-log.txt
 # override ARGS += $(ARGS_DIFF)
