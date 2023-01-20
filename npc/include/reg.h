@@ -13,11 +13,28 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#ifndef __SDB_H__
-#define __SDB_H__
+#ifndef __RISCV64_REG_H__
+#define __RISCV64_REG_H__
 
 #include <common.h>
 
-word_t expr(char *e, bool *success);
+#define DPI_C_SET_GPR_PTR 1
+#define GPR(n) cpu->rootp->top__DOT__u_gir__DOT____Vcellout__gir_gen__BRA__##n##__KET____DOT__genblk1__DOT__u_gir__dout
+#define gpr(n) *((uint64_t *)&(GPR(0)) + n)
+
+static inline int check_reg_idx(int idx) {
+  IFDEF(CONFIG_RT_CHECK, assert(idx >= 0 && idx < 32));
+  return idx;
+}
+
+static inline const char* reg_name(int idx, int width) {
+  extern const char* regs[];
+  return regs[check_reg_idx(idx)];
+}
+
+extern uint64_t *cpu_gpr;
+
+void isa_reg_display(void);
+word_t isa_reg_str2val(const char *s, bool *success);
 
 #endif

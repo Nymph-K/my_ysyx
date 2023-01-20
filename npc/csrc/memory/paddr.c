@@ -15,9 +15,8 @@
 
 #include <memory/host.h>
 #include <memory/paddr.h>
-#include <device/mmio.h>
-#include <isa.h>
-#include <cpu/ringbuf.h>
+//#include <device/mmio.h>
+#include <ringbuf.h>
 
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
@@ -49,7 +48,7 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 
 static void out_of_bound(paddr_t addr) {
   panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
-      addr, (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1, cpu.pc);
+      addr, (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1, cpu->pc);
 }
 
 void init_mem() {
@@ -81,85 +80,19 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   out_of_bound(addr);
 }
 
-u_int8_t mem_data[STACK_DP] = {0,};
-
-u_int8_t mem_access(TOP_NAME* cpu) {
-  #define MEM_SUCCESS 0
-  #define MEM_ERROR 1
-  #define MEM_NOACCESS 2
+void mem_access(void) {
   u_int64_t offset;
   if (cpu->mem_r)
   {
-    offset = cpu->mem_addr - 0x80000000;
-    if(offset <= STACK_DP){
-      cpu->mem_rdata = *((u_int64_t *)(mem_data+offset));
-      debug_printf("load  = 0x%16lX      data = 0x%16lX      mem = 0x%16lX\n", cpu->mem_addr, cpu->mem_rdata, *((u_int64_t *)(mem_data+offset)));
-      return MEM_SUCCESS;
-    }
-    else {
-      debug_printf("Memory access out of bounds!\n");
-      return MEM_ERROR;
-    }
+    cpu->mem_rdata = paddr_read(cpu->mem_addr, 1 << cpu->mem_dlen);
   }
   if (cpu->mem_w)
   {
-    offset = cpu->mem_addr - 0x80000000;
-    if(offset <= STACK_DP){
-      switch (cpu->mem_dlen) {
-        case 0: *((u_int8_t *)(mem_data+offset)) = (u_int8_t)cpu->mem_wdata;break;
-        case 1: *((u_int16_t *)(mem_data+offset)) = (u_int16_t)cpu->mem_wdata;break;
-        case 2: *((u_int32_t *)(mem_data+offset)) = (u_int32_t)cpu->mem_wdata;break;
-        case 3: *((u_int64_t *)(mem_data+offset)) = (u_int64_t)cpu->mem_wdata;break;
-        default: break; }
-      return MEM_SUCCESS;
-    }
-    else {
-      debug_printf("Memory access out of bounds!\n");
-      return MEM_ERROR;
-    }
-  }
-  return MEM_NOACCESS;
-}
-
-
-u_int8_t get_inst(TOP_NAME* cpu) {
-  u_int64_t offset;
-  offset = cpu->pc - 0x80000000;
-  if(offset <= STACK_DP){
-    cpu->inst = *((u_int32_t *)(mem_data+offset));
-    return MEM_SUCCESS;
-  }
-  else {
-    debug_printf("Memory access out of bounds!\n");
-    return MEM_ERROR;
+    paddr_write(cpu->mem_addr, 1 << cpu->mem_dlen, cpu->mem_rdata);
   }
 }
 
-char base_name[50];//base_name: dummy
-char abso_name[100];//Absolute path
-int load_bin(char *bin_file){
-  FILE *binFile = NULL;
-  if(bin_file[0] == '/'){
-    //Absolute path: /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/dummy-riscv64-npc.bin
-    strcpy(abso_name, bin_file);
-    strcpy(base_name, strrchr(bin_file, '/')+1);
-    size_t j = strlen(base_name) - 16;
-    base_name[j] = '\0';
-  } else {
-    // base_name: dummy
-    strcpy(base_name, bin_file);
-    strcpy(abso_name, "/home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/");
-    strcat(abso_name, bin_file);
-    strcat(abso_name, "-riscv64-npc.bin");
-  }
-  binFile = fopen(abso_name, "rb");
-  if(binFile != NULL){
-    fread(mem_data, 1, STACK_DP, binFile);
-    fclose(binFile);
-    return 0;
-  }else{
-    printf("NO such file: %s !\n", abso_name);
-    fclose(binFile);
-    return 1;
-  }
+word_t inst_fetch(void) {
+    cpu->inst = paddr_read(cpu->pc, 4);
+    return cpu->inst;
 }

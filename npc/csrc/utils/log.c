@@ -14,25 +14,21 @@
 ***************************************************************************************/
 
 #include <common.h>
-#include <memory/paddr.h>
 
-void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
-  assert(0);
+extern uint64_t g_nr_guest_inst;
+FILE *log_fp = NULL;
+
+void init_log(const char *log_file) {
+  log_fp = stdout;
+  if (log_file != NULL) {
+    FILE *fp = fopen(log_file, "w");
+    Assert(fp, "Can not open '%s'", log_file);
+    log_fp = fp;
+  }
+  Log("Log is written to %s", log_file ? log_file : "stdout");
 }
 
-void difftest_regcpy(void *dut, bool direction) {
-  assert(0);
-}
-
-void difftest_exec(uint64_t n) {
-  assert(0);
-}
-
-void difftest_raise_intr(word_t NO) {
-  assert(0);
-}
-
-void difftest_init(int port) {
-  /* Perform ISA dependent initialization. */
-  //init_isa();
+bool log_enable() {
+  return MUXDEF(CONFIG_TRACE, (g_nr_guest_inst >= CONFIG_TRACE_START) &&
+         (g_nr_guest_inst <= CONFIG_TRACE_END), false);
 }

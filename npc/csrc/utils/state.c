@@ -14,25 +14,14 @@
 ***************************************************************************************/
 
 #include <common.h>
-#include <memory/paddr.h>
 
-void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
-  assert(0);
-}
+NPCState npc_state = { .state = NPC_STOP };
 
-void difftest_regcpy(void *dut, bool direction) {
-  assert(0);
-}
+void exit_cpu(void);
 
-void difftest_exec(uint64_t n) {
-  assert(0);
-}
-
-void difftest_raise_intr(word_t NO) {
-  assert(0);
-}
-
-void difftest_init(int port) {
-  /* Perform ISA dependent initialization. */
-  //init_isa();
+int is_exit_status_bad() {
+  int good = (npc_state.state == NPC_END && npc_state.halt_ret == 0) ||
+    (npc_state.state == NPC_QUIT);
+  exit_cpu();
+  return !good;
 }

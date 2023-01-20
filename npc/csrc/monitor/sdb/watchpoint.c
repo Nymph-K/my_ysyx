@@ -13,11 +13,14 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include "sdb.h"
+#include <common.h>
 
 #define NR_WP 32
 #define WP_TP uint64_t
 #define EXP_SIZE 1024
+
+
+word_t expr(char *e, bool *success);
 
 typedef struct watchpoint {
   int NO;

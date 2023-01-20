@@ -13,7 +13,6 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <isa.h>
 #include <memory/paddr.h>
 
 void init_rand();
@@ -23,6 +22,7 @@ void init_difftest(char *ref_so_file, long img_size, int port);
 void init_device();
 void init_sdb();
 void init_disasm(const char *triple);
+void init_cpu(void);
 
 #if CONFIG_IRINGBUF_DEPTH
 void ringBufInit(void);
@@ -38,7 +38,7 @@ static void welcome() {
         "to record the trace. This may lead to a large log file. "
         "If it is not necessary, you can disable it in menuconfig"));
   Log("Build time: %s, %s", __TIME__, __DATE__);
-  printf("Welcome to %s-NEMU!\n", ANSI_FMT(str(__GUEST_ISA__), ANSI_FG_YELLOW ANSI_BG_RED));
+  printf("Welcome to %s_NPC!\n", ANSI_FMT(str(RISCV64), ANSI_FG_YELLOW ANSI_BG_RED));
   printf("For help, type \"help\"\n");
 }
 
@@ -51,6 +51,36 @@ static char *log_file = NULL;
 static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static int difftest_port = 1234;
+
+// char base_name[50];//base_name: dummy
+// char abso_name[100];//Absolute path
+// int load_bin(char *bin_file){
+//   FILE *binFile = NULL;
+//   if(bin_file[0] == '/'){
+//     //Absolute path: /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/dummy-riscv64-npc.bin
+//     strcpy(abso_name, bin_file);
+//     strcpy(base_name, strrchr(bin_file, '/')+1);
+//     size_t j = strlen(base_name) - 16;
+//     base_name[j] = '\0';
+//   } else {
+//     // base_name: dummy
+//     strcpy(base_name, bin_file);
+//     strcpy(abso_name, "/home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/");
+//     strcat(abso_name, bin_file);
+//     strcat(abso_name, "-riscv64-npc.bin");
+//   }
+//   binFile = fopen(abso_name, "rb");
+//   long size = ftell(binFile);
+//   if(binFile != NULL){
+//     fread(mem_data, size, 1, binFile);
+//     fclose(binFile);
+//     return 0;
+//   }else{
+//     printf("NO such file: %s !\n", abso_name);
+//     fclose(binFile);
+//     return 1;
+//   }
+// }
 
 static long load_img() {
   if (img_file == NULL) {
@@ -130,10 +160,13 @@ void init_monitor(int argc, char *argv[]) {
   IFDEF(CONFIG_DEVICE, init_device());
 
   /* Perform ISA dependent initialization. */
-  init_isa();
+  //init_isa();
 
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img();
+
+  /* reset cpu. */
+  init_cpu();
 
   /* Initialize differential testing. */
   init_difftest(diff_so_file, img_size, difftest_port);
@@ -168,6 +201,7 @@ void am_init_monitor() {
   init_mem();
   init_isa();
   load_img();
+  init_cpu();
   IFDEF(CONFIG_DEVICE, init_device());
   welcome();
 }

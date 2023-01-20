@@ -5,6 +5,8 @@
 
 `include "top.v"
 
+`define DPI_C_SET_GPR_PTR
+
 module GIR (
 	input  clk,
 	input  rst,
@@ -49,7 +51,10 @@ module GIR (
 		.dout(pc), 
 		.wen(1'b1));
 
-	
+`ifdef DPI_C_SET_GPR_PTR
+import "DPI-C" function void set_gpr_ptr(input logic [63:0] gir []);
+	initial set_gpr_ptr(gir);  // gir为通用寄存器的二维数组变量
+`endif
 
 endmodule //GIR
 

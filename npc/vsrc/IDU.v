@@ -3,7 +3,6 @@
 `ifndef IDU_V
 `define IDU_V
 
-import "DPI-C" function void stopCPU();
 
 `include "top.v"
 
@@ -148,6 +147,7 @@ module IDU (
 		})
 	);
 
+import "DPI-C" function void stopCPU();
 	localparam ebreak = 32'b00000000000100000000000001110011;
 	always @(*) begin
 		if(inst == ebreak) begin

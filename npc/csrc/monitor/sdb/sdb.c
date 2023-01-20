@@ -13,17 +13,16 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <isa.h>
-#include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include "sdb.h"
 #include <memory/paddr.h>
+#include <reg.h>
 
 static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+void cpu_exec(uint64_t n);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -34,7 +33,7 @@ static char* rl_gets() {
     line_read = NULL;
   }
 
-  line_read = readline("(nemu) ");
+  line_read = readline("(npc) ");
 
   if (line_read && *line_read) {
     add_history(line_read);
@@ -120,6 +119,8 @@ static int cmd_x(char *args) {
   }
 }
 
+word_t expr(char *e, bool *success);
+
 static int cmd_p(char *args) {
   if (args == NULL) { 
     printf("Too few arguments!\n");
@@ -184,13 +185,13 @@ static struct {
 } cmd_table [] = {
   { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
-  { "q", "Exit NEMU", cmd_q },
-  { "si", "Single step execute the program.\t arg: N. Example: (nemu) si 10", cmd_si },
-  { "info", "Print program status.\t arg: r|w. Example: (nemu) info r", cmd_info },
-  { "x", "Scan memory.\t arg: N EXPR. Example: (nemu) x 10 $esp", cmd_x },
-  { "p", "Expression evaluation.\t arg: EXPR. Example: (nemu) p $esp", cmd_p },
-  { "w", "Set watch point.\t arg: EXPR. Example: (nemu) w $esp", cmd_w },
-  { "d", "Delete watch point.\t arg: N. Example: (nemu) d 2", cmd_d },
+  { "q", "Exit NPC", cmd_q },
+  { "si", "Single step execute the program.\t arg: N. Example: (npc) si 10", cmd_si },
+  { "info", "Print program status.\t arg: r|w. Example: (npc) info r", cmd_info },
+  { "x", "Scan memory.\t arg: N EXPR. Example: (npc) x 10 $esp", cmd_x },
+  { "p", "Expression evaluation.\t arg: EXPR. Example: (npc) p $esp", cmd_p },
+  { "w", "Set watch point.\t arg: EXPR. Example: (npc) w $esp", cmd_w },
+  { "d", "Delete watch point.\t arg: N. Example: (npc) d 2", cmd_d },
 
   /* TODO: Add more commands */
 
@@ -269,4 +270,13 @@ void init_sdb() {
 
   /* Initialize the watchpoint pool. */
   init_wp_pool();
+}
+
+void engine_start() {
+#ifdef CONFIG_TARGET_AM
+  cpu_exec(-1);
+#else
+  /* Receive commands from user. */
+  sdb_mainloop();
+#endif
 }

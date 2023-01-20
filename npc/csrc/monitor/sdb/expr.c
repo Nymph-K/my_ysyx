@@ -13,12 +13,14 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <isa.h>
 
 /* We use the POSIX regex functions to process regular expressions.
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
+#include <macro.h>
+#include <common.h>
+#include <reg.h>
 
 enum {
   TK_NOTYPE = 256, TK_EQ, TK_NEQ, TK_GE, TK_LE, TK_SR, TK_SL, 

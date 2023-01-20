@@ -2,7 +2,7 @@ TOPNAME = top
 #ALL ?= $(basename $(notdir $(shell find /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/tests/. -name "*.c")))Makefile
 IMG ?= $(abspath $(shell find /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/. -name "*-riscv64-npc.bin"))
 NXDC_FILES = constr/top.nxdc
-INC_PATH += $(abspath ./include/)
+INC_PATH += $(abspath $(shell find $(abspath ./include/) -type d))
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc  \
@@ -33,10 +33,10 @@ include $(NVBOARD_HOME)/scripts/nvboard.mk
 # rules for verilator
 INCFLAGS = $(addprefix -I, $(INC_PATH))
 CFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -g
-LDFLAGS += -lSDL2 -lSDL2_image
+LDFLAGS += -lSDL2 -lSDL2_image -lreadline
 
 override ARGS ?= --log=$(BUILD_DIR)/npc-log.txt
-//override ARGS += $(ARGS_DIFF)
+# override ARGS += $(ARGS_DIFF)
 NEMU_EXEC := $(BIN) $(ARGS) $(IMG)
 
 $(BIN): $(VSRCS) $(CSRCS) $(NVBOARD_ARCHIVE)
