@@ -24,7 +24,7 @@ extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
   cpu_gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
 }
 #else
-uint64_t *cpu_gpr = (uint64_t *)&(cpu->rootp->top__DOT__u_gir__DOT__gir);
+uint64_t *cpu_gpr = (uint64_t *)&(mycpu->rootp->top__DOT__u_gir__DOT__gir);
 #endif
 
 const char *regs[] = {
@@ -51,7 +51,7 @@ word_t isa_reg_str2val(const char *s, bool *success) {
   if (strcmp(s, "pc") == 0)
   {
     *success = true;
-    return cpu->pc;
+    return mycpu->pc;
   }
   for (int i = 1; i < 32; i++)
   {
@@ -63,4 +63,22 @@ word_t isa_reg_str2val(const char *s, bool *success) {
   }
   *success = false;
   return -1;
+}
+
+void reg_copy_to(CPU_state *ref)
+{
+  for (int i = 0; i < 32; i++)
+  {
+    ref->gpr[i] = cpu_gpr[i];
+  }
+  ref->pc = mycpu->pc;
+}
+
+void reg_set_from(CPU_state *ref)
+{
+  for (int i = 0; i < 32; i++)
+  {
+    cpu_gpr[i] = ref->gpr[i];
+  }
+  mycpu->pc = ref->pc;
 }

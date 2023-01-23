@@ -48,7 +48,7 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 
 static void out_of_bound(paddr_t addr) {
   panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
-      addr, (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1, cpu->pc);
+      addr, (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1, mycpu->pc);
 }
 
 void init_mem() {
@@ -82,17 +82,17 @@ void paddr_write(paddr_t addr, int len, word_t data) {
 
 void mem_access(void) {
   u_int64_t offset;
-  if (cpu->mem_r)
+  if (mycpu->mem_r)
   {
-    cpu->mem_rdata = paddr_read(cpu->mem_addr, 1 << cpu->mem_dlen);
+    mycpu->mem_rdata = paddr_read(mycpu->mem_addr, 1 << mycpu->mem_dlen);
   }
-  if (cpu->mem_w)
+  if (mycpu->mem_w)
   {
-    paddr_write(cpu->mem_addr, 1 << cpu->mem_dlen, cpu->mem_rdata);
+    paddr_write(mycpu->mem_addr, 1 << mycpu->mem_dlen, mycpu->mem_rdata);
   }
 }
 
 word_t inst_fetch(void) {
-    cpu->inst = paddr_read(cpu->pc, 4);
-    return cpu->inst;
+    mycpu->inst = paddr_read(mycpu->pc, 4);
+    return mycpu->inst;
 }

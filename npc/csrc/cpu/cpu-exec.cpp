@@ -6,10 +6,11 @@
 #include <reg.h>
 #include <ringbuf.h>
 #include <elf_pars.h>
+#include <cpu/difftest.h>
 //void nvboard_bind_all_pins(TOP_NAME* dut);
 
 static VerilatedContext* contextp = new VerilatedContext;
-TOP_NAME* cpu = new TOP_NAME{contextp};
+TOP_NAME* mycpu = new TOP_NAME{contextp};
 
 #if WAVE_TRACE
 #include "verilated.h"
@@ -18,19 +19,19 @@ TOP_NAME* cpu = new TOP_NAME{contextp};
 static VerilatedVcdC* tfp = new VerilatedVcdC;
 
 static void posedge_half_cycle() {
-  cpu->clk = 1; cpu->eval();tfp->dump(contextp->time());contextp->timeInc(1);
+  mycpu->clk = 1; mycpu->eval();tfp->dump(contextp->time());contextp->timeInc(1);
 }
 static void negedge_half_cycle() {
-  cpu->clk = 0; cpu->eval();tfp->dump(contextp->time());contextp->timeInc(1);
+  mycpu->clk = 0; mycpu->eval();tfp->dump(contextp->time());contextp->timeInc(1);
 }
 
 #else
 
 static void posedge_half_cycle() {
-  cpu->clk = 1; cpu->eval();
+  mycpu->clk = 1; mycpu->eval();
 }
 static void negedge_half_cycle() {
-  cpu->clk = 0; cpu->eval();
+  mycpu->clk = 0; mycpu->eval();
 }
 
 #endif
@@ -41,17 +42,17 @@ static void single_cycle() {
 }
 
 static void reset(int n) {
-  cpu->rst = 1;
+  mycpu->rst = 1;
   while (n -- > 0) single_cycle();
-  cpu->clk = 1; cpu->eval();
-  cpu->rst = 0; cpu->eval();
+  mycpu->clk = 1; mycpu->eval();
+  mycpu->rst = 0; mycpu->eval();
 }
 
 void stopCPU(void)
 {
   //difftest_skip_ref();
   npc_state.state = NPC_END;
-  npc_state.halt_pc = cpu->pc;
+  npc_state.halt_pc = mycpu->pc;
   npc_state.halt_ret = GPR(10);
 }
 
@@ -81,21 +82,21 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 }
 
 int riscv64_exec_once(void) {
-  cpu->clk = 1; cpu->eval();
+  mycpu->clk = 1; mycpu->eval();
   inst_fetch();
   posedge_half_cycle();
-  mem_access(); cpu->eval();
+  mem_access(); mycpu->eval();
   negedge_half_cycle();
-  debug_printf("pc = 0x%16lX \t inst = 0x%08X \t dnpc = 0x%16lX\n", cpu->pc, cpu->inst, cpu->dnpc);
+  debug_printf("pc = 0x%16lX \t inst = 0x%08X \t dnpc = 0x%16lX\n", mycpu->pc, mycpu->inst, mycpu->dnpc);
   return 0;
 }
 
 static void exec_once(Decode *s) {
   riscv64_exec_once();
-  s->pc = cpu->pc;
-  s->snpc = cpu->pc + 4;
-  s->dnpc = cpu->dnpc;
-  s->isa.inst.val = cpu->inst;
+  s->pc = mycpu->pc;
+  s->snpc = mycpu->pc + 4;
+  s->dnpc = mycpu->dnpc;
+  s->isa.inst.val = mycpu->inst;
 #ifdef CONFIG_ITRACE
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
@@ -160,7 +161,7 @@ static void execute(uint64_t n) {
   for (;n > 0; n --) {
     exec_once(&s);
     g_nr_guest_inst ++;
-    trace_and_difftest(&s, cpu->dnpc);
+    trace_and_difftest(&s, mycpu->dnpc);
     if (npc_state.state != NPC_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
   }
@@ -252,11 +253,11 @@ void cpu_exec(uint64_t n) {
 
 void init_cpu(void)
 {
-  // IFNVBOARD(nvboard_bind_all_pins(cpu));
+  // IFNVBOARD(nvboard_bind_all_pins(mycpu));
   // IFNVBOARD(nvboard_init());
   #if WAVE_TRACE
   contextp->traceEverOn(true);
-  cpu->trace(tfp, 0);
+  mycpu->trace(tfp, 0);
   tfp->open("wave.vcd");
   #endif
   reset(10);

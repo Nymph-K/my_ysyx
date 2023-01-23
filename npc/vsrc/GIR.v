@@ -31,7 +31,7 @@ module GIR (
 				Reg #(`XLEN, `XLEN'b0) u_gir (
 					.clk(clk), 
 					.rst(rst), 
-					.din(0), 
+					.din(`XLEN'b0), 
 					.dout(gir[n]), 
 					.wen((rd_wen == 1'b1 && rd == n) ? 1'b1 : 1'b0));
 			else

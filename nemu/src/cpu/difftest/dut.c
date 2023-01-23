@@ -21,6 +21,7 @@
 #include <utils.h>
 #include <difftest-def.h>
 
+
 void (*ref_difftest_memcpy)(paddr_t addr, void *buf, size_t n, bool direction) = NULL;
 void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
@@ -60,6 +61,7 @@ void difftest_skip_dut(int nr_ref, int nr_dut) {
 }
 
 void init_difftest(char *ref_so_file, long img_size, int port) {
+
   assert(ref_so_file != NULL);
 
   void *handle;
@@ -117,7 +119,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
 
   if (is_skip_ref) {
     // to skip the checking of an instruction, just copy the reg state to reference design
-    ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
+    ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
     is_skip_ref = false;
     return;
   }

@@ -57,6 +57,9 @@ uint64_t get_time();
 #define debug_printf(format, ...)
 #endif // DEUBG_PRINTF
 
+
+// ----------- diff test -----------
+enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
 # define DIFFTEST_REG_SIZE (sizeof(uint64_t) * 33) // GRPs + pc
 
 // ----------- log -----------
@@ -140,6 +143,7 @@ typedef struct {
   word_t gpr[32];
   vaddr_t pc;
 } riscv64_CPU_state;
+#define CPU_state riscv64_CPU_state
 
 // ----------- Decode -----------
 typedef struct {
@@ -160,6 +164,6 @@ typedef struct {
 
 // ----------- extern variables -----------
 extern NPCState npc_state;
-extern TOP_NAME* cpu;
+extern TOP_NAME* mycpu;
 
 #endif /*__INCLUDE_H__*/

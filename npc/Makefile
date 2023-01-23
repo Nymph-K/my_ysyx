@@ -34,7 +34,7 @@ include $(NVBOARD_HOME)/scripts/nvboard.mk
 # rules for verilator
 INCFLAGS = $(addprefix -I, $(INC_PATH))
 CFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\"" -g $(shell llvm-config --cxxflags) -fPIE
-LDFLAGS += -lSDL2 -lSDL2_image -lreadline -ldl $(shell llvm-config --libs)
+LDFLAGS += -lasan -lSDL2 -lSDL2_image -lreadline -ldl $(shell llvm-config --libs) -static-libasan
 
 override ARGS ?= --log=$(BUILD_DIR)/npc-log.txt
 # override ARGS += $(ARGS_DIFF)
