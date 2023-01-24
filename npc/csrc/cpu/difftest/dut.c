@@ -98,12 +98,14 @@ bool isa_difftest_checkregs(riscv64_CPU_state *ref_r, vaddr_t pc) {
   for (size_t i = 0; i < 32; i++)
   {
     if(ref_r->gpr[i] != cpu_gpr[i]) {
-      printf("ref->gpr[%ld] = %ld, \tcpu.gpr[%ld] = %ld\n", i, ref_r->gpr[i], i, cpu_gpr[i]);
+      printf("<------ Capture differences  ------>\n");
+      printf("ref->gpr[%ld] = 0x%016lX, \tcpu_gpr[%ld] = 0x%016lX\n", i, ref_r->gpr[i], i, cpu_gpr[i]);
+      printf("At pc = " ANSI_BG_MAGENTA ANSI_FG_RED "0x%016lX\n" ANSI_NONE, pc);
       return false;
     }
   }
-  if (ref_r->pc != mycpu->pc) {
-    printf("ref->pc = %ld, \tcpu.pc = %ld\n", ref_r->pc, mycpu->pc);
+  if (ref_r->pc != pc) {
+    printf("ref->pc = 0x%016lX, \tmycpu->pc = 0x%016lX\n", ref_r->pc, pc);
     return false;
   }
   return true;
@@ -114,6 +116,7 @@ static void checkregs(riscv64_CPU_state *ref, vaddr_t pc) {
     npc_state.state = NPC_ABORT;
     npc_state.halt_pc = pc;
     isa_reg_display();
+    printf("<------       End      ------>\n");
   }
 }
 
@@ -141,7 +144,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   }
 
   ref_difftest_exec(1);
-  ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);reg_set_from(&ref_r);
+  ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
 
   checkregs(&ref_r, pc);
 }

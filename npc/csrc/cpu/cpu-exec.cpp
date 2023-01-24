@@ -240,7 +240,7 @@ void cpu_exec(uint64_t n) {
             fun_depth = fun_depth == 0 ? 0 : fun_depth - 1;
         }
       #endif
-      Log("nemu: %s at pc = " FMT_WORD,
+      Log("npc: %s at pc = " FMT_WORD,
           (npc_state.state == NPC_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (npc_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
@@ -261,6 +261,7 @@ void init_cpu(void)
   tfp->open("wave.vcd");
   #endif
   reset(10);
+  IFDEF(CONFIG_DIFFTEST, riscv64_exec_once());
 }
 
 void exit_cpu(void)
