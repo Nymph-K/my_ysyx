@@ -13,8 +13,8 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <dlfcn.h>
 #include <common.h>
+#include <dlfcn.h>
 #include <memory/paddr.h>
 #include <cpu/difftest.h>
 #include <reg.h>
@@ -100,12 +100,13 @@ bool isa_difftest_checkregs(riscv64_CPU_state *ref_r, vaddr_t pc) {
     if(ref_r->gpr[i] != cpu_gpr[i]) {
       printf("<------ Capture differences  ------>\n");
       printf("ref->gpr[%ld] = 0x%016lX, \tcpu_gpr[%ld] = 0x%016lX\n", i, ref_r->gpr[i], i, cpu_gpr[i]);
-      printf("At pc = " ANSI_BG_MAGENTA ANSI_FG_RED "0x%016lX\n" ANSI_NONE, pc);
+      printf("At pc = " ANSI_FG_RED "0x%016lX\n" ANSI_NONE, pc);
       return false;
     }
   }
   if (ref_r->pc != pc) {
-    printf("ref->pc = 0x%016lX, \tmycpu->pc = 0x%016lX\n", ref_r->pc, pc);
+    printf("<------ Capture differences  ------>\n");
+    printf("ref->pc = 0x%016lX, \tmycpu->pc = " ANSI_FG_RED "0x%016lX\n" ANSI_NONE, ref_r->pc, pc);
     return false;
   }
   return true;

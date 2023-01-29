@@ -13,9 +13,9 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include <memory/paddr.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <memory/paddr.h>
 #include <reg.h>
 
 static int is_batch_mode = false;

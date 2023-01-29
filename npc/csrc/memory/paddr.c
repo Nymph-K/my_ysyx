@@ -88,11 +88,15 @@ void mem_access(void) {
   }
   if (mycpu->mem_w)
   {
-    paddr_write(mycpu->mem_addr, 1 << mycpu->mem_dlen, mycpu->mem_rdata);
+    paddr_write(mycpu->mem_addr, 1 << mycpu->mem_dlen, mycpu->mem_wdata);
   }
 }
 
 word_t inst_fetch(void) {
-    mycpu->inst = paddr_read(mycpu->pc, 4);
-    return mycpu->inst;
+    if (likely(in_pmem(mycpu->pc))){
+      mycpu->inst = host_read(guest_to_host(mycpu->pc), 4);
+      return mycpu->inst;
+    }
+    out_of_bound(mycpu->pc);
+    return 0;
 }

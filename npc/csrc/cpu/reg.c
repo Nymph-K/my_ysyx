@@ -15,7 +15,6 @@
 
 
 #include <reg.h>
-#include <Vtop___024root.h>
 
 #if DPI_C_SET_GPR_PTR
 #include "verilated_dpi.h"
@@ -24,6 +23,7 @@ extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
   cpu_gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
 }
 #else
+#include <Vtop___024root.h>
 uint64_t *cpu_gpr = (uint64_t *)&(mycpu->rootp->top__DOT__u_gir__DOT__gir);
 #endif
 

@@ -64,13 +64,13 @@ void *ringBufRead(ringBuf *ringbuf)
 	}
     ringbuf->head = H_NEXT_BUF(ringbuf);
     ringbuf->full = false;
-    return (uint8_t *)(ringbuf->tracebuf)+ret*ringbuf->width;//pointer of type ‘void *’ used in arithmetic
+    return (void *)((uint8_t *)(ringbuf->tracebuf)+ret*ringbuf->width);//pointer of type ‘void *’ used in arithmetic
 }
 
 /*往环形缓冲区写数据*/
 void ringBufWrite(ringBuf *ringbuf, void *data)
 {
-    memcpy((uint8_t *)(ringbuf->tracebuf)+ringbuf->tail*ringbuf->width, data, ringbuf->width);//pointer of type ‘void *’ used in arithmetic
+    memcpy((void *)((uint8_t *)(ringbuf->tracebuf)+ringbuf->tail*ringbuf->width), data, ringbuf->width);//pointer of type ‘void *’ used in arithmetic
     ringbuf->tail = T_NEXT_BUF(ringbuf);
     if (ringbuf->full)
     {

@@ -2,7 +2,10 @@
 `define TOP_V
 
 `define XLEN 64
+`define DXLEN 128//double XLEN
+`define HXLEN 32//half XLEN
 `define START_ADDR `XLEN'h80000000
+`define EXTENSION_M 1
 
 module top(
 	input clk,

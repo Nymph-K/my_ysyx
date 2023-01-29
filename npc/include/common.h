@@ -1,5 +1,8 @@
-#ifndef __INCLUDE_H__
-#define __INCLUDE_H__
+#ifndef __NPC_COMMON_H__
+#define __NPC_COMMON_H__
+
+#include "Vtop.h"
+#include "Vtop___024root.h"//dut->rootp
 
 #include <stdio.h>
 #include <stdint.h>
@@ -10,8 +13,6 @@
 #include "/home/k/ysyx-workbench/nemu/include/generated/autoconf.h"
 #include "macro.h"
 
-#include "Vtop.h"
-#include "Vtop___024root.h"//dut->rootp
 
 #ifdef CONFIG_TARGET_AM
 #include <klib.h>
@@ -166,4 +167,4 @@ typedef struct {
 extern NPCState npc_state;
 extern TOP_NAME* mycpu;
 
-#endif /*__INCLUDE_H__*/
+#endif /* __NPC_COMMON_H__ */

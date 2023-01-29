@@ -95,6 +95,27 @@ module EXU (
 	localparam CSRRSI	= 3'b110;
 	localparam CSRRCI	= 3'b111;
 
+`ifdef EXTENSION_M
+	//OP
+	localparam MUL		= 3'b000;
+	localparam MULH		= 3'b001;
+	localparam MULHSU	= 3'b010;
+	localparam MULHU	= 3'b011;
+	localparam DIV		= 3'b100;
+	localparam DIVU		= 3'b101;
+	localparam REM		= 3'b110;
+	localparam REMU		= 3'b111;
+	//OP_32
+	localparam MULW		= 3'b000;
+	localparam DIVW		= 3'b100;
+	localparam DIVUW	= 3'b101;
+	localparam REMW		= 3'b110;
+	localparam REMUW	= 3'b111;
+
+	localparam funct7_md = 7'b0000001;
+
+`endif
+
 	wire [`LEN_SEL-1:0] alu_sel;
 	MuxKeyWithDefault #(11, 7, `LEN_SEL) u_alu_sel (
 		.out(alu_sel),
@@ -136,8 +157,8 @@ module EXU (
 			`OP,		src1,
 			//MISC_MEM
 			//SYSTEM
-			`OP_IMM_32,	src1,
-			`OP_32,		src1
+			`OP_IMM_32,	{`HXLEN'b0, src1[`HXLEN-1:0]},
+			`OP_32,		{`HXLEN'b0, src1[`HXLEN-1:0]}
 		})
 	);
 	MuxKeyWithDefault #(11, 7, `XLEN) u_alu_b (
@@ -152,12 +173,12 @@ module EXU (
 			`BRANCH,	src2,
 			`LOAD,		imm,
 			`STORE,		imm,
-			`OP_IMM,	(funct3 != SLLI && funct3 != (SRAI & SRLI)) ? imm : {{(`XLEN-6){1'b0}}, imm[5:0]},
-			`OP,		(funct3 != SLL && funct3 != (SRA & SRL)) ? src2 : {{(`XLEN-6){1'b0}}, src2[5:0]},
+			`OP_IMM,	imm,
+			`OP,		src2,
 			//MISC_MEM
 			//SYSTEM
-			`OP_IMM_32,	(funct3 != SLLIW && funct3 != (SRAIW & SRLIW)) ? imm : {{(`XLEN-5){1'b0}}, imm[4:0]},
-			`OP_32,		(funct3 != SLLW && funct3 != (SRAW & SRLW)) ? src2 : {{(`XLEN-5){1'b0}}, src2[4:0]}
+			`OP_IMM_32,	{`HXLEN'b0, imm[`HXLEN-1:0]},
+			`OP_32,		{`HXLEN'b0, src2[`HXLEN-1:0]}
 		})
 	);
 	MuxKeyWithDefault #(11, 7, 1) u_alu_sub_sra (
@@ -172,25 +193,28 @@ module EXU (
 			`BRANCH,	1'b1,
 			`LOAD,		1'b0,
 			`STORE,		1'b0,
-			`OP_IMM,	funct3 == (SRAI | SRLI) ? inst[30] : 1'b0,
-			`OP,		inst[30],
+			`OP_IMM,	funct3 == (SRAI | SRLI) ? funct7[5] : 1'b0,
+			`OP,		funct7[5],
 			//MISC_MEM
 			//SYSTEM
-			`OP_IMM_32,	funct3 == (SRAIW | SRLIW) ? inst[30] : 1'b0,
-			`OP_32,		inst[30]
+			`OP_IMM_32,	funct3 == (SRAIW | SRLIW) ? funct7[5] : 1'b0,
+			`OP_32,		funct7[5]
 		})
 	);
-	wire alu_cout, alu_zero, alu_smaller, alu_overflow, alu_equal;
+	wire alu_cout, alu_zero, alu_smaller_s, alu_smaller_u, alu_overflow, alu_equal;
+	wire is_op_x_32 = (opcode == `OP_32) || (opcode == `OP_IMM_32);
 	ALU u_alu (
 		.sel(alu_sel),
 		.a(alu_a),
 		.b(alu_b),
 		.sub_sra(alu_sub_sra),
+		.is_op_x_32(is_op_x_32),
 		.result(alu_result),
 		.cout(alu_cout),
 		.zero(alu_zero),
 		.overflow(alu_overflow),
-		.smaller(alu_smaller),
+		.smaller_s(alu_smaller_s),
+		.smaller_u(alu_smaller_u),
 		.equal(alu_equal)
 	);
 
@@ -245,10 +269,10 @@ module EXU (
 		.lut({
 			BEQ	, alu_equal,
 			BNE	, ~alu_equal,
-			BLT	, alu_smaller,
-			BGE	, ~alu_smaller,
-			BLTU, alu_cout,	//result: -255 to 255
-			BGEU, ~alu_cout //result: -255 to 255
+			BLT	, alu_smaller_s,
+			BGE	, ~alu_smaller_s,
+			BLTU, alu_smaller_u,	//result: -255 to 255
+			BGEU, ~alu_smaller_u 	//result: -255 to 255
 		})
 	);
 
@@ -305,13 +329,38 @@ module EXU (
 			`LOAD,		ld_data,
 			`STORE,		`XLEN'b0,
 			`OP_IMM,	alu_result,
-			`OP,		alu_result,
+			`OP,		op_result,
 			//MISC_MEM
 			//SYSTEM
-			`OP_IMM_32,	alu_result,
-			`OP_32,		alu_result
+			`OP_IMM_32,	{{(`XLEN-32){alu_result[31]}}, alu_result[31:0]},
+			`OP_32,		{{(`XLEN-32){op_32_result[31]}}, op_32_result[31:0]}
 		})
 	);
+
+import "DPI-C" function void stopCPU();
+	localparam ebreak = 32'b00000000000100000000000001110011;
+	always @(*) begin
+		if(inst == ebreak) begin
+			stopCPU();
+		end
+	end
+
+	wire [`XLEN-1:0] op_result, op_32_result;
+`ifdef EXTENSION_M
+	wire [`XLEN-1:0] mdu_x_rd;
+	MDU u_mdu(
+			.src1(src1),
+			.src2(src2),
+			.funct3(funct3),
+			.x_rd(mdu_x_rd));
+
+    wire en_mdu = (opcode == `OP | opcode == `OP_32) && (funct7 == funct7_md);
+	assign op_result = en_mdu ? mdu_x_rd : alu_result;
+	assign op_32_result = en_mdu ? mdu_x_rd : alu_result;
+`else
+	assign op_result = alu_result;
+	assign op_32_result = alu_result;
+`endif
 
 endmodule //EXU
 
