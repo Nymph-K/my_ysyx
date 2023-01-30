@@ -714,42 +714,42 @@ int process_section_headers(FILE *file)
 
             if (strcmp(string_name, ".dynamic") == 0)
             {
-                printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
+                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 dynamic_addr = section->sh_offset;
                 dynamic_size = section->sh_size;
             }
 
             else if (strcmp(string_name, ".rel.dyn") == 0)
             {
-                printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
+                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 rel_dyn_offset = section->sh_offset;
                 rel_dyn_size = section->sh_size;
             }
 
             else if (strcmp(string_name, ".dynsym") == 0)
             {
-                printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
+                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 sym_dyn_offset = section->sh_offset;
                 sym_dyn_size = section->sh_size;
             }
 
             else if (strcmp(string_name, ".symtab") == 0)
             {
-                printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
+                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 sym_tbl_offset = section->sh_offset;
                 sym_tbl_size = section->sh_size;
             }
 
             else if (strcmp(string_name, ".dynstr") == 0)
             {
-                printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
+                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 str_dyn_offset = section->sh_offset;
                 str_dyn_size = section->sh_size;
             }
 
             else if (strcmp(string_name, ".strtab") == 0)
             {
-                printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
+                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 str_tbl_offset = section->sh_offset;
                 str_tbl_size = section->sh_size;
             }

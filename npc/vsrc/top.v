@@ -10,38 +10,27 @@
 module top(
 	input clk,
 	input rst,
-	input  [31:0] inst,
-	output mem_r,
-	output mem_w,
-	output [1:0] mem_dlen,
-	//inout  [`XLEN-1:0] mem_data,
-	input  [`XLEN-1:0] mem_rdata,
-	output [`XLEN-1:0] mem_wdata,
-	output [`XLEN-1:0] mem_addr,
 	output [`XLEN-1:0] pc,
-	output [`XLEN-1:0] dnpc
+	output [`XLEN-1:0] dnpc,
+	output [31:0] inst
 );
-	//wire [`XLEN-1:0] mem_rdata, mem_wdata;
-	//assign mem_rdata = (mem_r) ? mem_data : `XLEN'b0;
-	//assign mem_data = (mem_w) ? mem_wdata : `XLEN'bZ;
-	assign mem_dlen = funct3[1:0];
 
 	wire [4:0] rs1, rs2, rd;
 	wire rd_wen;
 	wire [`XLEN-1:0] x_rd, x_rs1, x_rs2;
 	//wire [`XLEN-1:0] dnpc;
 	GIR u_gir(
-	  .clk(clk),
-	  .rst(rst),
-	  .rs1(rs1),
-	  .rs2(rs2),
-	  .rd(rd),
-	  .rd_wen(rd_wen),
-	  .x_rd(x_rd),
-	  .x_rs1(x_rs1),
-	  .x_rs2(x_rs2),
-	  .dnpc(dnpc),
-	  .pc(pc)
+		.clk(clk),
+		.rst(rst),
+		.rs1(rs1),
+		.rs2(rs2),
+		.rd(rd),
+		.rd_wen(rd_wen),
+		.x_rd(x_rd),
+		.x_rs1(x_rs1),
+		.x_rs2(x_rs2),
+		.dnpc(dnpc),
+		.pc(pc)
 	);
 
 	wire [6:0] opcode;
@@ -66,6 +55,11 @@ module top(
 	);
 
 
+	wire mem_r;
+	wire mem_w;
+	wire [`XLEN-1:0] mem_rdata;
+	wire [`XLEN-1:0] mem_wdata;
+	wire [`XLEN-1:0] mem_addr;
 	EXU u_exu (
 		.clk(clk),
 		.rst(rst),
@@ -84,8 +78,14 @@ module top(
 		.mem_rdata(mem_rdata), //ld_data
 		.mem_wdata(mem_wdata), //st_data
 		.pc(pc),
-		.dnpc(dnpc)
-);
+		.dnpc(dnpc));
+
+	IFU u_ifu (
+	  	.clk(clk),
+	  	.rst(rst),
+		.pc(pc),
+		.inst(inst)
+	);
 	
 endmodule
 

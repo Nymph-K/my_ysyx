@@ -83,11 +83,8 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 
 int riscv64_exec_once(void) {
   mycpu->clk = 1; mycpu->eval();
-  inst_fetch();
   posedge_half_cycle();
-  mem_access(); mycpu->eval();
   negedge_half_cycle();
-  debug_printf("pc = 0x%16lX \t inst = 0x%08X \t dnpc = 0x%16lX\n", mycpu->pc, mycpu->inst, mycpu->dnpc);
   return 0;
 }
 

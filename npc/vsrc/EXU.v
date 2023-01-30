@@ -24,7 +24,7 @@ module EXU (
 	output mem_r,
 	output mem_w,
 	output [`XLEN-1:0] mem_addr,
-	input  [`XLEN-1:0] mem_rdata, //ld_data
+	output [`XLEN-1:0] mem_rdata, //ld_data
 	output [`XLEN-1:0] mem_wdata, //st_data
 
 	input  [`XLEN-1:0] pc,
@@ -222,7 +222,7 @@ module EXU (
 	assign dnpc_sum = dnpc_base + dnpc_offs;
 	assign dnpc = opcode != `JALR ? dnpc_sum : {dnpc_sum[`XLEN-1:1], 1'b0};
 	wire branch_con;//branch condition is true or false
-	MuxKeyWithDefault #(11, 7, `XLEN) u_dnpc_base (
+	MuxKeyWithDefault #(13, 7, `XLEN) u_dnpc_base (
 		.out(dnpc_base),
 		.key(opcode),
 		.default_out(pc),
@@ -236,8 +236,8 @@ module EXU (
 			`STORE,		pc,
 			`OP_IMM,	pc,
 			`OP,		pc,
-			//MISC_MEM
-			//SYSTEM
+			`MISC_MEM,	pc,
+			`SYSTEM,	pc,
 			`OP_IMM_32,	pc,
 			`OP_32,		pc
 		})
@@ -295,6 +295,17 @@ module EXU (
 			LD,	{{(`XLEN-64){mem_rdata[63]}}, mem_rdata[63:0]}
 		})
 	);
+import "DPI-C" function void exu_pmem_read(input longint raddr, output longint rdata);
+import "DPI-C" function void exu_pmem_write(input longint waddr, input longint wdata, input byte dlen);
+	wire [1:0] mem_dlen = funct3[1:0];
+	always_latch @(negedge clk) begin
+		if (mem_r) begin
+			exu_pmem_read(mem_addr, mem_rdata);
+		end
+		if (mem_w) begin
+			exu_pmem_write(mem_addr, mem_wdata, {6'b0, mem_dlen});
+		end
+	end
 
 	MuxKeyWithDefault #(11, 7, 1) u_rd_wen (
 		.out(rd_wen),
