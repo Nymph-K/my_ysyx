@@ -54,12 +54,6 @@ module top(
 		.x_rs2(x_rs2)
 	);
 
-
-	wire mem_r;
-	wire mem_w;
-	wire [`XLEN-1:0] mem_rdata;
-	wire [`XLEN-1:0] mem_wdata;
-	wire [`XLEN-1:0] mem_addr;
 	EXU u_exu (
 		.clk(clk),
 		.rst(rst),
@@ -72,11 +66,6 @@ module top(
 		.imm(imm),
 		.rd_wen(rd_wen),
 		.x_rd(x_rd),
-		.mem_r(mem_r),
-		.mem_w(mem_w),
-		.mem_addr(mem_addr),
-		.mem_rdata(mem_rdata), //ld_data
-		.mem_wdata(mem_wdata), //st_data
 		.pc(pc),
 		.dnpc(dnpc));
 

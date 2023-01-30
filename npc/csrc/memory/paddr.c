@@ -107,20 +107,36 @@ extern "C" void inst_fetch(long long  pc, int *inst) {
 
 extern "C" void exu_pmem_read(long long raddr, long long *rdata) {
   // 总是读取地址为`raddr & ~0x7ull`的8字节返回给`rdata`
-  paddr_t addr = raddr;// & ~0x7ull;
+  paddr_t addr = raddr & ~0x7ull;
   if (likely(in_pmem(addr))) {
     *rdata = pmem_read(addr, 8);
   }
   else out_of_bound(addr);
 }
 
-extern "C" void exu_pmem_write(long long waddr, long long wdata, char mem_dlen) {
+extern "C" void exu_pmem_write(long long waddr, long long wdata, char wmask) {
   // 总是往地址为`waddr & ~0x7ull`的8字节按写掩码`wmask`写入`wdata`
   // `wmask`中每比特表示`wdata`中1个字节的掩码,
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
-  paddr_t addr = waddr;// & ~0x7ull;
+  paddr_t addr = waddr & ~0x7ull;
   if (likely(in_pmem(addr))) { 
-    pmem_write(addr, 1 << mem_dlen, wdata);
+    size_t i;
+    for (i = 0; i < 8; i++)
+    {
+      if ((wmask & 1) == 0)
+      {
+        wmask = (unsigned char)wmask >> 1;
+      }
+      else break;
+    }
+    switch ((unsigned char)wmask)
+    {
+      case 1: pmem_write(addr + i, 1, wdata); break;
+      case 3: pmem_write(addr + i, 2, wdata); break;
+      case 15: pmem_write(addr + i, 4, wdata); break;
+      case 255: pmem_write(addr + i, 8, wdata); break;
+      default: break;
+    }
   }
   else out_of_bound(addr);
 }

@@ -21,12 +21,6 @@ module EXU (
 	output rd_wen,
 	output [`XLEN-1:0] x_rd,
 
-	output mem_r,
-	output mem_w,
-	output [`XLEN-1:0] mem_addr,
-	output [`XLEN-1:0] mem_rdata, //ld_data
-	output [`XLEN-1:0] mem_wdata, //st_data
-
 	input  [`XLEN-1:0] pc,
 	output [`XLEN-1:0] dnpc
 );
@@ -276,36 +270,15 @@ module EXU (
 		})
 	);
 
-	assign mem_w = (opcode == `STORE) ? 1'b1 : 1'b0;
-	assign mem_r = (opcode == `LOAD) ? 1'b1 : 1'b0;;
-	assign mem_wdata = (mem_w == 1'b1) ? src2 : `XLEN'b0;
-	assign mem_addr = mem_w || mem_r ? alu_result : `XLEN'b0;
 	wire [`XLEN-1:0] ld_data;
-	MuxKeyWithDefault #(7, 3, `XLEN) u_ld_data (
-		.out(ld_data),
-		.key(funct3),
-		.default_out(`XLEN'b0),
-		.lut({
-			LB, {{(`XLEN-8){mem_rdata[7]}}, mem_rdata[7:0]},
-			LH,	{{(`XLEN-16){mem_rdata[15]}}, mem_rdata[15:0]},
-			LW,	{{(`XLEN-32){mem_rdata[31]}}, mem_rdata[31:0]},
-			LBU,{{(`XLEN-8){1'b0}}, mem_rdata[7:0]},
-			LHU,{{(`XLEN-16){1'b0}}, mem_rdata[15:0]},
-			LWU,{{(`XLEN-32){1'b0}}, mem_rdata[31:0]},
-			LD,	{{(`XLEN-64){mem_rdata[63]}}, mem_rdata[63:0]}
-		})
+	MAU u_mau(
+		.clk(clk),
+		.funct3(funct3),
+		.opcode(opcode),
+		.src2(src2),
+		.alu_result(alu_result),
+		.ld_data(ld_data)
 	);
-import "DPI-C" function void exu_pmem_read(input longint raddr, output longint rdata);
-import "DPI-C" function void exu_pmem_write(input longint waddr, input longint wdata, input byte dlen);
-	wire [1:0] mem_dlen = funct3[1:0];
-	always_latch @(negedge clk) begin
-		if (mem_r) begin
-			exu_pmem_read(mem_addr, mem_rdata);
-		end
-		if (mem_w) begin
-			exu_pmem_write(mem_addr, mem_wdata, {6'b0, mem_dlen});
-		end
-	end
 
 	MuxKeyWithDefault #(11, 7, 1) u_rd_wen (
 		.out(rd_wen),
