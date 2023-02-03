@@ -24,9 +24,8 @@ void init_sdb();
 void init_disasm(const char *triple);
 void init_cpu(void);
 
-#if CONFIG_IRINGBUF_DEPTH
 void ringBufInit(void);
-#endif
+
 #if CONFIG_FRINGBUF_DEPTH
 int  init_elf(char const *file_name);
 static char *elf_file = NULL;
@@ -176,7 +175,7 @@ void init_monitor(int argc, char *argv[]) {
 
   IFDEF(CONFIG_ITRACE, init_disasm("riscv64-pc-linux-gnu"));
 
-  #if CONFIG_IRINGBUF_DEPTH | CONFIG_MRINGBUF_DEPTH | CONFIG_FRINGBUF_DEPTH
+  #if CONFIG_IRINGBUF_DEPTH | CONFIG_MRINGBUF_DEPTH | CONFIG_FRINGBUF_DEPTH | CONFIG_DRINGBUF_DEPTH
   ringBufInit();
   #endif
   #if CONFIG_FRINGBUF_DEPTH

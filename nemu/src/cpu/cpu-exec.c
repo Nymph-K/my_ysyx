@@ -139,6 +139,55 @@ void assert_fail_msg() {
   statistic();
 }
 
+static void print_trace(void) {
+  #if CONFIG_IRINGBUF_DEPTH
+    Log("trace %d instractions:", ringBufLen(&iringbuf));
+    const char *ilog_str;
+    while(!ringBufEmpty(&iringbuf)){
+      ilog_str = ringBufRead(&iringbuf);
+      _Log("%s\n", ilog_str);
+    }
+  #endif
+  #if CONFIG_MRINGBUF_DEPTH
+    Log("trace %d mem access:", ringBufLen(&mringbuf));
+    const char *mlog_str;
+    while(!ringBufEmpty(&mringbuf)){
+      mlog_str = ringBufRead(&mringbuf);
+      _Log("%s\n", mlog_str);
+    }
+  #endif
+  #if CONFIG_FRINGBUF_DEPTH
+    Log("trace %d function call:", ringBufLen(&fringbuf));
+    callBuf *cb;
+    int fun_depth = 1;
+    while(!ringBufEmpty(&fringbuf)){
+      cb = ringBufRead(&fringbuf);
+      if(cb->c_r == 'c')
+        fun_depth++;
+      _Log("0x%08lx -> 0x%08lx: %s", cb->pc, cb->dnpc, cb->c_r == 'c' ? "call " : "ret  ");
+      for (size_t i = 0; i < fun_depth; i++)
+      {
+        _Log("    ");
+      }
+      if(cb->c_r == 'c')
+        _Log("%s -> %s\n", get_func_name_ndx(cb->pc_fndx), get_func_name_ndx(cb->dnpc_fndx));
+      else
+        _Log("%s <- %s\n", get_func_name_ndx(cb->dnpc_fndx), get_func_name_ndx(cb->pc_fndx));
+      
+      if(cb->c_r == 'r')
+        fun_depth = fun_depth == 0 ? 0 : fun_depth - 1;
+    }
+  #endif
+  #if CONFIG_DRINGBUF_DEPTH
+    Log("trace %d device access:", ringBufLen(&dringbuf));
+    const char *dlog_str;
+    while(!ringBufEmpty(&dringbuf)){
+      dlog_str = ringBufRead(&dringbuf);
+      _Log("%s\n", dlog_str);
+    }
+  #endif
+}
+
 /* Simulate how the CPU works. */
 void cpu_exec(uint64_t n) {
   g_print_step = (n < MAX_INST_TO_PRINT);
@@ -160,44 +209,7 @@ void cpu_exec(uint64_t n) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 
     case NEMU_END: case NEMU_ABORT:
-      #if CONFIG_IRINGBUF_DEPTH
-        Log("trace %d instractions:", ringBufLen(&iringbuf));
-        const char *ilog_str;
-        while(!ringBufEmpty(&iringbuf)){
-          ilog_str = ringBufRead(&iringbuf);
-          _Log("%s\n", ilog_str);
-        }
-      #endif
-      #if CONFIG_MRINGBUF_DEPTH
-        Log("trace %d mem access:", ringBufLen(&mringbuf));
-        const char *mlog_str;
-        while(!ringBufEmpty(&mringbuf)){
-          mlog_str = ringBufRead(&mringbuf);
-          _Log("%s\n", mlog_str);
-        }
-      #endif
-      #if CONFIG_FRINGBUF_DEPTH
-        Log("trace %d function call:", ringBufLen(&fringbuf));
-        callBuf *cb;
-        int fun_depth = 1;
-        while(!ringBufEmpty(&fringbuf)){
-          cb = ringBufRead(&fringbuf);
-          if(cb->c_r == 'c')
-            fun_depth++;
-          _Log("0x%08lx -> 0x%08lx: %s", cb->pc, cb->dnpc, cb->c_r == 'c' ? "call " : "ret  ");
-          for (size_t i = 0; i < fun_depth; i++)
-          {
-            _Log("    ");
-          }
-          if(cb->c_r == 'c')
-            _Log("%s -> %s\n", get_func_name_ndx(cb->pc_fndx), get_func_name_ndx(cb->dnpc_fndx));
-          else
-            _Log("%s <- %s\n", get_func_name_ndx(cb->dnpc_fndx), get_func_name_ndx(cb->pc_fndx));
-          
-          if(cb->c_r == 'r')
-            fun_depth = fun_depth == 0 ? 0 : fun_depth - 1;
-        }
-      #endif
+      print_trace();
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :

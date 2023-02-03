@@ -24,9 +24,8 @@ void init_device();
 void init_sdb();
 void init_disasm(const char *triple);
 
-#if CONFIG_IRINGBUF_DEPTH
 void ringBufInit(void);
-#endif
+
 #if CONFIG_FRINGBUF_DEPTH
 int  init_elf(char const *file_name);
 static char *elf_file = NULL;

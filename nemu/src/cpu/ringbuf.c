@@ -1,7 +1,7 @@
 #include <cpu/ringbuf.h>
 #include <string.h>
 
-#if CONFIG_IRINGBUF_DEPTH|CONFIG_MRINGBUF_DEPTH|CONFIG_FRINGBUF_DEPTH
+#if CONFIG_IRINGBUF_DEPTH|CONFIG_MRINGBUF_DEPTH|CONFIG_FRINGBUF_DEPTH|CONFIG_DRINGBUF_DEPTH
 
 #define H_NEXT_NBUF(cur, n) (cur->head+n)%(cur->depth)
 #define H_NEXT_BUF(cur) H_NEXT_NBUF(cur, 1)
@@ -19,6 +19,10 @@ static char mlogbuffer[CONFIG_MRINGBUF_DEPTH*LOG_LEN] = {0};
 #if CONFIG_FRINGBUF_DEPTH
 ringBuf fringbuf;
 static callBuf fcallbuffer[CONFIG_FRINGBUF_DEPTH] = {0};
+#endif
+#if CONFIG_DRINGBUF_DEPTH
+ringBuf dringbuf;
+static char dlogbuffer[CONFIG_DRINGBUF_DEPTH*LOG_LEN] = {0};
 #endif
 
 /*环形缓冲区初始化函数*/
@@ -50,6 +54,15 @@ void ringBufInit(void)
     fringbuf.depth = CONFIG_FRINGBUF_DEPTH;
     fringbuf.width = FTC_WIDTH;
     fringbuf.tracebuf = (void *)fcallbuffer;
+    #endif
+
+    #if CONFIG_DRINGBUF_DEPTH
+    dringbuf.head = 0;
+    dringbuf.tail = 0;
+    dringbuf.full = false;
+    dringbuf.depth = CONFIG_DRINGBUF_DEPTH;
+    dringbuf.width = LOG_LEN;
+    dringbuf.tracebuf = dlogbuffer;
     #endif
 }
 

@@ -177,6 +177,17 @@ config FRINGBUF_DEPTH
   int "Trace last n function calls and returns when not 0"
   default 16
 
+  config DTRACE
+    depends on TRACE && DEVICE
+    bool "Enable device tracer"
+    default y
+  
+  config DRINGBUF_DEPTH
+    depends on DTRACE
+    int "Trace last n device access when not 0"
+    default 16
+  
+
 config DIFFTEST
   depends on TARGET_NATIVE_ELF
   bool "Enable differential testing"

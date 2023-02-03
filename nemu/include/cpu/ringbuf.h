@@ -3,7 +3,7 @@
 
 #include <common.h>
 
-#if CONFIG_IRINGBUF_DEPTH|CONFIG_MRINGBUF_DEPTH
+#if CONFIG_IRINGBUF_DEPTH|CONFIG_MRINGBUF_DEPTH|CONFIG_FRINGBUF_DEPTH|CONFIG_DRINGBUF_DEPTH
 
 #define LOG_LEN 128
 #define FTC_WIDTH sizeof(callBuf)
@@ -30,6 +30,7 @@ typedef struct
 extern ringBuf iringbuf;
 extern ringBuf mringbuf;
 extern ringBuf fringbuf;
+extern ringBuf dringbuf;
 
 void ringBufInit(void);
 void *ringBufRead(ringBuf *ringbuf);
