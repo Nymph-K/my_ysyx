@@ -70,9 +70,15 @@ static inline void update_screen() {
 #endif
 #endif
 
+// call `update_screen()` when the sync register is non-zero,
+// then zero out the sync register
 void vga_update_screen() {
-  // TODO: call `update_screen()` when the sync register is non-zero,
-  // then zero out the sync register
+#define SYNC_MASK ((uint32_t)0x01)
+  if (vgactl_port_base[1] & SYNC_MASK)
+  {
+    update_screen();
+    vgactl_port_base[1] &= ~SYNC_MASK;
+  }
 }
 
 void init_vga() {
