@@ -32,6 +32,15 @@ void init_alarm();
 
 void send_key(uint8_t, bool);
 void vga_update_screen();
+void destroy_sdl_audio();
+void destroy_screen();
+
+void sdl_clear_event_queue() {
+#ifndef CONFIG_TARGET_AM
+  SDL_Event event;
+  while (SDL_PollEvent(&event));
+#endif
+}
 
 void device_update() {
   static uint64_t last = 0;
@@ -48,6 +57,9 @@ void device_update() {
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
       case SDL_QUIT:
+        destroy_sdl_audio();
+        destroy_screen();
+        sdl_clear_event_queue();
         nemu_state.state = NEMU_QUIT;
         break;
 #ifdef CONFIG_HAS_KEYBOARD
@@ -63,13 +75,6 @@ void device_update() {
       default: break;
     }
   }
-#endif
-}
-
-void sdl_clear_event_queue() {
-#ifndef CONFIG_TARGET_AM
-  SDL_Event event;
-  while (SDL_PollEvent(&event));
 #endif
 }
 

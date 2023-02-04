@@ -42,8 +42,8 @@ static SDL_Renderer *renderer = NULL;
 static SDL_Texture *texture = NULL;
 
 static void init_screen() {
-  SDL_Window *window = NULL;
   char title[128];
+  SDL_Window *window = NULL;
   sprintf(title, "%s-NEMU", str(__GUEST_ISA__));
   SDL_Init(SDL_INIT_VIDEO);
   SDL_CreateWindowAndRenderer(
@@ -60,6 +60,13 @@ static inline void update_screen() {
   SDL_RenderClear(renderer);
   SDL_RenderCopy(renderer, texture, NULL, NULL);
   SDL_RenderPresent(renderer);
+}
+
+void destroy_screen() 
+{
+  SDL_DestroyTexture(texture);
+  SDL_DestroyRenderer(renderer);
+  SDL_Quit();
 }
 #else
 static void init_screen() {}
