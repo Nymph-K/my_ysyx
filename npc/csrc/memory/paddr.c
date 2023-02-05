@@ -21,6 +21,9 @@
 #include "svdpi.h"//DPI-C
 #include "Vtop__Dpi.h"//DPI-C
 
+#include <stdio.h>
+#include <sys/time.h>
+
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
 #else // CONFIG_PMEM_GARRAY
@@ -70,30 +73,19 @@ void init_mem() {
       (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1);
 }
 
-word_t paddr_read(paddr_t addr, int len) {
-  if (likely(in_pmem(addr))) return pmem_read(addr, len);
-  IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
-  out_of_bound(addr);
-  return 0;
-}
-
-void paddr_write(paddr_t addr, int len, word_t data) {
-  if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
-  IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
-  out_of_bound(addr);
-}
-
-// void mem_access(void) {
-//   u_int64_t offset;
-//   if (mycpu->mem_r)
-//   {
-//     mycpu->mem_rdata = paddr_read(mycpu->mem_addr, 1 << mycpu->mem_dlen);
-//   }
-//   if (mycpu->mem_w)
-//   {
-//     paddr_write(mycpu->mem_addr, 1 << mycpu->mem_dlen, mycpu->mem_wdata);
-//   }
+// word_t paddr_read(paddr_t addr, int len) {
+//   if (likely(in_pmem(addr))) return pmem_read(addr, len);
+//   //IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
+//   out_of_bound(addr);
+//   return 0;
 // }
+
+// void paddr_write(paddr_t addr, int len, word_t data) {
+//   if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+//   //IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
+//   out_of_bound(addr);
+// }
+
 
 extern "C" void inst_fetch(long long  pc, int *inst) {
     if (likely(in_pmem(pc))){
@@ -105,16 +97,31 @@ extern "C" void inst_fetch(long long  pc, int *inst) {
     }
 }
 
-extern "C" void exu_pmem_read(long long raddr, long long *rdata) {
+#define DEVICE_BASE   (0xa0000000)
+#define RTC_ADDR      (DEVICE_BASE + 0x0000048)
+#define SERIAL_PORT   (DEVICE_BASE + 0x00003f8)
+
+static struct timeval boot_time = {};
+void timer_init() {
+  gettimeofday(&boot_time, NULL);
+}
+extern "C" void paddr_read(long long raddr, long long *rdata) {
   // 总是读取地址为`raddr & ~0x7ull`的8字节返回给`rdata`
   paddr_t addr = raddr & ~0x7ull;
   if (likely(in_pmem(addr))) {
     *rdata = pmem_read(addr, 8);
   }
+  else if(addr == RTC_ADDR){
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    long int seconds = now.tv_sec - boot_time.tv_sec;
+    long int useconds = now.tv_usec - boot_time.tv_usec;
+    *rdata = seconds * 1000000 + (useconds + 500);
+  }
   else out_of_bound(addr);
 }
 
-extern "C" void exu_pmem_write(long long waddr, long long wdata, char wmask) {
+extern "C" void paddr_write(long long waddr, long long wdata, char wmask) {
   // 总是往地址为`waddr & ~0x7ull`的8字节按写掩码`wmask`写入`wdata`
   // `wmask`中每比特表示`wdata`中1个字节的掩码,
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
@@ -136,6 +143,11 @@ extern "C" void exu_pmem_write(long long waddr, long long wdata, char wmask) {
       case 15: pmem_write(addr + i, 4, wdata); break;
       case 255: pmem_write(addr + i, 8, wdata); break;
       default: break;
+    }
+  }
+  else if(addr == SERIAL_PORT && wmask == 1){
+    {
+      putchar(wdata);
     }
   }
   else out_of_bound(addr);

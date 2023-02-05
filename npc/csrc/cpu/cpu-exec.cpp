@@ -160,7 +160,7 @@ static void execute(uint64_t n) {
     g_nr_guest_inst ++;
     trace_and_difftest(&s, mycpu->dnpc);
     if (npc_state.state != NPC_RUNNING) break;
-    IFDEF(CONFIG_DEVICE, device_update());
+    //IFDEF(CONFIG_DEVICE, device_update());
   }
 }
 

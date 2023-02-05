@@ -214,7 +214,7 @@ bool check_parentheses(uint16_t p, uint16_t q) {
 #define UNSIGNED_CALCU 0//1: 在计算过程中就使用的无符号. 0: 在计算过程中使用有符号计算仅将最终结果转换为无符号
 #define SHORT_CIRCUIT_OPERATOR 1
 
-word_t paddr_read(paddr_t addr, int len);
+word_t vaddr_read(vaddr_t addr, int len);
 
 uint32_t eval(uint16_t p, uint16_t q, bool *success) {
   if (p > q) {
@@ -390,7 +390,7 @@ uint32_t eval(uint16_t p, uint16_t q, bool *success) {
 
       case TK_DEREF:
         //return *(uint32_t *)val2;
-        return paddr_read(val2, 4);
+        return vaddr_read(val2, 4);
         break;
 
       case TK_ADDRESS:

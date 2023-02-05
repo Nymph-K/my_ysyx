@@ -29,8 +29,10 @@ static inline bool in_pmem(paddr_t addr) {
   return (addr >= CONFIG_MBASE) && (addr - CONFIG_MSIZE < (paddr_t)CONFIG_MBASE);
 }
 
-word_t paddr_read(paddr_t addr, int len);
-void paddr_write(paddr_t addr, int len, word_t data);
-void mem_access(void);
+// word_t paddr_read(paddr_t addr, int len);
+// void paddr_write(paddr_t addr, int len, word_t data);
+extern "C" void paddr_read(long long raddr, long long *rdata);
+extern "C" void paddr_write(long long waddr, long long wdata, char wmask);
+// void mem_access(void);
 
 #endif

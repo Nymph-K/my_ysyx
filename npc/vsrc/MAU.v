@@ -116,14 +116,14 @@ module MAU (
 		})
 	);
 
-import "DPI-C" function void exu_pmem_read(input longint raddr, output longint rdata);
-import "DPI-C" function void exu_pmem_write(input longint waddr, input longint wdata, input byte wmask);
+import "DPI-C" function void paddr_read(input longint raddr, output longint rdata);
+import "DPI-C" function void paddr_write(input longint waddr, input longint wdata, input byte wmask);
 	always_latch @(negedge clk) begin
 		if (mem_r) begin
-			exu_pmem_read(mem_addr, mem_rdata);
+			paddr_read(mem_addr, mem_rdata);
 		end
 		if (mem_w) begin
-			exu_pmem_write(mem_addr, mem_wdata, wmask);
+			paddr_write(mem_addr, mem_wdata, wmask);
 		end
 	end
 

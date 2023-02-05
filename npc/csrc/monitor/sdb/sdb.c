@@ -13,7 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <memory/paddr.h>
+//#include <memory/paddr.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <reg.h>
@@ -23,6 +23,8 @@ static int is_batch_mode = false;
 void init_regex();
 void init_wp_pool();
 void cpu_exec(uint64_t n);
+
+word_t vaddr_read(vaddr_t addr, int len);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -112,7 +114,7 @@ static int cmd_x(char *args) {
       sscanf(arg, "%x", &addr);
       for (uint32_t i = 0; i < num; i++)
       {
-        printf("[0x%08x] = 0x%08lx\n", addr + i*4, paddr_read(addr + i*4, 4));
+        printf("[0x%08x] = 0x%08lx\n", addr + i*4, vaddr_read(addr + i*4, 4));
       }
       return 0;
     }
@@ -247,10 +249,10 @@ void sdb_mainloop() {
       args = NULL;
     }
 
-#ifdef CONFIG_DEVICE
-    extern void sdl_clear_event_queue();
-    sdl_clear_event_queue();
-#endif
+// #ifdef CONFIG_DEVICE
+//     extern void sdl_clear_event_queue();
+//     sdl_clear_event_queue();
+// #endif
 
     int i;
     for (i = 0; i < NR_CMD; i ++) {
