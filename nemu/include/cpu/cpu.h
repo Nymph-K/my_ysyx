@@ -21,9 +21,11 @@
 void cpu_exec(uint64_t n);
 
 void set_nemu_state(int state, vaddr_t pc, int halt_ret);
+word_t isa_raise_intr(word_t NO, vaddr_t epc);
 void invalid_inst(vaddr_t thispc);
 
 #define NEMUTRAP(thispc, code) set_nemu_state(NEMU_END, thispc, code)
+#define NEMUINTR(no, epc) isa_raise_intr(no,epc)
 #define INV(thispc) invalid_inst(thispc)
 
 #endif

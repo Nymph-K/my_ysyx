@@ -36,7 +36,7 @@ typedef enum {
   mtval2      = 0x34B
 } mcsr_idx;
 
-extern uint64_t mcsr[128];
+extern uint64_t mcsr[256];
 
 #define MCSR(idx) (mcsr[check_csr_idx(idx)])
 
