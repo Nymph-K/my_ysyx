@@ -5,7 +5,7 @@
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 
-static char sprint_buf[1024];
+static char sprint_buf[2048];
 
 int printf(const char *fmt, ...) {
   va_list args; 
@@ -13,7 +13,7 @@ int printf(const char *fmt, ...) {
   va_start(args, fmt);
   n = vsprintf(sprint_buf, fmt, args);
   va_end(args);
-  for (size_t i = 0; i < 1024 && sprint_buf[i] != '\0'; i++)
+  for (size_t i = 0; i < 2048 && sprint_buf[i] != '\0'; i++)
   {
     putch(sprint_buf[i]);
   }
@@ -73,6 +73,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
         case 'u':              /* unsigned int */
         case 'o':              /* unsigned int o*/
         case 'x':  case 'X':   /* unsigned int x*/
+        case 'p':              /* pointer */
         case 'l':              /* long */
           switch (*fmt)
           {
@@ -96,6 +97,13 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
               itoa(d, d2s, 16);
               break;
 
+            case 'p':               /* unsigned int */
+              d = va_arg(ap, unsigned int);
+              itoa(d, d2s, 16);
+              // width = 16;
+              // pad_zero = false;
+              break;
+
             case 'l':              /* long */
               if (fmt[1] == 'u'){
                 d = va_arg(ap, unsigned long);
@@ -114,6 +122,11 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
           if (sign_disp && *d2s != '-')//sign +
           {
             spc_len -= 1;
+          }
+          if (*fmt == 'p')
+          {
+              *out++ = '0';len++;
+              *out++ = 'x';len++;
           }
           char padding = (pad_zero == true) ? '0' : ' ';
           if(align_left == false) {// padding space' ' or zero'0'

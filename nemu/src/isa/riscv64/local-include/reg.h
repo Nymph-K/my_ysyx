@@ -18,6 +18,33 @@
 
 #include <common.h>
 
+typedef enum {
+  mstatus     = 0x300,
+  misa        = 0x301,
+  medeleg     = 0x302,
+  mideleg     = 0x303,
+  mie         = 0x304,
+  mtvec       = 0x305,
+  mcounteren  = 0x306,
+  mstatush    = 0x310,
+  mscratch    = 0x340,
+  mepc        = 0x341,
+  mcause      = 0x342,
+  mtval       = 0x343,
+  mip         = 0x344,
+  mtinst      = 0x34A,
+  mtval2      = 0x34B
+} mcsr_idx;
+
+extern uint64_t mcsr[128];
+
+#define MCSR(idx) (mcsr[check_csr_idx(idx)])
+
+static inline int check_csr_idx(int idx) {
+  IFDEF(CONFIG_RT_CHECK, assert(idx >= mstatus && idx < mtval2));
+  return (idx & 0xFF);
+}
+
 static inline int check_reg_idx(int idx) {
   IFDEF(CONFIG_RT_CHECK, assert(idx >= 0 && idx < 32));
   return idx;
