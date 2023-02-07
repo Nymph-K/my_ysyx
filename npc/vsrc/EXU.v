@@ -15,6 +15,9 @@ module EXU (
 	input  [6:0] opcode,
 	input  [2:0] funct3,
 	input  [6:0] funct7,
+	input  [4:0] rs1,
+	input  [4:0] rs2,
+	output [4:0] rd,
 	input  [`XLEN-1:0] src1,
 	input  [`XLEN-1:0] src2,
 	input  [`XLEN-1:0] imm,
@@ -82,12 +85,16 @@ module EXU (
 	//SYSTEM
 	localparam ECALL	= 3'b000;
 	localparam EBREAK	= 3'b000;
+	localparam MRET		= 3'b000;
 	localparam CSRRW	= 3'b001;
 	localparam CSRRS	= 3'b010;
 	localparam CSRRC	= 3'b011;
 	localparam CSRRWI	= 3'b101;
 	localparam CSRRSI	= 3'b110;
 	localparam CSRRCI	= 3'b111;
+	localparam ebreak = 32'b00000000000100000000000001110011;
+	localparam ecall  = 32'b00000000000000000000000001110011;
+	localparam mret   = 32'b00110000001000000000000001110011;
 
 `ifdef EXTENSION_M
 	//OP
@@ -111,7 +118,7 @@ module EXU (
 `endif
 
 	wire [`LEN_SEL-1:0] alu_sel;
-	MuxKeyWithDefault #(11, 7, `LEN_SEL) u_alu_sel (
+	MuxKeyWithDefault #(12, 7, `LEN_SEL) u_alu_sel (
 		.out(alu_sel),
 		.key(opcode),
 		.default_out(`SEL_AOS),
@@ -126,7 +133,7 @@ module EXU (
 			`OP_IMM,	funct3,  //x[rd] = x[rs1] op imm;
 			`OP,		funct3,  //x[rd] = x[rs1] op x[rs2];
 			//MISC_MEM
-			//SYSTEM
+			`SYSTEM,	csr_alu_sel,//csr |= rs1, csr &= rs1
 			`OP_IMM_32,	funct3,  //x[rd] = sext(x[rs1] op imm);
 			`OP_32,		funct3   //x[rd] = sext(x[rs1] op x[rs2]);
 		})
@@ -135,7 +142,7 @@ module EXU (
 	wire [`XLEN-1:0] alu_a, alu_b;
 	wire [`XLEN-1:0] alu_result;
 	wire alu_sub_sra;
-	MuxKeyWithDefault #(11, 7, `XLEN) u_alu_a (
+	MuxKeyWithDefault #(12, 7, `XLEN) u_alu_a (
 		.out(alu_a),
 		.key(opcode),
 		.default_out(`XLEN'b0),
@@ -150,12 +157,12 @@ module EXU (
 			`OP_IMM,	src1,
 			`OP,		src1,
 			//MISC_MEM
-			//SYSTEM
+			`SYSTEM,	csr_alu_a,// I ? imm : x[rs1]
 			`OP_IMM_32,	{`HXLEN'b0, src1[`HXLEN-1:0]},
 			`OP_32,		{`HXLEN'b0, src1[`HXLEN-1:0]}
 		})
 	);
-	MuxKeyWithDefault #(11, 7, `XLEN) u_alu_b (
+	MuxKeyWithDefault #(12, 7, `XLEN) u_alu_b (
 		.out(alu_b),
 		.key(opcode),
 		.default_out(`XLEN'b0),
@@ -170,12 +177,12 @@ module EXU (
 			`OP_IMM,	imm,
 			`OP,		src2,
 			//MISC_MEM
-			//SYSTEM
+			`SYSTEM,	csr_alu_b,
 			`OP_IMM_32,	{`HXLEN'b0, imm[`HXLEN-1:0]},
 			`OP_32,		{`HXLEN'b0, src2[`HXLEN-1:0]}
 		})
 	);
-	MuxKeyWithDefault #(11, 7, 1) u_alu_sub_sra (
+	MuxKeyWithDefault #(12, 7, 1) u_alu_sub_sra (
 		.out(alu_sub_sra),
 		.key(opcode),
 		.default_out(1'b0),
@@ -190,7 +197,7 @@ module EXU (
 			`OP_IMM,	funct3 == (SRAI | SRLI) ? funct7[5] : 1'b0,
 			`OP,		funct7[5],
 			//MISC_MEM
-			//SYSTEM
+			`SYSTEM,	1'b0,
 			`OP_IMM_32,	funct3 == (SRAIW | SRLIW) ? funct7[5] : 1'b0,
 			`OP_32,		funct7[5]
 		})
@@ -216,7 +223,7 @@ module EXU (
 	assign dnpc_sum = dnpc_base + dnpc_offs;
 	assign dnpc = opcode != `JALR ? dnpc_sum : {dnpc_sum[`XLEN-1:1], 1'b0};
 	wire branch_con;//branch condition is true or false
-	MuxKeyWithDefault #(13, 7, `XLEN) u_dnpc_base (
+	MuxKeyWithDefault #(12, 7, `XLEN) u_dnpc_base (
 		.out(dnpc_base),
 		.key(opcode),
 		.default_out(pc),
@@ -230,13 +237,13 @@ module EXU (
 			`STORE,		pc,
 			`OP_IMM,	pc,
 			`OP,		pc,
-			`MISC_MEM,	pc,
-			`SYSTEM,	pc,
+			//MISC_MEM
+			`SYSTEM,	csr_dnpc_base,//ecall, mret
 			`OP_IMM_32,	pc,
 			`OP_32,		pc
 		})
 	);
-	MuxKeyWithDefault #(11, 7, `XLEN) u_dnpc_offs (
+	MuxKeyWithDefault #(12, 7, `XLEN) u_dnpc_offs (
 		.out(dnpc_offs),
 		.key(opcode),
 		.default_out(`XLEN'd4),
@@ -251,7 +258,7 @@ module EXU (
 			`OP_IMM,	`XLEN'd4,
 			`OP,		`XLEN'd4,
 			//MISC_MEM
-			//SYSTEM
+			`SYSTEM,	 csr_dnpc_offs,//ecall, mret
 			`OP_IMM_32,	`XLEN'd4,
 			`OP_32,		`XLEN'd4
 		})
@@ -280,7 +287,7 @@ module EXU (
 		.ld_data(ld_data)
 	);
 
-	MuxKeyWithDefault #(11, 7, 1) u_rd_wen (
+	MuxKeyWithDefault #(12, 7, 1) u_rd_wen (
 		.out(rd_wen),
 		.key(opcode),
 		.default_out(1'b0),
@@ -295,12 +302,12 @@ module EXU (
 			`OP_IMM,	1'b1,
 			`OP,		1'b1,
 			//MISC_MEM
-			//SYSTEM
+			`SYSTEM,	inst_is_x == 3'b000 ? 1'b0 : csr_rd_en,// except ecall, ebreak, mret
 			`OP_IMM_32,	1'b1,
 			`OP_32,		1'b1
 		})
 	);
-	MuxKeyWithDefault #(11, 7, `XLEN) u_rd_data (
+	MuxKeyWithDefault #(12, 7, `XLEN) u_rd_data (
 		.out(x_rd),
 		.key(opcode),
 		.default_out(`XLEN'b0),
@@ -315,16 +322,143 @@ module EXU (
 			`OP_IMM,	alu_result,
 			`OP,		op_result,
 			//MISC_MEM
-			//SYSTEM
+			`SYSTEM,	csr,
 			`OP_IMM_32,	{{(`XLEN-32){alu_result[31]}}, alu_result[31:0]},
 			`OP_32,		{{(`XLEN-32){op_32_result[31]}}, op_32_result[31:0]}
 		})
 	);
 
+	wire [`XLEN-1:0] csr;
+	wire op_is_system = opcode == `SYSTEM ? 1'b1 : 1'b0;
+	wire inst_is_ebreak = inst == ebreak ? 1'b1 : 1'b0;
+	wire inst_is_ecall = inst == ecall ? 1'b1 : 1'b0;
+	wire inst_is_mret = inst == mret ? 1'b1 : 1'b0;
+	wire [2:0] inst_is_x = {inst_is_mret, inst_is_ecall, inst_is_ebreak};	//001: ebreak, 010: ecall, 100: mret
+	CSR u_csr(
+		.clk(clk),
+		.rst(rst),
+		.inst_is_x(inst_is_x),
+		.pc(pc),
+		.rd_en(csr_rd_en & op_is_system), 
+		.wt_en(csr_wt_en & op_is_system),
+		.csr_idx(csr_idx),
+		.source(alu_result),
+		.csr(csr)
+	);
+
+	wire [`LEN_SEL-1:0] csr_alu_sel;
+	wire [`XLEN-1:0] csr_alu_a, csr_alu_b;
+	MuxKeyWithDefault #(6, 3, `LEN_SEL) u_csr_alu_sel (
+		.out(csr_alu_sel),
+		.key(funct3),
+		.default_out(`SEL_AOS),
+		.lut({
+			//ECALL | EBREAK | MRET
+			CSRRW	,	`SEL_AOS,
+			CSRRS	,	OR,
+			CSRRC	,	AND,
+			CSRRWI	,	`SEL_AOS,
+			CSRRSI	,	OR,
+			CSRRCI	,	AND
+		})
+	);
+	MuxKeyWithDefault #(6, 3, `XLEN) u_csr_alu_a (
+		.out(csr_alu_a),
+		.key(funct3),
+		.default_out(`XLEN'b0),
+		.lut({
+			//ECALL | EBREAK | MRET
+			CSRRW	,	src1,
+			CSRRS	,	src1,
+			CSRRC	,	~src1,
+			CSRRWI	,	{{(`XLEN-5){1'b0}}, rs1},
+			CSRRSI	,	{{(`XLEN-5){1'b0}}, rs1},
+			CSRRCI	,	~{{(`XLEN-5){1'b0}}, rs1}
+		})
+	);
+	MuxKeyWithDefault #(6, 3, `XLEN) u_csr_alu_b (
+		.out(csr_alu_b),
+		.key(funct3),
+		.default_out(`XLEN'b0),
+		.lut({
+			//ECALL | EBREAK | MRET
+			CSRRW	,	`XLEN'b0,
+			CSRRS	,	csr,
+			CSRRC	,	csr,
+			CSRRWI	,	`XLEN'b0,
+			CSRRSI	,	csr,
+			CSRRCI	,	csr
+		})
+	);
+
+	wire csr_rd_en, csr_wt_en;
+	MuxKeyWithDefault #(7, 3, 1) u_csr_rd_en (
+		.out(csr_rd_en),
+		.key(funct3),
+		.default_out(1'b0),
+		.lut({
+			ECALL | EBREAK | MRET	,	1'b1,
+			CSRRW					,	rd == 5'd0 ? 1'b0 : 1'b1,
+			CSRRS					,	1'b1,
+			CSRRC					,	1'b1,
+			CSRRWI					,	rd == 5'd0 ? 1'b0 : 1'b1,
+			CSRRSI					,	1'b1,
+			CSRRCI					,	1'b1
+		})
+	);
+	MuxKeyWithDefault #(6, 3, 1) u_csr_wt_en (
+		.out(csr_wt_en),
+		.key(funct3),
+		.default_out(1'b0),
+		.lut({
+			//ECALL | EBREAK | MRET
+			CSRRW	,	1'b1,
+			CSRRS	,	rs1 == 5'd0 ? 1'b0 : 1'b1,
+			CSRRC	,	rs1 == 5'd0 ? 1'b0 : 1'b1,
+			CSRRWI	,	1'b1,
+			CSRRSI	,	rs1 == 5'd0 ? 1'b0 : 1'b1,
+			CSRRCI	,	rs1 == 5'd0 ? 1'b0 : 1'b1
+		})
+	);
+	
+	wire [11:0] csr_idx;
+	localparam mtvec		= 12'h305;
+	localparam mepc			= 12'h341;
+	MuxKeyWithDefault #(2, 3, 12) u_csr_idx (
+		.out(csr_idx),
+		.key(inst_is_x),
+		.default_out(imm[11:0]),
+		.lut({
+			//ebreak: dnpc = pc + 4
+			3'b010, mtvec,	//ecall:dnpc = csr[mtvec]
+			3'b100, mepc	//mret: dnpc = csr[mepc]
+		})
+	);
+	wire [`XLEN-1:0] csr_dnpc_base, csr_dnpc_offs;
+	MuxKeyWithDefault #(2, 3, `XLEN) u_csr_dnpc_base (
+		.out(csr_dnpc_base),
+		.key(inst_is_x),
+		.default_out(pc),
+		.lut({
+			//3'b001, pc,	//ebreak: dnpc = pc + 4
+			3'b010, csr,//ecall:dnpc = csr[mtvec]
+			3'b100, csr	//mret: dnpc = csr[mepc]
+		})
+	);
+	MuxKeyWithDefault #(2, 3, `XLEN) u_csr_dnpc_offs (
+		.out(csr_dnpc_offs),
+		.key(inst_is_x),
+		.default_out(`XLEN'd4),
+		.lut({
+			//3'b001, `XLEN'd4,	//ebreak: dnpc = pc + 4
+			3'b010, `XLEN'd0,	//ecall:dnpc = csr[mtvec]
+			3'b100, `XLEN'd0	//mret: dnpc = csr[mepc]
+		})
+	);
+
 import "DPI-C" function void stopCPU();
-	localparam ebreak = 32'b00000000000100000000000001110011;
 	always @(*) begin
-		if(inst == ebreak) begin
+		if(inst_is_ebreak) begin
 			stopCPU();
 		end
 	end

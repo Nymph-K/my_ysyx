@@ -33,6 +33,8 @@ static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
 
+void difftest_skip_ref();
+
 static word_t pmem_read(paddr_t addr, int len) {
   word_t ret = host_read(guest_to_host(addr), len);
   #if CONFIG_MRINGBUF_DEPTH
@@ -105,6 +107,7 @@ static struct timeval boot_time = {};
 void timer_init() {
   gettimeofday(&boot_time, NULL);
 }
+
 extern "C" void paddr_read(long long raddr, long long *rdata) {
   // 总是读取地址为`raddr & ~0x7ull`的8字节返回给`rdata`
   paddr_t addr = raddr & ~0x7ull;
@@ -117,6 +120,12 @@ extern "C" void paddr_read(long long raddr, long long *rdata) {
     long int seconds = now.tv_sec - boot_time.tv_sec;
     long int useconds = now.tv_usec - boot_time.tv_usec;
     *rdata = seconds * 1000000 + (useconds + 500);
+    #if CONFIG_DRINGBUF_DEPTH
+      char str[128];
+      sprintf(str, "Device R: %10s[%d] = %016llX \tlen = %d", "Timer", 0, *rdata, 8);
+      ringBufWrite(&dringbuf, str);
+    #endif
+    IFDEF(CONFIG_DIFFTEST, difftest_skip_ref());
   }
   else out_of_bound(addr);
 }
@@ -145,9 +154,15 @@ extern "C" void paddr_write(long long waddr, long long wdata, char wmask) {
       default: break;
     }
   }
-  else if(addr == SERIAL_PORT && wmask == 1){
+  else if(addr == SERIAL_PORT){// && wmask == 1
     {
       putchar(wdata);
+      #if CONFIG_DRINGBUF_DEPTH
+        char str[128];
+        sprintf(str, "Device W: %10s[%d] = %016llX \tlen = %d", "Serial", 0, wdata, 1);
+        ringBufWrite(&dringbuf, str);
+      #endif
+    IFDEF(CONFIG_DIFFTEST, difftest_skip_ref());
     }
   }
   else out_of_bound(addr);

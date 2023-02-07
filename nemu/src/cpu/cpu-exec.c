@@ -19,6 +19,7 @@
 #include <locale.h>
 #include <cpu/ringbuf.h>
 #include <elf_pars.h>
+#include "../isa/riscv64/local-include/reg.h"
 
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
@@ -55,7 +56,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   s->snpc = pc;
   isa_exec_once(s);
   cpu.pc = s->dnpc;
-#ifdef CONFIG_ITRACE
+#if defined CONFIG_ITRACE || defined CONFIG_FTRACE || defined CONFIG_ETRACE
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
   int ilen = s->snpc - s->pc;
@@ -109,6 +110,21 @@ static void exec_once(Decode *s, vaddr_t pc) {
         cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
         ringBufWrite(&fringbuf, &cb);
       }
+    }
+  #endif
+  #if CONFIG_ERINGBUF_DEPTH
+    char etrace_log[128];
+    if(strncmp(p, "ecall", 5) == 0){
+      sprintf(etrace_log, "Exception-ecall: mepc = 0x%lX,  mcause = 0x%lX, mtvec = 0x%lX\n", MCSR(mepc), MCSR(mcause), MCSR(mtvec));
+      ringBufWrite(&eringbuf, &etrace_log);
+    }
+    else if(strncmp(p, "ebreak", 6) == 0){
+      sprintf(etrace_log, "Exception-ebreak: mepc = 0x%lX,  mcause = 0x%lX, mtvec = 0x%lX\n", MCSR(mepc), MCSR(mcause), MCSR(mtvec));
+      ringBufWrite(&eringbuf, &etrace_log);
+    }
+    else if(strncmp(p, "mret", 4) == 0){
+      sprintf(etrace_log, "Exception-mret: mepc = 0x%lX,  mcause = 0x%lX, mtvec = 0x%lX\n", MCSR(mepc), MCSR(mcause), MCSR(mtvec));
+      ringBufWrite(&eringbuf, &etrace_log);
     }
   #endif
 #endif
@@ -184,6 +200,14 @@ static void print_trace(void) {
     while(!ringBufEmpty(&dringbuf)){
       dlog_str = ringBufRead(&dringbuf);
       _Log("%s\n", dlog_str);
+    }
+  #endif
+  #if CONFIG_ERINGBUF_DEPTH
+    Log("trace %d exceptions:", ringBufLen(&eringbuf));
+    const char *elog_str;
+    while(!ringBufEmpty(&eringbuf)){
+      elog_str = ringBufRead(&eringbuf);
+      _Log("%s\n", elog_str);
     }
   #endif
 }

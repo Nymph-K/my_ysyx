@@ -147,7 +147,7 @@ void init_monitor(int argc, char *argv[]) {
     MUXDEF(CONFIG_ISA_riscv64, "riscv64", "bad")))) "-pc-linux-gnu"
   ));
 
-  #if CONFIG_IRINGBUF_DEPTH | CONFIG_MRINGBUF_DEPTH | CONFIG_FRINGBUF_DEPTH
+  #if CONFIG_IRINGBUF_DEPTH | CONFIG_MRINGBUF_DEPTH | CONFIG_FRINGBUF_DEPTH | CONFIG_ERINGBUF_DEPTH
   ringBufInit();
   #endif
   #if CONFIG_FRINGBUF_DEPTH

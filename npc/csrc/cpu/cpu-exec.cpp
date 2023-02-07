@@ -94,7 +94,7 @@ static void exec_once(Decode *s) {
   s->snpc = mycpu->pc + 4;
   s->dnpc = mycpu->dnpc;
   s->isa.inst.val = mycpu->inst;
-#ifdef CONFIG_ITRACE
+#if defined CONFIG_ITRACE || defined CONFIG_FTRACE || defined CONFIG_ETRACE
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
   int ilen = s->snpc - s->pc;
@@ -150,6 +150,22 @@ static void exec_once(Decode *s) {
       }
     }
   #endif
+  #if CONFIG_ERINGBUF_DEPTH
+  #define MCSR(i) mycpu->rootp->top__DOT__u_exu__DOT__u_csr__DOT____Vcellout__csr_gen__BRA__##i##__KET____DOT__genblk1__DOT__u_csr__dout
+    char etrace_log[128];
+    if(strncmp(p, "ecall", 5) == 0){
+      sprintf(etrace_log, "Exception-ecall: mepc = %lx,  mcause= %lx, mtvec = %lx\n", MCSR(9), MCSR(10), MCSR(5));
+      ringBufWrite(&eringbuf, &etrace_log);
+    }
+    else if(strncmp(p, "ebreak", 6) == 0){
+      sprintf(etrace_log, "Exception-ebreak: mepc = %lx,  mcause= %lx, mtvec = %lx\n", MCSR(9), MCSR(10), MCSR(5));
+      ringBufWrite(&eringbuf, &etrace_log);
+    }
+    else if(strncmp(p, "mret", 4) == 0){
+      sprintf(etrace_log, "Exception-mret: mepc = %lx,  mcause= %lx, mtvec = %lx\n", MCSR(9), MCSR(10), MCSR(5));
+      ringBufWrite(&eringbuf, &etrace_log);
+    }
+  #endif
 #endif
 }
 
@@ -178,6 +194,63 @@ void assert_fail_msg() {
   statistic();
 }
 
+static void print_trace(void) {
+  #if CONFIG_IRINGBUF_DEPTH
+    Log("trace %d instractions:", ringBufLen(&iringbuf));
+    const char *ilog_str;
+    while(!ringBufEmpty(&iringbuf)){
+      ilog_str = (char *)ringBufRead(&iringbuf);
+      _Log("%s\n", ilog_str);
+    }
+  #endif
+  #if CONFIG_MRINGBUF_DEPTH
+    Log("trace %d mem access:", ringBufLen(&mringbuf));
+    const char *mlog_str;
+    while(!ringBufEmpty(&mringbuf)){
+      mlog_str = (char *)ringBufRead(&mringbuf);
+      _Log("%s\n", mlog_str);
+    }
+  #endif
+  #if CONFIG_FRINGBUF_DEPTH
+    Log("trace %d function call:", ringBufLen(&fringbuf));
+    callBuf *cb;
+    int fun_depth = 1;
+    while(!ringBufEmpty(&fringbuf)){
+      cb = (callBuf *)ringBufRead(&fringbuf);
+      if(cb->c_r == 'c')
+        fun_depth++;
+      _Log("0x%08lx -> 0x%08lx: %s", cb->pc, cb->dnpc, cb->c_r == 'c' ? "call " : "ret  ");
+      for (size_t i = 0; i < fun_depth; i++)
+      {
+        _Log("    ");
+      }
+      if(cb->c_r == 'c')
+        _Log("%s -> %s\n", get_func_name_ndx(cb->pc_fndx), get_func_name_ndx(cb->dnpc_fndx));
+      else
+        _Log("%s <- %s\n", get_func_name_ndx(cb->dnpc_fndx), get_func_name_ndx(cb->pc_fndx));
+      
+      if(cb->c_r == 'r')
+        fun_depth = fun_depth == 0 ? 0 : fun_depth - 1;
+    }
+  #endif
+  #if CONFIG_DRINGBUF_DEPTH
+    Log("trace %d device access:", ringBufLen(&dringbuf));
+    const char *dlog_str;
+    while(!ringBufEmpty(&dringbuf)){
+      dlog_str = (char *)ringBufRead(&dringbuf);
+      _Log("%s\n", dlog_str);
+    }
+  #endif
+  #if CONFIG_ERINGBUF_DEPTH
+    Log("trace %d exceptions:", ringBufLen(&eringbuf));
+    const char *elog_str;
+    while(!ringBufEmpty(&eringbuf)){
+      elog_str = (char *)ringBufRead(&eringbuf);
+      _Log("%s\n", elog_str);
+    }
+  #endif
+}
+
 /* Simulate how the CPU works. */
 void cpu_exec(uint64_t n) {
   g_print_step = (n < MAX_INST_TO_PRINT);
@@ -196,55 +269,18 @@ void cpu_exec(uint64_t n) {
   g_timer += timer_end - timer_start;
 
   switch (npc_state.state) {
-    case NPC_RUNNING: {npc_state.state = NPC_STOP; break;}
+    case NPC_RUNNING: npc_state.state = NPC_STOP; break;
 
-    case NPC_END: case NPC_ABORT:{
-      #if CONFIG_IRINGBUF_DEPTH
-        Log("trace %d instractions:", ringBufLen(&iringbuf));
-        const char *ilog_str;
-        while(!ringBufEmpty(&iringbuf)){
-          ilog_str = (const char*)ringBufRead(&iringbuf);
-          _Log("%s\n", ilog_str);
-        }
-      #endif
-      #if CONFIG_MRINGBUF_DEPTH
-        Log("trace %d mem access:", ringBufLen(&mringbuf));
-        const char *mlog_str;
-        while(!ringBufEmpty(&mringbuf)){
-          mlog_str = (const char*)ringBufRead(&mringbuf);
-          _Log("%s\n", mlog_str);
-        }
-      #endif
-      #if CONFIG_FRINGBUF_DEPTH
-        Log("trace %d function call:", ringBufLen(&fringbuf));
-        callBuf *cb;
-        int fun_depth = 1;
-        while(!ringBufEmpty(&fringbuf)){
-          cb = (callBuf *)ringBufRead(&fringbuf);
-          if(cb->c_r == 'c')
-            fun_depth++;
-          _Log("0x%08lx -> 0x%08lx: %s", cb->pc, cb->dnpc, cb->c_r == 'c' ? "call " : "ret  ");
-          for (size_t i = 0; i < fun_depth; i++)
-          {
-            _Log("    ");
-          }
-          if(cb->c_r == 'c')
-            _Log("%s -> %s\n", get_func_name_ndx(cb->pc_fndx), get_func_name_ndx(cb->dnpc_fndx));
-          else
-            _Log("%s <- %s\n", get_func_name_ndx(cb->dnpc_fndx), get_func_name_ndx(cb->pc_fndx));
-          
-          if(cb->c_r == 'r')
-            fun_depth = fun_depth == 0 ? 0 : fun_depth - 1;
-        }
-      #endif
+    case NPC_END: case NPC_ABORT:
+      print_trace();
       Log("npc: %s at pc = " FMT_WORD,
           (npc_state.state == NPC_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (npc_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           npc_state.halt_pc);
       // fall through
-    }
-    case NPC_QUIT: {statistic();}
+    
+    case NPC_QUIT: statistic();
   }
 }
 

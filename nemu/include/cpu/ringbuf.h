@@ -31,6 +31,7 @@ extern ringBuf iringbuf;
 extern ringBuf mringbuf;
 extern ringBuf fringbuf;
 extern ringBuf dringbuf;
+extern ringBuf eringbuf;
 
 void ringBufInit(void);
 void *ringBufRead(ringBuf *ringbuf);

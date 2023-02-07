@@ -38,12 +38,12 @@ typedef enum {
 
 extern uint64_t mcsr[256];
 
-#define MCSR(idx) (mcsr[check_csr_idx(idx)])
-
 static inline int check_csr_idx(int idx) {
   IFDEF(CONFIG_RT_CHECK, assert(idx >= mstatus && idx < mtval2));
   return (idx & 0xFF);
 }
+
+#define MCSR(idx) (mcsr[check_csr_idx(idx)])
 
 static inline int check_reg_idx(int idx) {
   IFDEF(CONFIG_RT_CHECK, assert(idx >= 0 && idx < 32));
