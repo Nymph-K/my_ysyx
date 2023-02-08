@@ -18,6 +18,14 @@
 
 #include <common.h>
 
+#define MIP_MSIP_MASK (1 << 3)
+#define MIP_MTIP_MASK (1 << 7)
+#define MIP_MEIP_MASK (1 << 11)
+#define MIE_MSIE_MASK (1 << 3)
+#define MIE_MTIE_MASK (1 << 7)
+#define MIE_MEIE_MASK (1 << 11)
+#define MSTATUS_MIE_MASK (1 << 3)
+
 typedef enum {
   mstatus     = 0x300,
   misa        = 0x301,

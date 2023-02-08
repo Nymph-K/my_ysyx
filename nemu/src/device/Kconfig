@@ -46,6 +46,33 @@ config RTC_MMIO
   default 0xa0000048
 endif # HAS_TIMER
 
+menuconfig HAS_CLINT
+  bool "Enable Core Local Interrupt"
+  default y
+
+if HAS_CLINT
+config CLINT_PORT
+  depends on HAS_PORT_IO
+  hex "Port address of the CLINT"
+  default 0x20
+
+config CLINT_MSIP_MMIO
+  hex "MMIO address of the CLINT msip"
+  default 0x2000000
+
+config CLINT_MTIMECMP_MMIO
+  hex "MMIO address of the CLINT mtimecmp"
+  default 0x2004000
+
+config CLINT_MTIME_MMIO
+  hex "MMIO address of the CLINT mtime"
+  default 0x200BFF8
+
+config CLINT_TICK_COUNT
+  hex "mtime increase 1 per tick count clock"
+  default 0x100
+endif # HAS_TIMER
+
 menuconfig HAS_KEYBOARD
   bool "Enable keyboard"
   default y

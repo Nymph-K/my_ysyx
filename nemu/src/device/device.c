@@ -29,11 +29,13 @@ void init_audio();
 void init_disk();
 void init_sdcard();
 void init_alarm();
+void init_clint();
 
 void send_key(uint8_t, bool);
 void vga_update_screen();
 void destroy_sdl_audio();
 void destroy_screen();
+void clint_mtime_update(void);
 
 void sdl_clear_event_queue() {
 #ifndef CONFIG_TARGET_AM
@@ -51,6 +53,7 @@ void device_update() {
   last = now;
 
   IFDEF(CONFIG_HAS_VGA, vga_update_screen());
+  IFDEF(CONFIG_HAS_CLINT, clint_mtime_update());
 
 #ifndef CONFIG_TARGET_AM
   SDL_Event event;
@@ -89,6 +92,7 @@ void init_device() {
   IFDEF(CONFIG_HAS_AUDIO, init_audio());
   IFDEF(CONFIG_HAS_DISK, init_disk());
   IFDEF(CONFIG_HAS_SDCARD, init_sdcard());
+  IFDEF(CONFIG_HAS_CLINT, init_clint());
 
   IFNDEF(CONFIG_TARGET_AM, init_alarm());
 }

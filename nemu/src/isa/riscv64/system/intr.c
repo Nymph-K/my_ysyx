@@ -26,5 +26,18 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
 }
 
 word_t isa_query_intr() {
-  return INTR_EMPTY;
+  if(MCSR(mstatus) & MSTATUS_MIE_MASK != 0)
+  {
+    if (/* condition */)
+    {
+      /* code */
+    }
+    else
+    {
+      /* code */
+    }
+    
+  }
+  else
+    return 0;
 }
