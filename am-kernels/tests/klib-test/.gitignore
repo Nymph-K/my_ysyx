@@ -1,0 +1,10 @@
+*
+!*/
+!*.h
+!*.c
+!Makefile
+.*
+_*
+*~
+build/
+!.gitignore

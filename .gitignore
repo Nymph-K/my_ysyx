@@ -6,11 +6,10 @@
 !/nanos-lite/*
 !/navy-apps/*
 !/npc/*
+!/am-kernels/*
 !Makefile
 !README.md
 !.gitignore
 !init.sh
 /fceux-am
 /nvboard
-/am-kernels
-!/am-kernels/tests/klib-test/*
