@@ -125,7 +125,9 @@ extern "C" void paddr_read(long long raddr, long long *rdata) {
       sprintf(str, "Device R: %10s[%d] = %016llX \tlen = %d", "Timer", 0, *rdata, 8);
       ringBufWrite(&dringbuf, str);
     #endif
-    IFDEF(CONFIG_DIFFTEST, difftest_skip_ref());
+    #ifdef CONFIG_DIFFTEST
+      difftest_skip_ref();
+    #endif
   }
   else out_of_bound(addr);
 }
@@ -162,7 +164,9 @@ extern "C" void paddr_write(long long waddr, long long wdata, char wmask) {
         sprintf(str, "Device W: %10s[%d] = %016llX \tlen = %d", "Serial", 0, wdata, 1);
         ringBufWrite(&dringbuf, str);
       #endif
-    IFDEF(CONFIG_DIFFTEST, difftest_skip_ref());
+      #ifdef CONFIG_DIFFTEST
+        difftest_skip_ref();
+      #endif
     }
   }
   else out_of_bound(addr);

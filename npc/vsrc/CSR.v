@@ -57,14 +57,14 @@ module CSR (
 					.rst(rst), 
 					.din(mepc_source), 
 					.dout(mcsr[n]), 
-					.wen((mcsr_idx == n && mepc_wt_en == 1'b1) ? 1'b1 : 1'b0));
+					.wen(((mcsr_idx == n && wt_en == 1'b1) || mepc_wt_en == 1'b1) ? 1'b1 : 1'b0));
 			else if (n == 10) //mcause
 				Reg #(`XLEN, `XLEN'b0) u_csr (
 					.clk(clk), 
 					.rst(rst), 
 					.din(mcause_source), 
 					.dout(mcsr[n]), 
-					.wen((mcsr_idx == n && mcause_wt_en == 1'b1) ? 1'b1 : 1'b0));
+					.wen(((mcsr_idx == n && wt_en == 1'b1) || mcause_wt_en == 1'b1) ? 1'b1 : 1'b0));
 			else
 				Reg #(`XLEN, `XLEN'b0) u_csr (
 					.clk(clk), 
@@ -115,7 +115,7 @@ module CSR (
 	MuxKeyWithDefault #(2, 3, 1) u_mepc_wt_en (
 		.out(mepc_wt_en),
 		.key(inst_is_x),
-		.default_out(wt_en),
+		.default_out(1'b0),
 		.lut({
 			3'b001, 1'b1,		//ebreak
 			3'b010, 1'b1		//ecall
@@ -136,7 +136,7 @@ module CSR (
 	MuxKeyWithDefault #(2, 3, 1) u_mcause_wt_en (
 		.out(mcause_wt_en),
 		.key(inst_is_x),
-		.default_out(wt_en),
+		.default_out(1'b0),
 		.lut({
 			3'b001, 1'b1,		//ebreak
 			3'b010, 1'b1		//ecall

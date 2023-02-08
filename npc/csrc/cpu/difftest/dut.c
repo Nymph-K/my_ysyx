@@ -30,6 +30,7 @@ void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 #ifdef CONFIG_DIFFTEST
 
 static bool is_skip_ref = false;
+static bool is_skip_ref_old = false;
 static int skip_dut_nr_inst = 0;
 
 // this is used to let ref skip instructions which
@@ -137,13 +138,18 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
     return;
   }
 
-  if (is_skip_ref) {
-    // to skip the checking of an instruction, just copy the reg state to reference design
-    reg_copy_to(&ref_r);ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
-    is_skip_ref = false;
+  if (is_skip_ref_old)
+  {// npc is one cycle ahead of nemu
+    reg_copy_to(&ref_r);
+    ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
+    is_skip_ref_old = false;
     return;
   }
-
+  if (is_skip_ref) {
+    // to skip the checking of an instruction, just copy the reg state to reference design
+    is_skip_ref_old = true;
+    is_skip_ref = false;
+  }
   ref_difftest_exec(1);
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
 

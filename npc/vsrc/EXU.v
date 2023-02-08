@@ -302,7 +302,7 @@ module EXU (
 			`OP_IMM,	1'b1,
 			`OP,		1'b1,
 			//MISC_MEM
-			`SYSTEM,	inst_is_x == 3'b000 ? 1'b0 : csr_rd_en,// except ecall, ebreak, mret
+			`SYSTEM,	inst_is_x == 3'b000 ? csr_rd_en : 1'b0,// except ecall, ebreak, mret
 			`OP_IMM_32,	1'b1,
 			`OP_32,		1'b1
 		})
@@ -470,6 +470,7 @@ import "DPI-C" function void stopCPU();
 			.src1(src1),
 			.src2(src2),
 			.funct3(funct3),
+			.opcode_is_w(opcode[3]),
 			.x_rd(mdu_x_rd));
 
     wire en_mdu = (opcode == `OP | opcode == `OP_32) && (funct7 == funct7_md);
