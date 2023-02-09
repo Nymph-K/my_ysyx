@@ -5,6 +5,7 @@
 
 `include "top.v"
 `include "IDU.v"
+`include "CLINT.v"
 
 module MAU (
     input clk,
