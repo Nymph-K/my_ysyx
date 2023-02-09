@@ -20,24 +20,40 @@
  * Then return the address of the interrupt/exception vector.
  */
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
+  MCSR(mstatus) &= ~MSTATUS_MIE_MASK;//close global interrupt enable
   MCSR(mepc) = epc;
   MCSR(mcause) = NO;
   return MCSR(mtvec);
 }
 
-word_t isa_query_intr() {
-  if(MCSR(mstatus) & MSTATUS_MIE_MASK != 0)
+void difftest_skip_ref();
+
+word_t isa_query_intr(vaddr_t epc) {
+  if((MCSR(mstatus) & MSTATUS_MIE_MASK) != 0)// global interrupt enable
   {
-    if (/* condition */)
+    if ((MCSR(mie) & (MIE_MSIE_MASK | MIE_MTIE_MASK | MIE_MEIE_MASK)) != 0)//software, timer, external interrupt enable
     {
-      /* code */
+      if ((MCSR(mip) & (MIP_MSIP_MASK | MIP_MTIP_MASK | MIP_MEIP_MASK)) != 0)//software, timer, external interrupt pending
+      {
+        uint64_t NO_macuse;
+        if ((MCSR(mip) & MIP_MEIP_MASK) != 0)//external interrupt pending
+        {
+          NO_macuse = MCAUSE_INTR_MASK | MCAUSE_MEI_MASK;
+        }
+        else if ((MCSR(mip) & MIP_MSIP_MASK) != 0)//software interrupt pending
+        {
+          NO_macuse = MCAUSE_INTR_MASK | MCAUSE_MSI_MASK;
+        }
+        else// if (MCSR(mip) & MIP_MTIP_MASK != 0)//timer interrupt pending
+        {
+          NO_macuse = MCAUSE_INTR_MASK | MCAUSE_MTI_MASK;
+        }
+        difftest_skip_ref();
+        return isa_raise_intr(NO_macuse, epc);
+      }
+      else return 0;
     }
-    else
-    {
-      /* code */
-    }
-    
+    else return 0;
   }
-  else
-    return 0;
+  else return 0;
 }

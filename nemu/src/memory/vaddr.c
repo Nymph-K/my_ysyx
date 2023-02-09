@@ -15,9 +15,23 @@
 
 #include <isa.h>
 #include <memory/paddr.h>
+#include <memory/host.h>
+
+static void out_of_bound(paddr_t addr) {
+  panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
+      addr, (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1, cpu.pc);
+}
 
 word_t vaddr_ifetch(vaddr_t addr, int len) {
-  return paddr_read(addr, len);
+  if (likely(in_pmem(addr)))
+  {
+    return host_read(guest_to_host(addr), len);
+  }
+  else
+  {
+    out_of_bound(addr);
+    return 0;
+  }
 }
 
 word_t vaddr_read(vaddr_t addr, int len) {

@@ -25,6 +25,10 @@
 #define MIE_MTIE_MASK (1 << 7)
 #define MIE_MEIE_MASK (1 << 11)
 #define MSTATUS_MIE_MASK (1 << 3)
+#define MCAUSE_INTR_MASK ((uint64_t)1 << 63)
+#define MCAUSE_MSI_MASK (3)
+#define MCAUSE_MTI_MASK (7)
+#define MCAUSE_MEI_MASK (11)
 
 typedef enum {
   mstatus     = 0x300,

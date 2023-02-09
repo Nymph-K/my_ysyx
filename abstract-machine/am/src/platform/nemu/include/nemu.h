@@ -32,6 +32,9 @@
 #define DISK_ADDR       (DEVICE_BASE + 0x0000300)
 #define FB_ADDR         (MMIO_BASE   + 0x1000000)
 #define AUDIO_SBUF_ADDR (MMIO_BASE   + 0x1200000)
+#define CLINT_MSIP_ADDR (0x2000000)
+#define CLINT_MTIMECMP_ADDR (0x2004000)
+#define CLINT_MTIME_ADDR (0x200BFF8)
 
 extern char _pmem_start;
 #define PMEM_SIZE (128 * 1024 * 1024)

@@ -6,6 +6,7 @@ static const char *tests[256] = {
   ['h'] = "hello",
   ['H'] = "display this help message",
   ['i'] = "interrupt/yield test",
+  ['T'] = "timer interrupt/yield test",
   ['d'] = "scan devices",
   ['m'] = "multiprocessor test",
   ['t'] = "real-time clock test",
@@ -26,6 +27,9 @@ int main(const char *args) {
     CASE('v', video_test, IOE);
     CASE('a', audio_test, IOE);
     CASE('p', vm_test, CTE(vm_handler), VME(simple_pgalloc, simple_pgfree));
+    #if HAS_CLINT_INTR
+    CASE('T', clint_timer_intr, IOE, CTE(clint_timer_trap));
+    #endif
     case 'H':
     default:
       printf("Usage: make run mainargs=*\n");

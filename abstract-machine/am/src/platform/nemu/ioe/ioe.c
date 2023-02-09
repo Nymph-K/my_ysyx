@@ -4,6 +4,7 @@
 void __am_timer_init();
 void __am_gpu_init();
 void __am_audio_init();
+void __am_clint_init();
 void __am_input_keybrd(AM_INPUT_KEYBRD_T *);
 void __am_timer_rtc(AM_TIMER_RTC_T *);
 void __am_timer_uptime(AM_TIMER_UPTIME_T *);
@@ -17,6 +18,9 @@ void __am_audio_play(AM_AUDIO_PLAY_T *);
 void __am_disk_config(AM_DISK_CONFIG_T *cfg);
 void __am_disk_status(AM_DISK_STATUS_T *stat);
 void __am_disk_blkio(AM_DISK_BLKIO_T *io);
+void __am_clint_msip(AM_CLINT_MSIP_T *ptr);
+void __am_clint_mtimecmp(AM_CLINT_MTIMECMP_T *ptr);
+void __am_clint_mtime(AM_CLINT_MTIME_T *ptr);
 
 static void __am_timer_config(AM_TIMER_CONFIG_T *cfg) { cfg->present = true; cfg->has_rtc = true; }
 static void __am_input_config(AM_INPUT_CONFIG_T *cfg) { cfg->present = true;  }
@@ -42,6 +46,9 @@ static void *lut[128] = {
   [AM_DISK_STATUS ] = __am_disk_status,
   [AM_DISK_BLKIO  ] = __am_disk_blkio,
   [AM_NET_CONFIG  ] = __am_net_config,
+  [AM_CLINT_MSIP  ] = __am_clint_msip,
+  [AM_CLINT_MTIMECMP] = __am_clint_mtimecmp,
+  [AM_CLINT_MTIME ] = __am_clint_mtime,
 };
 
 static void fail(void *buf) { panic("access nonexist register"); }
@@ -52,6 +59,7 @@ bool ioe_init() {
   __am_gpu_init();
   __am_timer_init();
   __am_audio_init();
+  //__am_clint_init();
   return true;
 }
 

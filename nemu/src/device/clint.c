@@ -28,10 +28,12 @@ static void clint_msip_io_handler(uint32_t offset, int len, bool is_write) {
   switch (offset) {
     case 0:
       if (is_write)
+      {
         if (clint_msip_base[0] == 1)
-          MCSR(mip) |= MSIP_MASK;
+          MCSR(mip) |= MIP_MSIP_MASK;
         else
-          MCSR(mip) &= ~MSIP_MASK;
+          MCSR(mip) &= ~MIP_MSIP_MASK;
+      }
       break;
     default: panic("do not support offset = %d", offset);
   }
@@ -41,7 +43,7 @@ static void clint_mtimecmp_io_handler(uint32_t offset, int len, bool is_write) {
   assert(len == 8);
   switch (offset) {
     case 0:
-      if (is_write) MCSR(mip) &= ~MTIP_MASK;  //Writing to register clears the timer interrupt.
+      if (is_write) MCSR(mip) &= ~MIP_MTIP_MASK;  //Writing to register clears the timer interrupt.
       break;
     default: panic("do not support offset = %d", offset);
   }
@@ -51,7 +53,7 @@ static void clint_mtime_io_handler(uint32_t offset, int len, bool is_write) {
   assert(len == 8);
   switch (offset) {
     case 0:
-      if (is_write) clint_msip_base[0] = 1;
+      if (is_write) tick_count = 0;
       break;
     default: panic("do not support offset = %d", offset);
   }
@@ -61,9 +63,12 @@ void init_clint() {
   clint_msip_base = new_space(4);
   clint_mtimecmp_base = new_space(8);
   clint_mtime_base = new_space(8);
+  *(uint32_t *)clint_msip_base = 0;
+  *(uint64_t *)clint_mtimecmp_base = -1;
+  *(uint64_t *)clint_mtime_base = 0;
   add_mmio_map("clint msip", CONFIG_CLINT_MSIP_MMIO, clint_msip_base, 4, clint_msip_io_handler);
   add_mmio_map("clint mtimecmp", CONFIG_CLINT_MTIMECMP_MMIO, clint_mtimecmp_base, 8, clint_mtimecmp_io_handler);
-  add_mmio_map("clint mtime", CONFIG_CLINT_MTIME_MMIO, clint_mtime_base, 8, NULL);
+  add_mmio_map("clint mtime", CONFIG_CLINT_MTIME_MMIO, clint_mtime_base, 8, clint_mtime_io_handler);
 }
 
 void clint_mtime_update(void)
@@ -72,10 +77,10 @@ void clint_mtime_update(void)
   if (tick_count >= CONFIG_CLINT_TICK_COUNT)
   {
     tick_count = 0;
-    *(uint64_t *)clint_mtime_base++;
+    *(uint64_t *)clint_mtime_base += 1;
     if (*(uint64_t *)clint_mtime_base >= *(uint64_t *)clint_mtimecmp_base)
     {
-      MCSR(mip) |= MTIP_MASK;
+      MCSR(mip) |= MIP_MTIP_MASK;
     }
   }
 }

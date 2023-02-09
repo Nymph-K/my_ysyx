@@ -31,6 +31,9 @@ AM_DEVREG(21, NET_CONFIG,   RD, bool present);
 AM_DEVREG(22, NET_STATUS,   RD, int rx_len, tx_len);
 AM_DEVREG(23, NET_TX,       WR, Area buf);
 AM_DEVREG(24, NET_RX,       WR, Area buf);
+AM_DEVREG(25, CLINT_MSIP,   WR, uint32_t msip; bool is_write);
+AM_DEVREG(26, CLINT_MTIMECMP, WR, uint64_t mtimecmp; bool is_write);
+AM_DEVREG(27, CLINT_MTIME,  WR, uint64_t mtime; bool is_write);
 
 // Input
 

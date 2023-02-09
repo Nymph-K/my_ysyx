@@ -10,6 +10,8 @@
 #define VME(f1, f2) ({ void *f1(int); void f2(void *); vme_init(f1, f2); })
 #define MPE ({ mpe_init(entry); })
 
+#define HAS_CLINT_INTR 1
+
 extern void (*entry)();
 
 #define CASE(id, entry_, ...) \

@@ -26,7 +26,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
 
   int len = 0;
   bool is_arg = false;
-  int d;
+  long int d;
   char c;
   char *s;
   char d2s[32];
@@ -108,10 +108,17 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
               if (fmt[1] == 'u'){
                 d = va_arg(ap, unsigned long);
                 fmt++;
+                ltoa(d, d2s, 10);
               }
-              else
+              else if (fmt[1] == 'x' || fmt[1] == 'X'){
+                d = va_arg(ap, unsigned long long);
+                fmt++;
+                ltoa(d, d2s, 16);
+              }
+              else{
                 d = va_arg(ap, long);
-              ltoa(d, d2s, 10);
+                ltoa(d, d2s, 10);
+              }
               break;
 
             default:
