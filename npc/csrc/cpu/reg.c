@@ -71,6 +71,10 @@ void reg_copy_to(CPU_state *ref)
   {
     ref->gpr[i] = cpu_gpr[i];
   }
+  for (size_t i = 0; i < 15; i++)
+  {
+    ref->mcsr[i] = csr[i];
+  }
   ref->pc = mycpu->pc;
 }
 

@@ -151,32 +151,33 @@ static void exec_once(Decode *s) {
     }
   #endif
   #if CONFIG_ERINGBUF_DEPTH
-  #define MCSR(i) mycpu->rootp->top__DOT__u_exu__DOT__u_csr__DOT____Vcellout__csr_gen__BRA__##i##__KET____DOT__genblk1__DOT__u_csr__dout
     char etrace_log[128];
     if(strncmp(p, "ecall", 5) == 0){
-      sprintf(etrace_log, "Exception-ecall: mepc = %lx,  mcause= %lx, mtvec = %lx\n", MCSR(9), MCSR(10), MCSR(5));
+      sprintf(etrace_log, "Exception-ecall: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
       ringBufWrite(&eringbuf, &etrace_log);
     }
     else if(strncmp(p, "ebreak", 6) == 0){
-      sprintf(etrace_log, "Exception-ebreak: mepc = %lx,  mcause= %lx, mtvec = %lx\n", MCSR(9), MCSR(10), MCSR(5));
+      sprintf(etrace_log, "Exception-ebreak: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
       ringBufWrite(&eringbuf, &etrace_log);
     }
     else if(strncmp(p, "mret", 4) == 0){
-      sprintf(etrace_log, "Exception-mret: mepc = %lx,  mcause= %lx, mtvec = %lx\n", MCSR(9), MCSR(10), MCSR(5));
+      sprintf(etrace_log, "Exception-mret: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
       ringBufWrite(&eringbuf, &etrace_log);
     }
   #endif
 #endif
 }
 
+#define is_interrupt mycpu->rootp->top__DOT__u_exu__DOT__interrupt
+void difftest_skip_ref();
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
     exec_once(&s);
     g_nr_guest_inst ++;
+    IFDEF(CONFIG_DIFFTEST, if(is_interrupt) difftest_skip_ref());
     trace_and_difftest(&s, mycpu->dnpc);
     if (npc_state.state != NPC_RUNNING) break;
-    //IFDEF(CONFIG_DEVICE, device_update());
   }
 }
 

@@ -17,6 +17,7 @@
 #include <cpu/cpu.h>
 #include <difftest-def.h>
 #include <memory/paddr.h>
+#include "../../isa/riscv64/local-include/reg.h"
 
 void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
@@ -32,19 +33,42 @@ void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   }
 }
 
+typedef struct {
+  vaddr_t pc;
+  word_t gpr[32];
+  word_t mcsr[15];
+} npc_riscv64_CPU_state;
+
 void difftest_regcpy(void *dut, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
     for (size_t i = 0; i < 32; i++)
     {
-      cpu.gpr[i] = ((CPU_state *)dut)->gpr[i];
+      cpu.gpr[i] = ((npc_riscv64_CPU_state *)dut)->gpr[i];
     }
-    cpu.pc = ((CPU_state *)dut)->pc;
+    {
+      mcsr[0x00] = ((npc_riscv64_CPU_state *)dut)->mcsr[0];
+      mcsr[0x01] = ((npc_riscv64_CPU_state *)dut)->mcsr[1];
+      mcsr[0x02] = ((npc_riscv64_CPU_state *)dut)->mcsr[2];
+      mcsr[0x03] = ((npc_riscv64_CPU_state *)dut)->mcsr[3];
+      mcsr[0x04] = ((npc_riscv64_CPU_state *)dut)->mcsr[4];
+      mcsr[0x05] = ((npc_riscv64_CPU_state *)dut)->mcsr[5];
+      mcsr[0x06] = ((npc_riscv64_CPU_state *)dut)->mcsr[6];
+      mcsr[0x10] = ((npc_riscv64_CPU_state *)dut)->mcsr[7];
+      mcsr[0x40] = ((npc_riscv64_CPU_state *)dut)->mcsr[8];
+      mcsr[0x41] = ((npc_riscv64_CPU_state *)dut)->mcsr[9];
+      mcsr[0x42] = ((npc_riscv64_CPU_state *)dut)->mcsr[10];
+      mcsr[0x43] = ((npc_riscv64_CPU_state *)dut)->mcsr[11];
+      mcsr[0x44] = ((npc_riscv64_CPU_state *)dut)->mcsr[12];
+      mcsr[0x4A] = ((npc_riscv64_CPU_state *)dut)->mcsr[13];
+      mcsr[0x4B] = ((npc_riscv64_CPU_state *)dut)->mcsr[14];
+    }
+    cpu.pc = ((npc_riscv64_CPU_state *)dut)->pc;
   } else {
     for (size_t i = 0; i < 32; i++)
     {
-      ((CPU_state *)dut)->gpr[i] = cpu.gpr[i];
+      ((npc_riscv64_CPU_state *)dut)->gpr[i] = cpu.gpr[i];
     }
-    ((CPU_state *)dut)->pc = cpu.pc;
+    ((npc_riscv64_CPU_state *)dut)->pc = cpu.pc;
   }
 }
 

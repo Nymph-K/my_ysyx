@@ -141,8 +141,9 @@ typedef struct {
 
 // ----------- cpu state -----------
 typedef struct {
-  word_t gpr[32];
   vaddr_t pc;
+  word_t gpr[32];
+  word_t mcsr[15];
 } riscv64_CPU_state;
 #define CPU_state riscv64_CPU_state
 

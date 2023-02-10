@@ -1,10 +1,11 @@
 #include <am.h>
+#include "npc.h"
 
 void __am_timer_init() {
 }
 
 void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
-  uptime->us = (*(volatile uint64_t *)(0xa0000048));
+  uptime->us = ino(RTC_ADDR);
 }
 
 void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {

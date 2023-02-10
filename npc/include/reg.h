@@ -21,6 +21,7 @@
 #define DPI_C_SET_GPR_PTR 1
 #define GPR(n) mycpu->rootp->top__DOT__u_gir__DOT____Vcellout__gir_gen__BRA__##n##__KET____DOT__genblk1__DOT__u_gir__dout
 #define gpr(n) *((uint64_t *)&(GPR(0)) + n)
+#define csr mycpu->rootp->top__DOT__u_exu__DOT__u_csr__DOT__mcsr
 
 static inline int check_reg_idx(int idx) {
   IFDEF(CONFIG_RT_CHECK, assert(idx >= 0 && idx < 32));

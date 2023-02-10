@@ -99,9 +99,18 @@ extern "C" void inst_fetch(long long  pc, int *inst) {
     }
 }
 
-#define DEVICE_BASE   (0xa0000000)
-#define RTC_ADDR      (DEVICE_BASE + 0x0000048)
-#define SERIAL_PORT   (DEVICE_BASE + 0x00003f8)
+#define DEVICE_BASE 0xa0000000
+#define SERIAL_PORT     (DEVICE_BASE + 0x00003f8)
+#define KBD_ADDR        (DEVICE_BASE + 0x0000060)
+#define RTC_ADDR        (DEVICE_BASE + 0x0000048)
+#define VGACTL_ADDR     (DEVICE_BASE + 0x0000100)
+#define AUDIO_ADDR      (DEVICE_BASE + 0x0000200)
+#define DISK_ADDR       (DEVICE_BASE + 0x0000300)
+#define FB_ADDR         (MMIO_BASE   + 0x1000000)
+#define AUDIO_SBUF_ADDR (MMIO_BASE   + 0x1200000)
+#define CLINT_MSIP_ADDR (0x2000000)
+#define CLINT_MTIMECMP_ADDR (0x2004000)
+#define CLINT_MTIME_ADDR (0x200BFF8)
 
 static struct timeval boot_time = {};
 void timer_init() {
@@ -125,6 +134,12 @@ extern "C" void paddr_read(long long raddr, long long *rdata) {
       sprintf(str, "Device R: %10s[%d] = %016llX \tlen = %d", "Timer", 0, *rdata, 8);
       ringBufWrite(&dringbuf, str);
     #endif
+    #ifdef CONFIG_DIFFTEST
+      difftest_skip_ref();
+    #endif
+  }
+  else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
+  {
     #ifdef CONFIG_DIFFTEST
       difftest_skip_ref();
     #endif
@@ -168,6 +183,12 @@ extern "C" void paddr_write(long long waddr, long long wdata, char wmask) {
         difftest_skip_ref();
       #endif
     }
+  }
+  else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
+  {
+    #ifdef CONFIG_DIFFTEST
+      difftest_skip_ref();
+    #endif
   }
   else out_of_bound(addr);
 }

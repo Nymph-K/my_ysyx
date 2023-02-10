@@ -20,7 +20,6 @@
  * Then return the address of the interrupt/exception vector.
  */
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
-  MCSR(mstatus) &= ~MSTATUS_MIE_MASK;//close global interrupt enable
   MCSR(mepc) = epc;
   MCSR(mcause) = NO;
   return MCSR(mtvec);
@@ -48,7 +47,7 @@ word_t isa_query_intr(vaddr_t epc) {
         {
           NO_macuse = MCAUSE_INTR_MASK | MCAUSE_MTI_MASK;
         }
-        difftest_skip_ref();
+        IFDEF(CONFIG_DIFFTEST, difftest_skip_ref());
         return isa_raise_intr(NO_macuse, epc);
       }
       else return 0;

@@ -21,7 +21,7 @@ module CLINT (
     output [`XLEN-1:0] mtimecmp
 );
 
-    localparam tick_count = `XLEN'h100;
+    localparam tick_count = `XLEN'h1000;
 
 	wire [`XLEN-1:0] tick;
 
@@ -43,7 +43,7 @@ module CLINT (
         .wen((tick == tick_count) || mtime_wen));
 
     wire mtimecmp_wen = (mem_addr == `CLINT_MTIMECMP_ADDR) && mem_w;
-    Reg #(`XLEN, `XLEN'h100) u_mtimecmp (
+    Reg #(`XLEN, `XLEN'hffffffff) u_mtimecmp (
         .clk(clk),
         .rst(rst),
         .din(mem_wdata),

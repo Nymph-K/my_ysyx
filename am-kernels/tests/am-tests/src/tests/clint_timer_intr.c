@@ -1,17 +1,17 @@
 #include <amtest.h>
 
 #if HAS_CLINT_INTR
-static uint64_t timecmp = 0x1;
+static uint64_t timecmp = 0x80;
 
 Context *clint_timer_trap(Event ev, Context *ctx) {
   switch(ev.event) {
     case EVENT_IRQ_TIMER:
-      timecmp += 0x1;
+      timecmp += 0x80;
       io_write(AM_CLINT_MTIMECMP, timecmp, true);//clean mtip
-      printf("Event Timer irq: ");
+      printf("t: ");
       break;
     case EVENT_YIELD:
-      printf("Event yield: ");
+      printf("y: ");
       break;
     default:
       break;
@@ -26,9 +26,11 @@ void clint_timer_intr() {
   io_write(AM_CLINT_MTIME, 0, true);
   io_write(AM_CLINT_MTIMECMP, timecmp, true);
   iset(1);
-  while (1) {
+  for (size_t j = 0; j < 4; j++)
+  {
     for (volatile int i = 0; i < 100000; i++) ;
     yield();
   }
+  iset(0);
 }
 #endif

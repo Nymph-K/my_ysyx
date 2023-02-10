@@ -9,11 +9,14 @@
 
 module MAU (
     input clk,
+	input rst,
 	input  [2:0] funct3,
 	input  [6:0] opcode,
 	input  [`XLEN-1:0] src2,
     input  [`XLEN-1:0] alu_result,
-	output [`XLEN-1:0] ld_data
+	output [`XLEN-1:0] ld_data,
+    output msip,
+    output mtip
 );
 
 	//LOAD
@@ -32,7 +35,7 @@ module MAU (
 
 	wire mem_r;
 	wire mem_w;
-	wire [`XLEN-1:0] mem_rdata;
+	reg [`XLEN-1:0] mem_rdata;
 	wire [`XLEN-1:0] mem_wdata;
 	wire [`XLEN-1:0] mem_addr;
 
@@ -116,11 +119,31 @@ module MAU (
 			SD, 8'b1111_1111
 		})
 	);
+	
+    wire [`XLEN-1:0] mtime, mtimecmp;
+	CLINT u_clint(
+		.clk(clk),
+		.rst(rst),
+		.mem_w(mem_w),
+		.mem_wdata(mem_wdata),
+		.mem_addr(mem_addr),
+		.msip(msip),
+		.mtip(mtip),
+		.mtime(mtime),
+		.mtimecmp(mtimecmp)
+	);
 
 import "DPI-C" function void paddr_read(input longint raddr, output longint rdata);
 import "DPI-C" function void paddr_write(input longint waddr, input longint wdata, input byte wmask);
 	always_latch @(negedge clk) begin
 		if (mem_r) begin
+			if (mem_addr == `CLINT_MTIME_ADDR) begin
+				mem_rdata = mtime;
+			end else if (mem_addr == `CLINT_MTIMECMP_ADDR) begin
+				mem_rdata = mtimecmp;
+			end else if (mem_addr == `CLINT_MSIP_ADDR) begin
+				mem_rdata = {{(`XLEN-1){1'b0}}, msip};
+			end
 			paddr_read(mem_addr, mem_rdata);
 		end
 		if (mem_w) begin

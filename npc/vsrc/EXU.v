@@ -221,7 +221,7 @@ module EXU (
 
 	wire [`XLEN-1:0] dnpc_base, dnpc_offs, dnpc_sum;
 	assign dnpc_sum = dnpc_base + dnpc_offs;
-	assign dnpc = opcode != `JALR ? dnpc_sum : {dnpc_sum[`XLEN-1:1], 1'b0};
+	assign dnpc = interrupt ? csr_mtvec : (opcode != `JALR) ? dnpc_sum : {dnpc_sum[`XLEN-1:1], 1'b0};
 	wire branch_con;//branch condition is true or false
 	MuxKeyWithDefault #(12, 7, `XLEN) u_dnpc_base (
 		.out(dnpc_base),
@@ -238,7 +238,7 @@ module EXU (
 			`OP_IMM,	pc,
 			`OP,		pc,
 			//MISC_MEM
-			`SYSTEM,	csr_dnpc_base,//ecall, mret
+			`SYSTEM,	sys_dnpc_base,//ecall, mret
 			`OP_IMM_32,	pc,
 			`OP_32,		pc
 		})
@@ -258,7 +258,7 @@ module EXU (
 			`OP_IMM,	`XLEN'd4,
 			`OP,		`XLEN'd4,
 			//MISC_MEM
-			`SYSTEM,	 csr_dnpc_offs,//ecall, mret
+			`SYSTEM,	 sys_dnpc_offs,//ecall, mret
 			`OP_IMM_32,	`XLEN'd4,
 			`OP_32,		`XLEN'd4
 		})
@@ -278,13 +278,17 @@ module EXU (
 	);
 
 	wire [`XLEN-1:0] ld_data;
+    wire msip, mtip;
 	MAU u_mau(
 		.clk(clk),
+		.rst(rst),
 		.funct3(funct3),
 		.opcode(opcode),
 		.src2(src2),
 		.alu_result(alu_result),
-		.ld_data(ld_data)
+		.ld_data(ld_data),
+		.msip(msip),
+		.mtip(mtip)
 	);
 
 	MuxKeyWithDefault #(12, 7, 1) u_rd_wen (
@@ -328,12 +332,13 @@ module EXU (
 		})
 	);
 
-	wire [`XLEN-1:0] csr;
+	wire [`XLEN-1:0] csr, csr_mtvec;
 	wire op_is_system = opcode == `SYSTEM ? 1'b1 : 1'b0;
 	wire inst_is_ebreak = inst == ebreak ? 1'b1 : 1'b0;
 	wire inst_is_ecall = inst == ecall ? 1'b1 : 1'b0;
 	wire inst_is_mret = inst == mret ? 1'b1 : 1'b0;
 	wire [2:0] inst_is_x = {inst_is_mret, inst_is_ecall, inst_is_ebreak};	//001: ebreak, 010: ecall, 100: mret
+	wire interrupt;
 	CSR u_csr(
 		.clk(clk),
 		.rst(rst),
@@ -343,7 +348,11 @@ module EXU (
 		.wt_en(csr_wt_en & op_is_system),
 		.csr_idx(csr_idx),
 		.source(alu_result),
-		.csr(csr)
+		.msip(msip),
+		.mtip(mtip),
+		.interrupt(interrupt),
+		.csr(csr),
+		.csr_mtvec(csr_mtvec)
 	);
 
 	wire [`LEN_SEL-1:0] csr_alu_sel;
@@ -422,35 +431,35 @@ module EXU (
 	);
 	
 	wire [11:0] csr_idx;
-	localparam mtvec		= 12'h305;
-	localparam mepc			= 12'h341;
+	localparam addr_mtvec		= 12'h305;
+	localparam addr_mepc		= 12'h341;
 	MuxKeyWithDefault #(2, 3, 12) u_csr_idx (
 		.out(csr_idx),
 		.key(inst_is_x),
 		.default_out(imm[11:0]),
 		.lut({
-			//ebreak: dnpc = pc + 4
-			3'b010, mtvec,	//ecall:dnpc = csr[mtvec]
-			3'b100, mepc	//mret: dnpc = csr[mepc]
+			//3'b001, addr_mtvec, //ebreak: dnpc = csr[mtvec]
+			3'b010, addr_mtvec,	//ecall:dnpc = csr[mtvec]
+			3'b100, addr_mepc	//mret: dnpc = csr[mepc]
 		})
 	);
-	wire [`XLEN-1:0] csr_dnpc_base, csr_dnpc_offs;
-	MuxKeyWithDefault #(2, 3, `XLEN) u_csr_dnpc_base (
-		.out(csr_dnpc_base),
+	wire [`XLEN-1:0] sys_dnpc_base, sys_dnpc_offs;
+	MuxKeyWithDefault #(2, 3, `XLEN) u_sys_dnpc_base (
+		.out(sys_dnpc_base),
 		.key(inst_is_x),
 		.default_out(pc),
 		.lut({
-			//3'b001, pc,	//ebreak: dnpc = pc + 4
+			//3'b001, csr,	//ebreak: dnpc = pc + 4
 			3'b010, csr,//ecall:dnpc = csr[mtvec]
 			3'b100, csr	//mret: dnpc = csr[mepc]
 		})
 	);
-	MuxKeyWithDefault #(2, 3, `XLEN) u_csr_dnpc_offs (
-		.out(csr_dnpc_offs),
+	MuxKeyWithDefault #(2, 3, `XLEN) u_sys_dnpc_offs (
+		.out(sys_dnpc_offs),
 		.key(inst_is_x),
 		.default_out(`XLEN'd4),
 		.lut({
-			//3'b001, `XLEN'd4,	//ebreak: dnpc = pc + 4
+			//3'b001, `XLEN'd0,	//ebreak: dnpc = pc + 4
 			3'b010, `XLEN'd0,	//ecall:dnpc = csr[mtvec]
 			3'b100, `XLEN'd0	//mret: dnpc = csr[mepc]
 		})
