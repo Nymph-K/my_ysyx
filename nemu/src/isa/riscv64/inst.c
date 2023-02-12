@@ -112,8 +112,8 @@ static int decode_exec(Decode *s) {
   INSTPAT("0100000 ????? ????? 101 ????? 01100 11", sra    , R, R(dest) = (int64_t)src1 >> (src2 & 0x3F));
   INSTPAT("0000000 ????? ????? 110 ????? 01100 11", or     , R, R(dest) = src1 | src2);
   INSTPAT("0000000 ????? ????? 111 ????? 01100 11", and    , R, R(dest) = src1 & src2);
-  INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10)); IFDEF(CONFIG_DIFFTEST, difftest_skip_ref())); // R(10) is $a0
-  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , N, s->dnpc = NEMUINTR(0x0B, s->pc); IFDEF(CONFIG_DIFFTEST, difftest_skip_ref())); // R(17) is $a7
+  INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10)); mcsr[0] &= ~MSTATUS_MIE_MASK; IFDEF(CONFIG_DIFFTEST, difftest_skip_ref())); // R(10) is $a0
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , N, s->dnpc = NEMUINTR(0x0B, s->pc); mcsr[0] &= ~MSTATUS_MIE_MASK; IFDEF(CONFIG_DIFFTEST, difftest_skip_ref())); // R(17) is $a7
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , N, s->dnpc = CSR(mepc); IFDEF(CONFIG_DIFFTEST, difftest_skip_ref()));//open global interrupt enable
 
   INSTPAT("??????? ????? ????? 110 ????? 00000 11", lwu    , I, R(dest) = Mr(src1 + src2, 4) & 0x00000000FFFFFFFF);

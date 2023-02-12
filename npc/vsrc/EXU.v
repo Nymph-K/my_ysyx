@@ -406,7 +406,7 @@ module EXU (
 		.key(funct3),
 		.default_out(1'b0),
 		.lut({
-			ECALL | EBREAK | MRET	,	1'b1,
+			ECALL | MRET			,	(inst_is_ecall | inst_is_mret) ? 1'b1 : 1'b0,
 			CSRRW					,	rd == 5'd0 ? 1'b0 : 1'b1,
 			CSRRS					,	1'b1,
 			CSRRC					,	1'b1,
@@ -438,28 +438,28 @@ module EXU (
 		.key(inst_is_x),
 		.default_out(imm[11:0]),
 		.lut({
-			//3'b001, addr_mtvec, //ebreak: dnpc = csr[mtvec]
+			//3'b001, addr_mtvec, //ebreak: stop CPU
 			3'b010, addr_mtvec,	//ecall:dnpc = csr[mtvec]
 			3'b100, addr_mepc	//mret: dnpc = csr[mepc]
 		})
 	);
 	wire [`XLEN-1:0] sys_dnpc_base, sys_dnpc_offs;
-	MuxKeyWithDefault #(2, 3, `XLEN) u_sys_dnpc_base (
+	MuxKeyWithDefault #(3, 3, `XLEN) u_sys_dnpc_base (
 		.out(sys_dnpc_base),
 		.key(inst_is_x),
 		.default_out(pc),
 		.lut({
-			//3'b001, csr,	//ebreak: dnpc = pc + 4
+			3'b001, pc,	//ebreak: stop CPU
 			3'b010, csr,//ecall:dnpc = csr[mtvec]
 			3'b100, csr	//mret: dnpc = csr[mepc]
 		})
 	);
-	MuxKeyWithDefault #(2, 3, `XLEN) u_sys_dnpc_offs (
+	MuxKeyWithDefault #(3, 3, `XLEN) u_sys_dnpc_offs (
 		.out(sys_dnpc_offs),
 		.key(inst_is_x),
 		.default_out(`XLEN'd4),
 		.lut({
-			//3'b001, `XLEN'd0,	//ebreak: dnpc = pc + 4
+			3'b001, `XLEN'd4,	//ebreak: stop CPU
 			3'b010, `XLEN'd0,	//ecall:dnpc = csr[mtvec]
 			3'b100, `XLEN'd0	//mret: dnpc = csr[mepc]
 		})

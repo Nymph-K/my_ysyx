@@ -48,6 +48,7 @@ word_t isa_query_intr(vaddr_t epc) {
           NO_macuse = MCAUSE_INTR_MASK | MCAUSE_MTI_MASK;
         }
         IFDEF(CONFIG_DIFFTEST, difftest_skip_ref());
+        mcsr[0] &= ~MSTATUS_MIE_MASK; //MIE=0
         return isa_raise_intr(NO_macuse, epc);
       }
       else return 0;

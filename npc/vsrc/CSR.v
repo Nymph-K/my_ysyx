@@ -82,28 +82,28 @@ module CSR (
 	assign mcsr[idx_mip] = mip_dout | (msip ? mask_mip_msip : `XLEN'b0) | (mtip ? mask_mip_mtip : `XLEN'b0);
 	generate
 		for (genvar n = 0; n < 15; n = n + 1) begin: csr_gen
-			if (n == 0) //mstatus
+			if (n == idx_mstatus) //mstatus
 				Reg #(`XLEN, `XLEN'ha00001800) u_csr (
 					.clk(clk), 
 					.rst(rst), 
 					.din(mstatus_source), 
 					.dout(mcsr[n]), 
-					.wen(((mcsr_idx == n && wt_en == 1'b1) || interrupt) ? 1'b1 : 1'b0));
-			else if (n == 9) //mepc
+					.wen(((mcsr_idx == n && wt_en == 1'b1) || exception) ? 1'b1 : 1'b0));
+			else if (n == idx_mepc) //mepc
 				Reg #(`XLEN, `XLEN'b0) u_csr (
 					.clk(clk), 
 					.rst(rst), 
 					.din(mepc_source), 
 					.dout(mcsr[n]), 
 					.wen(((mcsr_idx == n && wt_en == 1'b1) || exception == 1'b1) ? 1'b1 : 1'b0));
-			else if (n == 10) //mcause
+			else if (n == idx_mcause) //mcause
 				Reg #(`XLEN, `XLEN'b0) u_csr (
 					.clk(clk), 
 					.rst(rst), 
 					.din(mcause_source), 
 					.dout(mcsr[n]), 
 					.wen(((mcsr_idx == n && wt_en == 1'b1) || exception == 1'b1) ? 1'b1 : 1'b0));
-			else if (n == 12) //mip
+			else if (n == idx_mip) //mip
 				Reg #(`XLEN, `XLEN'b0) u_csr (
 					.clk(clk), 
 					.rst(rst), 
@@ -151,7 +151,7 @@ module CSR (
 	assign interrupt = ((mcsr[idx_mstatus] & mask_mstatus_mie) != 0) && ((mcsr[idx_mie] & mcsr[idx_mip]) != 0);
 	wire exception = (inst_is & ~INST_MRET) != 0;
 
-	wire [`XLEN-1:0] mstatus_source = interrupt ? (mcsr[idx_mstatus] & ~mask_mstatus_mie) : source;
+	wire [`XLEN-1:0] mstatus_source = exception ? (mcsr[idx_mstatus] & ~mask_mstatus_mie) : source;
 
 	wire [`XLEN-1:0] mepc_source = exception ? pc : source;
 

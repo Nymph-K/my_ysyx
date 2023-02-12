@@ -1,7 +1,7 @@
 #include <amtest.h>
 
 #if HAS_CLINT_INTR
-static uint64_t timecmp = 0x80;
+static uint64_t timecmp = 0x40;
 
 Context *clint_timer_trap(Event ev, Context *ctx) {
   switch(ev.event) {
@@ -26,9 +26,9 @@ void clint_timer_intr() {
   io_write(AM_CLINT_MTIME, 0, true);
   io_write(AM_CLINT_MTIMECMP, timecmp, true);
   iset(1);
-  for (size_t j = 0; j < 4; j++)
+  for (size_t j = 0; j < 5; j++)
   {
-    for (volatile int i = 0; i < 100000; i++) ;
+    for (volatile int i = 0; i < 50000; i++) ;
     yield();
   }
   iset(0);

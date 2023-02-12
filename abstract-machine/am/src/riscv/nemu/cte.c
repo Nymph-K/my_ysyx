@@ -19,22 +19,15 @@ Context* __am_irq_handle(Context *c) {
     c = user_handler(ev, c);
     assert(c != NULL);
   }
-
+  asm volatile("csrs mstatus, 0x8");//MIE=1
   return c;
 }
 
 extern void __am_asm_trap(void);
 
-extern inline void am_trap(void)
-{
-  asm volatile("csrc mstatus, 0x8");//MIE=0
-  __am_asm_trap();
-  asm volatile("csrs mstatus, 0x8");//MIE=1
-}
-
 bool cte_init(Context*(*handler)(Event, Context*)) {
   // initialize exception entry
-  asm volatile("csrw mtvec, %0" : : "r"(am_trap));
+  asm volatile("csrw mtvec, %0" : : "r"(__am_asm_trap));
   uint64_t mstatus_val = 0xa00001800;//SXL=2, UXL=2, MPP=3
   asm volatile("csrw mstatus, %0" : : "r"(mstatus_val));
 
