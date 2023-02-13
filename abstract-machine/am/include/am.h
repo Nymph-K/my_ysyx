@@ -23,8 +23,9 @@ typedef struct Context Context;
 // An event of type @event, caused by @cause of pointer @ref
 typedef struct {
   enum {
+    EVENT_YIELD = -1, 
     EVENT_NULL = 0,
-    EVENT_YIELD, EVENT_SYSCALL, EVENT_PAGEFAULT, EVENT_ERROR,
+    EVENT_SYSCALL = 2, EVENT_PAGEFAULT, EVENT_ERROR,
     EVENT_IRQ_TIMER, EVENT_IRQ_IODEV, EVENT_IRQ_SOFT,
   } event;
   uintptr_t cause, ref;
