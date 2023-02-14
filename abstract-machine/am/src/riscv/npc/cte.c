@@ -15,7 +15,7 @@ Context* __am_irq_handle(Context *c) {
     }
 
     c = user_handler(ev, c);
-    printf("mcause = 0x%16lX,   mstatus = 0x%lX,   mepc = 0x%lX\n", c->mcause, c->mstatus, c->mepc - 4);
+    //printf("mcause = 0x%16lX,   mstatus = 0x%lX,   mepc = 0x%lX\n", c->mcause, c->mstatus, c->mepc - 4);
     assert(c != NULL);
   }
   asm volatile("csrs mstatus, 0x8");//MIE=1

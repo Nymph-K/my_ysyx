@@ -4,11 +4,11 @@ void do_syscall(Context *c);
 
 static Context* do_event(Event e, Context* c) {
   switch (e.event) {
-    //case -1: printf("Event yield!\n");break;
-    case EVENT_SYSCALL: printf("System call!\n"); do_syscall(c); break;
-    case 5: printf("Machine timer interrupt!\n");break;
-    case 6: printf("Machine external interrupt!\n");break;
-    case 7: printf("Machine software interrupt!\n");break;
+    case EVENT_YIELD: do_syscall(c); break;//printf("Event yield!\n"); 
+    case EVENT_SYSCALL: do_syscall(c); break;//printf("System call!\n"); 
+    case EVENT_IRQ_TIMER: printf("Machine timer interrupt!\n");break;
+    case EVENT_IRQ_IODEV: printf("Machine external interrupt!\n");break;
+    case EVENT_IRQ_SOFT: printf("Machine software interrupt!\n");break;
     default: panic("Unhandled event ID = %d", e.event);
   }
 

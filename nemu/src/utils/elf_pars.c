@@ -8,273 +8,152 @@
 #endif // DEUBG_PRINTF
 
 static int is_64bit_elf;
-Elf64_Ehdr elf_header;
-Elf64_Dyn *dynamic_section = NULL;
-Elf64_Shdr *section_headers = NULL;
-Elf64_Phdr *program_headers = NULL;
-Elf64_Sym *sym_dyn = NULL;
-Elf64_Sym *sym_tbl = NULL;
-Elf64_Sym *sym_func = NULL;
-unsigned int sym_func_num;
-char *str_dyn = NULL;
-char *str_tbl = NULL;
+static int num_of_elf = 0;
+static Elf64_Ehdr *elf_header;
+static Elf64_Shdr **section_headers = NULL;
+static Elf64_Dyn *dynamic_section = NULL;
+static Elf64_Phdr *program_headers = NULL;
+static Elf64_Sym *sym_dyn = NULL;
+static Elf64_Sym *sym_tbl = NULL;
+static Elf64_Sym *sym_func = NULL;
+static unsigned int sym_func_num;
+static char *str_dyn = NULL;
+static char *str_tbl = NULL;
 
-static unsigned int dynamic_addr = 0;
-//static unsigned int dynamic_offset;
-unsigned int dynamic_strings = 0;
-unsigned int dynamic_size = 0;
+static Elf64_Off *dynamic_offset = NULL;
+static Elf64_Xword *dynamic_size = NULL;
+static unsigned int *dynamic_nent = NULL;
 
-static unsigned int rel_dyn_offset;
-static unsigned int rel_dyn_size;
-static unsigned int rel_nent;
+static Elf64_Off *rel_dyn_offset = NULL;
+static Elf64_Xword *rel_dyn_size = NULL;
+static unsigned int *rel_nent = NULL;
 
-static unsigned int sym_dyn_offset = 0;
-static unsigned int sym_dyn_size = 0;
-unsigned int sym_dyn_nent = 0;
-static unsigned int sym_tbl_offset = 0;
-static unsigned int sym_tbl_size = 0;
-unsigned int sym_tbl_nent = 0;
+static Elf64_Off *sym_dyn_offset = NULL;
+static Elf64_Xword *sym_dyn_size = NULL;
+static unsigned int *sym_dyn_nent = NULL;
 
-static unsigned int str_dyn_offset = 0;
-static unsigned int str_dyn_size = 0;
-static unsigned int str_tbl_offset = 0;
-static unsigned int str_tbl_size = 0;
+static Elf64_Off *sym_tbl_offset = NULL;
+static Elf64_Xword *sym_tbl_size = NULL;
+static unsigned int *sym_tbl_nent = NULL;
 
-static unsigned int dynamic_nent;
+static Elf64_Off *str_dyn_offset = NULL;
+static Elf64_Xword *str_dyn_size = NULL;
 
-int init_elf(char const *file_name)
+static Elf64_Off *str_tbl_offset = NULL;
+static Elf64_Xword *str_tbl_size = NULL;
+
+
+int init_elf(int file_num, char const *file_name[])
 {
-    if (file_name == NULL)
+    elf_header = malloc(sizeof(Elf64_Ehdr) * file_num);
+    section_headers = malloc(sizeof(Elf64_Shdr *) * file_num);
+    for (size_t i = 0; i < file_num; i++)
     {
-        debug_printf("No Elf file: %s\n", file_name);
-        return -1;
+        if (file_name[i] == NULL)
+        {
+            debug_printf("ERROR! Invalid path!\n");
+            continue;
+        }
+        FILE *read_elf = fopen(file_name[i], "rb");
+        if (read_elf == NULL)
+        {
+            debug_printf("ERROR! open file failed!\n");
+            continue;
+        }
+        if(Process_object(read_elf, num_of_elf)) {
+            num_of_elf++;
+        }
+        fclose(read_elf);
+        free_useless();
     }
-    FILE *read_elf = fopen(file_name, "rb");
-    Process_object(read_elf);
-    fclose(read_elf);
-    free_useless();
     return 0;
 }
 
-int byte_get_little_endian(unsigned char *field, int size)
+int Process_object(FILE *file, int idx_of_elf)
 {
 
-    switch (size)
+    if (!get_file_header(file, idx_of_elf))
     {
-    case 1:
-        return *field;
-    case 2:
-        return ((unsigned int)(field[0])) | (((unsigned int)(field[1])) << 8);
-    case 3:
-        return ((unsigned long)(field[0])) | (((unsigned long)(field[1])) << 8) | (((unsigned long)(field[2])) << 16);
-
-    case 4:
-        return ((unsigned long)(field[0])) | (((unsigned long)(field[1])) << 8) | (((unsigned long)(field[2])) << 16) | (((unsigned long)(field[3])) << 24);
-
-    case 8:
-        return ((unsigned long)(field[0])) | (((unsigned long)(field[1])) << 8) | (((unsigned long)(field[2])) << 16) | (((unsigned long)(field[3])) << 24) | (((unsigned long)(field[4])) << 32) | (((unsigned long)(field[5])) << 40) | (((unsigned long)(field[6])) << 48) | (((unsigned long)(field[7])) << 56);
-
-    default: return 0;
-    }
-}
-
-int Process_object(FILE *file)
-{
-
-    if (!get_file_header(file))
-    {
-        debug_printf("gei file header Failed");
+        debug_printf("Get file header failed!\n");
         return 0;
     }
 
-    /********* start     process ***********/
-    if (!process_file_header())
+    if (!get_64bit_section_headers(file, idx_of_elf))
     {
+        debug_printf("Get section header failed!\n");
         return 0;
     }
-    if (!process_section_headers(file))
-    {
-        return 0;
-    }
-    // if (!process_program_headers(file))
-    // {
 
-    //     process_dynamic_section(file);
-    // }
-    // process_relocs(file);
+    if (!process_section_headers(file, idx_of_elf))
+    {
+        return 0;
+    }
+
     process_string_table(file);
     process_symbol_table(file);
 
     return 0;
 }
 
-int get_file_header(FILE *file)
+int get_file_header(FILE *file, int idx_of_elf)
 {
 
     /* Read in the identity array.  */
-    if (fread(elf_header.e_ident, EI_NIDENT, 1, file) != 1)
+    if (fread(elf_header[idx_of_elf].e_ident, EI_NIDENT, 1, file) != 1)
         return 0;
 
     /* For now we only support 32 bit and 64 bit ELF files.  */
-    is_64bit_elf = (elf_header.e_ident[EI_CLASS] == ELFCLASS64);
+    is_64bit_elf = (elf_header[idx_of_elf].e_ident[EI_CLASS] == ELFCLASS64);
 
     /* Read in the rest of the header.  */
     if (is_64bit_elf)
     {
-
-        Elf64_External_Ehdr ehdr64;
-        if (fread(ehdr64.e_type, sizeof(ehdr64) - EI_NIDENT, 1, file) != 1)
+        if(fread(elf_header[idx_of_elf].e_ident + EI_NIDENT, sizeof(Elf64_Ehdr) - EI_NIDENT, 1, file) == 1)
+            return 1;
+        else 
             return 0;
-
-        elf_header.e_type = BYTE_GET(ehdr64.e_type);
-        elf_header.e_machine = BYTE_GET(ehdr64.e_machine);
-        elf_header.e_version = BYTE_GET(ehdr64.e_version);
-        elf_header.e_entry = BYTE_GET(ehdr64.e_entry);
-        elf_header.e_phoff = BYTE_GET(ehdr64.e_phoff);
-        elf_header.e_shoff = BYTE_GET(ehdr64.e_shoff);
-        elf_header.e_flags = BYTE_GET(ehdr64.e_flags);
-        elf_header.e_ehsize = BYTE_GET(ehdr64.e_ehsize);
-        elf_header.e_phentsize = BYTE_GET(ehdr64.e_phentsize);
-        elf_header.e_phnum = BYTE_GET(ehdr64.e_phnum);
-        elf_header.e_shentsize = BYTE_GET(ehdr64.e_shentsize);
-        elf_header.e_shnum = BYTE_GET(ehdr64.e_shnum);
-        elf_header.e_shstrndx = BYTE_GET(ehdr64.e_shstrndx);
-
-        // if (elf_header.e_shoff)
-        // {
-        //     if (is_64bit_elf)
-        //         get_64bit_section_headers(file, elf_header.e_shnum);
-        //     else
-        //     {
-        //         // 32位 ...
-        //     }
-        // }
     }
-    return 1;
+    return 0;
 }
 
-// int get_32bit_section_headers(FILE *file, unsigned int num) {
-
-//     Elf32_External_Shdr * shdrs;
-//     Elf32_Shdr* internal;
-
-//     shdrs = (Elf32_External_Shdr *) get_data (NULL, file, elf_header.e_shoff,
-//                                               elf_header.e_shentsize, num,
-//                                               ("section headers"));
-//     if (!shdrs)
-//         return 0;
-
-//     section_headers = (Elf32_Shdr *) cmalloc (num,sizeof (Elf32_Shdr));
-
-//     if (section_headers == NULL)
-//     {
-//         debug_printf("Out of memory\n");
-//         return 0;
-//     }
-
-//     internal = section_headers;
-
-//     for (int i = 0;i < num;i++, internal++)
-//     {
-//         internal->sh_name      = BYTE_GET (shdrs[i].sh_name);
-//         internal->sh_type      = BYTE_GET (shdrs[i].sh_type);
-//         internal->sh_flags     = BYTE_GET (shdrs[i].sh_flags);
-//         internal->sh_addr      = BYTE_GET (shdrs[i].sh_addr);
-//         internal->sh_offset    = BYTE_GET (shdrs[i].sh_offset);
-//         internal->sh_size      = BYTE_GET (shdrs[i].sh_size);
-//         internal->sh_link      = BYTE_GET (shdrs[i].sh_link);
-//         internal->sh_info      = BYTE_GET (shdrs[i].sh_info);
-//         internal->sh_addralign = BYTE_GET (shdrs[i].sh_addralign);
-//         internal->sh_entsize   = BYTE_GET (shdrs[i].sh_entsize);
-//     }
-
-//     free (shdrs);
-
-//     return 1;
-// }
-
-int get_64bit_section_headers(FILE *file, unsigned int num)
+int get_64bit_section_headers(FILE *file, int idx_of_elf)
 {
-
-    Elf64_External_Shdr *shdrs;
-    Elf64_Shdr *internal;
-
-    shdrs = (Elf64_External_Shdr *)get_data(NULL, file, elf_header.e_shoff,
-                                            elf_header.e_shentsize, num,
-                                            ("section headers"));
-    if (!shdrs)
-        return 0;
-
-    section_headers = (Elf64_Shdr *)cmalloc(num, sizeof(Elf64_Shdr));
-
-    if (section_headers == NULL)
+    section_headers[idx_of_elf] = malloc(elf_header[idx_of_elf].e_shentsize * elf_header[idx_of_elf].e_shnum);
+    section_headers[idx_of_elf] = get_data(section_headers[idx_of_elf], file, elf_header[idx_of_elf].e_shoff,
+                                            elf_header[idx_of_elf].e_shentsize, elf_header[idx_of_elf].e_shnum);
+    if (!section_headers[idx_of_elf])
     {
         debug_printf("Out of memory\n");
         return 0;
     }
-
-    internal = section_headers;
-
-    for (int i = 0; i < num; i++, internal++)
-    {
-        internal->sh_name = BYTE_GET(shdrs[i].sh_name);
-        internal->sh_type = BYTE_GET(shdrs[i].sh_type);
-        internal->sh_flags = BYTE_GET(shdrs[i].sh_flags);
-        internal->sh_addr = BYTE_GET(shdrs[i].sh_addr);
-        internal->sh_offset = BYTE_GET(shdrs[i].sh_offset);
-        internal->sh_size = BYTE_GET(shdrs[i].sh_size);
-        internal->sh_link = BYTE_GET(shdrs[i].sh_link);
-        internal->sh_info = BYTE_GET(shdrs[i].sh_info);
-        internal->sh_addralign = BYTE_GET(shdrs[i].sh_addralign);
-        internal->sh_entsize = BYTE_GET(shdrs[i].sh_entsize);
-    }
-
-    free(shdrs);
-
     return 1;
 }
 
-void *get_data(void *var, FILE *file, long offset, size_t size, size_t nmemb, const char *reason)
+void *get_data(void *var, FILE *file, long offset, size_t size, size_t nmemb)
 {
-    void *mvar;
-
     if (size == 0 || nmemb == 0)
         return NULL;
-
     if (fseek(file, offset, SEEK_SET))
-    {
-        // error (_("Unable to seek to 0x%lx for %s\n"),
-        //   (unsigned long) archive_file_offset + offset, reason);
         return NULL;
-    }
 
-    mvar = var;
+    void *mvar = var;
     if (mvar == NULL)
     {
-        /* Check for overflow.  */
         if (nmemb < (~(size_t)0 - 1) / size)
-            /* + 1 so that we can '\0' terminate invalid string table sections.  */
             mvar = malloc(size * nmemb + 1);
 
         if (mvar == NULL)
         {
-            // error (_("Out of memory allocating 0x%lx bytes for %s\n"),
-            //(unsigned long)(size * nmemb), reason);
             return NULL;
         }
-
         ((char *)mvar)[size * nmemb] = '\0';
     }
-
     if (fread(mvar, size, nmemb, file) != nmemb)
     {
-        // error (_("Unable to read in 0x%lx bytes of %s\n"),
-        //  (unsigned long)(size * nmemb), reason);
         if (mvar != var)
             free(mvar);
         return NULL;
     }
-
     return mvar;
 }
 
@@ -287,356 +166,7 @@ void *cmalloc(size_t nmemb, size_t size)
         return malloc(nmemb * size);
 }
 
-int process_file_header(void)
-{
-
-    if (elf_header.e_ident[EI_MAG0] != ELFMAG0 || elf_header.e_ident[EI_MAG1] != ELFMAG1 || elf_header.e_ident[EI_MAG2] != ELFMAG2 || elf_header.e_ident[EI_MAG3] != ELFMAG3)
-    {
-        debug_printf("Not an ELF file - it has the wrong magic bytes at the start\n");
-        return 0;
-    }
-
-    debug_printf("ELF Header:\n");
-    debug_printf("  Magic:     ");
-    for (int i = 0; i < EI_NIDENT; ++i)
-        debug_printf("%2.2x ", elf_header.e_ident[i]);
-    debug_printf("\n");
-    debug_printf("  Class:                             %s\n",
-                 get_elf_class(elf_header.e_ident[EI_CLASS]));
-
-    debug_printf("  Data:                              %s\n",
-                 get_data_encoding(elf_header.e_ident[EI_DATA]));
-    debug_printf("  Version:                           %d %s\n",
-                 elf_header.e_ident[EI_VERSION],
-                 (elf_header.e_ident[EI_VERSION] == EV_CURRENT
-                      ? "(current)"
-                      : (elf_header.e_ident[EI_VERSION] != EV_NONE
-                             ? ("<unknown: %lx>")
-                             : "")));
-    debug_printf("  OS/ABI:                            %s\n",
-                 get_osabi_name(elf_header.e_ident[EI_OSABI]));
-
-    debug_printf("  ABI Version:                       %d\n",
-                 elf_header.e_ident[EI_ABIVERSION]);
-
-    debug_printf("  Type:                              %s\n",
-                 get_file_type(elf_header.e_type));
-
-    debug_printf("  Machine:                           %s\n",
-                 get_machine_name(elf_header.e_machine));
-
-    debug_printf("  Version:                           0x%lx\n",
-                 (unsigned long)elf_header.e_version);
-
-    debug_printf("  Entry point address:               0x%lx", elf_header.e_entry);
-
-    debug_printf("\n  Start of program headers:          %ld", elf_header.e_phoff);
-
-    debug_printf(" (bytes into file)\n  Start of section headers:          %ld", elf_header.e_shoff);
-    debug_printf(" (bytes into file)\n");
-
-    debug_printf("  Flags:                             0x%lx\n", (unsigned long)elf_header.e_flags);
-
-    debug_printf("  Size of this header:               %ld (bytes)\n", (long)elf_header.e_ehsize);
-
-    debug_printf("  Size of program headers:           %ld (bytes)\n", (long)elf_header.e_phentsize);
-
-    debug_printf("  Number of program headers:         %ld\n", (long)elf_header.e_phnum);
-
-    if (section_headers != NULL && elf_header.e_phnum == PN_XNUM && section_headers[0].sh_info != 0)
-        debug_printf(" (%ld)", (long)section_headers[0].sh_info);
-
-    debug_printf("  Size of section headers:           %ld (bytes)\n",
-                 (long)elf_header.e_shentsize);
-
-    debug_printf("  Number of section headers:         %ld\n",
-                 (long)elf_header.e_shnum);
-
-    if (section_headers != NULL && elf_header.e_shnum == SHN_UNDEF)
-        debug_printf(" (%ld)", (long)section_headers[0].sh_size);
-
-    debug_printf("  Section header string table index: %ld\n",
-                 (long)elf_header.e_shstrndx);
-
-    if (section_headers != NULL && elf_header.e_shstrndx == (SHN_XINDEX & 0xffff))
-        debug_printf(" (%u)", section_headers[0].sh_link);
-    else if (elf_header.e_shstrndx != SHN_UNDEF && elf_header.e_shstrndx >= elf_header.e_shnum)
-        debug_printf(" <corrupt: out of range>");
-
-    return 1;
-}
-
-const char *get_elf_class(unsigned int elf_class)
-{
-    static char buff[32];
-
-    switch (elf_class)
-    {
-    case ELFCLASSNONE:
-        return ("none");
-    case ELFCLASS32:
-        return ("ELF32");
-    case ELFCLASS64:
-        return ("ELF64");
-    default:
-        snprintf(buff, sizeof(buff), ("<unknown: %x>"), elf_class);
-        return buff;
-    }
-}
-
-const char *get_data_encoding(unsigned int encoding)
-{
-    static char buff[32];
-
-    switch (encoding)
-    {
-    case ELFDATANONE:
-        return ("none");
-    case ELFDATA2LSB:
-        return ("2's complement, little endian");
-    case ELFDATA2MSB:
-        return ("2's complement, big endian");
-    default:
-        snprintf(buff, sizeof(buff), ("<unknown: %x>"), encoding);
-        return buff;
-    }
-}
-
-const char *get_osabi_name(unsigned int osabi)
-{
-    static char buff[40];
-    switch (osabi)
-    {
-    case ELFOSABI_NONE:
-        return ("UNIX System V ABI");
-    case ELFOSABI_HPUX:
-        return ("HP-UX");
-    case ELFOSABI_NETBSD:
-        return ("NetBSD");
-    case ELFOSABI_GNU:
-        return ("Object uses GNU ELF extensions");
-    case ELFOSABI_SOLARIS:
-        return ("Sun Solaris");
-    case ELFOSABI_AIX:
-        return ("IBM AIX");
-    case ELFOSABI_IRIX:
-        return ("SGI Irix");
-    case ELFOSABI_FREEBSD:
-        return ("FreeBSD");
-    case ELFOSABI_TRU64:
-        return ("Compaq TRU64 UNIX");
-    case ELFOSABI_MODESTO:
-        return ("Novell Modesto");
-    case ELFOSABI_OPENBSD:
-        return ("OpenBSD");
-    case ELFOSABI_ARM_AEABI:
-        return ("ARM EABI");
-    case ELFOSABI_ARM:
-        return ("ARM");
-    case ELFOSABI_STANDALONE:
-        return ("Standalone (embedded) application");
-    default:
-        break;
-    }
-
-    snprintf(buff, sizeof(buff), ("<unknown: %x>"), osabi);
-    return buff;
-}
-
-const char *get_file_type(unsigned e_type)
-{
-
-    static char buff[32];
-
-    switch (e_type)
-    {
-    case ET_NONE:
-        return ("NONE (None)");
-    case ET_REL:
-        return ("REL (Relocatable file)");
-    case ET_EXEC:
-        return ("EXEC (Executable file)");
-    case ET_DYN:
-        return ("DYN (Shared object file)");
-    case ET_CORE:
-        return ("CORE (Core file)");
-
-    default:
-        if ((e_type >= ET_LOPROC) && (e_type <= ET_HIPROC))
-            snprintf(buff, sizeof(buff), ("Processor Specific: (%x)"), e_type);
-        else if ((e_type >= ET_LOOS) && (e_type <= ET_HIOS))
-            snprintf(buff, sizeof(buff), ("OS Specific: (%x)"), e_type);
-        else
-            snprintf(buff, sizeof(buff), ("<unknown>: %x"), e_type);
-        return buff;
-    }
-}
-
-const char *get_machine_name(unsigned e_machine)
-{
-
-    static char buff[64];
-
-    switch (e_machine)
-    {
-    case EM_NONE:
-        return ("None");
-    case EM_AARCH64:
-        return ("AArch64");
-    case EM_M32:
-        return ("WE32100");
-    case EM_SPARC:
-        return ("Sparc");
-    case EM_386:
-        return ("Intel 80386");
-    case EM_68K:
-        return ("MC68000");
-    case EM_88K:
-        return ("MC88000");
-    case EM_860:
-        return ("Intel 80860");
-    case EM_MIPS:
-        return ("MIPS R3000");
-    case EM_S370:
-        return ("IBM System/370");
-    case EM_MIPS_RS3_LE:
-        return ("MIPS R4000 big-endian");
-    case EM_PARISC:
-        return ("HPPA");
-    case EM_SPARC32PLUS:
-        return ("Sparc v8+");
-    case EM_960:
-        return ("Intel 90860");
-    case EM_PPC:
-        return ("PowerPC");
-    case EM_PPC64:
-        return ("PowerPC64");
-    case EM_FR20:
-        return ("Fujitsu FR20");
-    case EM_RH32:
-        return ("TRW RH32");
-    case EM_ARM:
-        return ("ARM");
-    case EM_SH:
-        return ("Renesas / SuperH SH");
-    case EM_SPARCV9:
-        return ("Sparc v9");
-    case EM_TRICORE:
-        return ("Siemens Tricore");
-    case EM_ARC:
-        return ("ARC");
-    case EM_H8_300:
-        return ("Renesas H8/300");
-    case EM_H8_300H:
-        return ("Renesas H8/300H");
-    case EM_H8S:
-        return ("Renesas H8S");
-    case EM_H8_500:
-        return ("Renesas H8/500");
-    case EM_IA_64:
-        return ("Intel IA-64");
-    case EM_MIPS_X:
-        return ("Stanford MIPS-X");
-    case EM_COLDFIRE:
-        return ("Motorola Coldfire");
-    case EM_ALPHA:
-        return ("Alpha");
-    case EM_D10V:
-        return ("d10v");
-    case EM_D30V:
-        return ("d30v");
-    case EM_M32R:
-        return ("Renesas M32R (formerly Mitsubishi M32r)");
-    case EM_V800:
-        return ("Renesas V850 (using RH850 ABI)");
-    case EM_V850:
-        return ("Renesas V850");
-    case EM_MN10300:
-        return ("mn10300");
-    case EM_MN10200:
-        return ("mn10200");
-    case EM_FR30:
-        return ("Fujitsu FR30");
-    case EM_PJ:
-        return ("picoJava");
-    case EM_MMA:
-        return ("Fujitsu Multimedia Accelerator");
-    case EM_PCP:
-        return ("Siemens PCP");
-    case EM_NCPU:
-        return ("Sony nCPU embedded RISC processor");
-    case EM_NDR1:
-        return ("Denso NDR1 microprocesspr");
-    case EM_STARCORE:
-        return ("Motorola Star*Core processor");
-    case EM_ME16:
-        return ("Toyota ME16 processor");
-    case EM_ST100:
-        return ("STMicroelectronics ST100 processor");
-    case EM_TINYJ:
-        return ("Advanced Logic Corp. TinyJ embedded processor");
-    case EM_PDSP:
-        return ("Sony DSP processor");
-    case EM_FX66:
-        return ("Siemens FX66 microcontroller");
-    case EM_ST9PLUS:
-        return ("STMicroelectronics ST9+ 8/16 bit microcontroller");
-    case EM_ST7:
-        return ("STMicroelectronics ST7 8-bit microcontroller");
-    case EM_68HC16:
-        return ("Motorola MC68HC16 Microcontroller");
-    case EM_68HC12:
-        return ("Motorola MC68HC12 Microcontroller");
-    case EM_68HC11:
-        return ("Motorola MC68HC11 Microcontroller");
-    case EM_68HC08:
-        return ("Motorola MC68HC08 Microcontroller");
-    case EM_68HC05:
-        return ("Motorola MC68HC05 Microcontroller");
-    case EM_SVX:
-        return ("Silicon Graphics SVx");
-    case EM_ST19:
-        return ("STMicroelectronics ST19 8-bit microcontroller");
-    case EM_VAX:
-        return ("Digital VAX");
-    case EM_AVR:
-        return ("Atmel AVR 8-bit microcontroller");
-    case EM_CRIS:
-        return ("Axis Communications 32-bit embedded processor");
-    case EM_JAVELIN:
-        return ("Infineon Technologies 32-bit embedded cpu");
-    case EM_FIREPATH:
-        return ("Element 14 64-bit DSP processor");
-    case EM_ZSP:
-        return ("LSI Logic's 16-bit DSP processor");
-    case EM_MMIX:
-        return ("Donald Knuth's educational 64-bit processor");
-    case EM_HUANY:
-        return ("Harvard Universitys's machine-independent object format");
-    case EM_PRISM:
-        return ("Vitesse Prism");
-    case EM_X86_64:
-        return ("Advanced Micro Devices X86-64");
-    case EM_S390:
-        return ("IBM S/390");
-    case EM_OPENRISC:
-    case EM_ARC_A5:
-        return ("ARC International ARCompact processor");
-    case EM_XTENSA:
-        return ("Tensilica Xtensa Processor");
-    case EM_MICROBLAZE:
-    case EM_TILEPRO:
-        return ("Tilera TILEPro multicore architecture family");
-    case EM_TILEGX:
-        return ("Tilera TILE-Gx multicore architecture family");
-    default:
-        snprintf(buff, sizeof(buff), ("<unknown>: 0x%x"), e_machine);
-    }
-
-    return buff;
-}
-
-int process_section_headers(FILE *file)
+int process_section_headers(FILE *file, int idx_of_elf)
 {
 
     Elf64_Shdr *section;
@@ -644,117 +174,58 @@ int process_section_headers(FILE *file)
 
     unsigned int flag_shoff = 0;
 
-    if (elf_header.e_shnum == 0)
-    {
-        if (elf_header.e_shoff != 0)
-            debug_printf("possibly corrupt ELF file header - it has a non-zero section header offset, but no section headers\n");
-        else
-            debug_printf("\nThere are no sections in this file.\n");
-        return 1;
-    }
-
-    debug_printf("  There are %d section headers, starting at offset 0x%lx:\n",
-                 elf_header.e_shnum, (unsigned long)elf_header.e_shoff);
-
-    if (is_64bit_elf)
-    {
-        if (!get_64bit_section_headers(file, elf_header.e_shnum))
-            return 0;
-    }
-
     /* Read in the string table, so that we have names to display.  */
-    if (elf_header.e_shstrndx != SHN_UNDEF && elf_header.e_shstrndx < elf_header.e_shnum)
+    if (elf_header[idx_of_elf].e_shstrndx != SHN_UNDEF && elf_header[idx_of_elf].e_shstrndx < elf_header[idx_of_elf].e_shnum)
     {
-        section = section_headers + elf_header.e_shstrndx;
+        section = section_headers[idx_of_elf] + elf_header[idx_of_elf].e_shstrndx;
 
         flag_shoff = section->sh_offset;
     }
 
-    if (elf_header.e_shnum > 1)
-        debug_printf("\nSection Headers:\n");
-    else
-        debug_printf("\nSection Header:\n");
-    section = section_headers;
+    section = section_headers[idx_of_elf];
 
     unsigned int countC;
     if (is_64bit_elf)
     {
-        debug_printf("  [Nr] Name                Type                        Addr     Off   Size   ES Flg Lk Inf Al\n");
-        for (int i = 0;
-             i < elf_header.e_shnum;
-             i++, section++)
+        for (int i = 0; i < elf_header[idx_of_elf].e_shnum; i++, section++)
         {
-            debug_printf("  [%2u] ", i);
-
             countC = flag_shoff + section->sh_name;
 
             fseek(file, countC, SEEK_SET);
             char string_name[20];
-            if(fread(string_name, 20, 1, file) != 1) return -1;
-
-            debug_printf("%-18s ", string_name);
-
-            debug_printf(" %-15.15s ",
-                         get_section_type_name(section->sh_type));
-
-            debug_printf("%16lx", (unsigned long)section->sh_addr);
-            debug_printf(" %07lx %06lx %4lx",
-                         (unsigned long)section->sh_offset,
-                         (unsigned long)section->sh_size,
-                         (unsigned long)section->sh_entsize);
-
-            if (section->sh_flags)
-                debug_printf(" %2.2lx ", section->sh_flags);
-            else
-                debug_printf("%4c", 32);
-
-            debug_printf("%2u ", section->sh_link);
-            debug_printf("%3u %3lu", section->sh_info,
-                         (unsigned long)section->sh_addralign);
+            if(fread(string_name, 20, 1, file) != 1) 
+                return -1;
 
             if (strcmp(string_name, ".dynamic") == 0)
             {
-                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
-                dynamic_addr = section->sh_offset;
+                dynamic_offset = section->sh_offset;
                 dynamic_size = section->sh_size;
             }
-
             else if (strcmp(string_name, ".rel.dyn") == 0)
             {
-                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 rel_dyn_offset = section->sh_offset;
                 rel_dyn_size = section->sh_size;
             }
-
             else if (strcmp(string_name, ".dynsym") == 0)
             {
-                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 sym_dyn_offset = section->sh_offset;
                 sym_dyn_size = section->sh_size;
             }
-
             else if (strcmp(string_name, ".symtab") == 0)
             {
-                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 sym_tbl_offset = section->sh_offset;
                 sym_tbl_size = section->sh_size;
             }
-
             else if (strcmp(string_name, ".dynstr") == 0)
             {
-                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 str_dyn_offset = section->sh_offset;
                 str_dyn_size = section->sh_size;
             }
-
             else if (strcmp(string_name, ".strtab") == 0)
             {
-                debug_printf("%s off = %07lx   size = %06lx", string_name, section->sh_offset, section->sh_size);
                 str_tbl_offset = section->sh_offset;
                 str_tbl_size = section->sh_size;
             }
-
-            debug_printf("\n");
         }
     }
     return 1;
@@ -823,7 +294,7 @@ const char *get_section_type_name(unsigned int sh_type)
         {
             const char *result;
 
-            switch (elf_header.e_machine)
+            switch (elf_header[idx_of_elf].e_machine)
             {
 
             case EM_MIPS:
@@ -865,7 +336,7 @@ const char *get_section_type_name(unsigned int sh_type)
         {
             const char *result;
 
-            switch (elf_header.e_machine)
+            switch (elf_header[idx_of_elf].e_machine)
             {
             case EM_IA_64:
                 result = get_ia64_section_type_name(sh_type);
@@ -1165,7 +636,7 @@ const char *get_segment_type(unsigned int p_type)
         {
             const char *result;
 
-            switch (elf_header.e_machine)
+            switch (elf_header[idx_of_elf].e_machine)
             {
             case EM_AARCH64:
                 result = get_aarch64_segment_type(p_type);
@@ -1200,7 +671,7 @@ const char *get_segment_type(unsigned int p_type)
         {
             const char *result;
 
-            switch (elf_header.e_machine)
+            switch (elf_header[idx_of_elf].e_machine)
             {
             case EM_PARISC:
                 result = get_parisc_segment_type(p_type);
@@ -1229,10 +700,10 @@ int process_program_headers(FILE *file)
 {
 
     Elf64_Phdr *segment;
-    if (elf_header.e_phnum == 0)
+    if (elf_header[idx_of_elf].e_phnum == 0)
     {
 
-        if (elf_header.e_phoff != 0)
+        if (elf_header[idx_of_elf].e_phoff != 0)
         {
             debug_printf("possibly corrupt ELF header - it has a non-zero program"
                          " header offset, but no program headers");
@@ -1258,7 +729,7 @@ int process_program_headers(FILE *file)
 
     unsigned int i;
     for (i = 0, segment = program_headers;
-         i < elf_header.e_phnum;
+         i < elf_header[idx_of_elf].e_phnum;
          i++, segment++)
     {
         debug_printf("  %-14.14s ", get_segment_type(segment->p_type));
@@ -1422,7 +893,7 @@ int get_program_headers(FILE *file)
     if (program_headers != NULL)
         return 1;
 
-    phdrs64 = (Elf64_Phdr *)cmalloc(elf_header.e_phnum,
+    phdrs64 = (Elf64_Phdr *)cmalloc(elf_header[idx_of_elf].e_phnum,
                                     sizeof(Elf64_Phdr));
 
     if (phdrs64 == NULL)
@@ -1441,59 +912,25 @@ int get_program_headers(FILE *file)
     return 0;
 }
 
-// int get_32bit_program_headers(FILE *file, Elf32_Phdr *pheaders) {
-
-//     Elf32_External_Phdr* phdrs;
-//     Elf32_External_Phdr* external;
-//     Elf32_Phdr* internal;
-
-//     unsigned int i;
-
-//     phdrs = (Elf32_External_Phdr *) get_data (NULL, file, elf_header.e_phoff,
-//                                               elf_header.e_phentsize,
-//                                               elf_header.e_phnum,
-//                                               ("program headers"));
-
-//     if (!phdrs)
-//         return 0;
-
-//     for (i = 0, internal = pheaders, external = phdrs;
-//          i < elf_header.e_phnum;
-//          i++, internal++, external++){
-
-//         internal->p_type   = BYTE_GET (external->p_type);
-//         internal->p_offset = BYTE_GET (external->p_offset);
-//         internal->p_vaddr  = BYTE_GET (external->p_vaddr);
-//         internal->p_paddr  = BYTE_GET (external->p_paddr);
-//         internal->p_filesz = BYTE_GET (external->p_filesz);
-//         internal->p_memsz  = BYTE_GET (external->p_memsz);
-//         internal->p_flags  = BYTE_GET (external->p_flags);
-//         internal->p_align  = BYTE_GET (external->p_align);
-//     }
-//     free (phdrs);
-
-//     return 1;
-// }
-
 int get_64bit_program_headers(FILE *file, Elf64_Phdr *pheaders)
 {
 
-    Elf64_External_Phdr *phdrs;
-    Elf64_External_Phdr *external;
+    Elf64_Phdr *phdrs;
+    Elf64_Phdr *external;
     Elf64_Phdr *internal;
 
     unsigned int i;
 
-    phdrs = (Elf64_External_Phdr *)get_data(NULL, file, elf_header.e_phoff,
-                                            elf_header.e_phentsize,
-                                            elf_header.e_phnum,
+    phdrs = (Elf64_Phdr *)get_data(NULL, file, elf_header[idx_of_elf].e_phoff,
+                                            elf_header[idx_of_elf].e_phentsize,
+                                            elf_header[idx_of_elf].e_phnum,
                                             ("program headers"));
 
     if (!phdrs)
         return 0;
 
     for (i = 0, internal = pheaders, external = phdrs;
-         i < elf_header.e_phnum;
+         i < elf_header[idx_of_elf].e_phnum;
          i++, internal++, external++)
     {
 
@@ -1524,10 +961,10 @@ int process_dynamic_section(FILE *file)
     // else if (! get_32bit_dynamic_section (file))
     //          return 0;
 
-    if (dynamic_addr)
+    if (dynamic_offset)
     {
         debug_printf("\nDynamic section at offset 0x%x contains %u entries:\n",
-                     dynamic_addr, dynamic_nent);
+                     dynamic_offset, dynamic_nent);
         debug_printf("  Tag        Type                         Name/Value\n");
     }
 
@@ -1585,59 +1022,15 @@ int process_dynamic_section(FILE *file)
     return 0;
 }
 
-// int get_32bit_dynamic_section(FILE *file) {
-
-//     Elf32_External_Dyn * edyn = (Elf32_External_Dyn *) malloc(dynamic_size);
-//     Elf32_External_Dyn * ext;
-//     Elf32_Dyn * entry;
-
-//     fseek(file,dynamic_addr,SEEK_SET);
-//     if(fread(edyn,dynamic_size,1,file) != 1) return -1;
-
-//     if(edyn==NULL)
-//         return 0;
-
-//     for (ext = edyn, dynamic_nent = 0;
-//          (char *) ext < (char *) edyn + dynamic_size;
-//          ext++)
-//     {
-//         dynamic_nent++;
-//         if (BYTE_GET (ext->d_tag) == DT_NULL)
-//             break;
-//     }
-
-//     dynamic_section = (Elf32_Dyn *) cmalloc (dynamic_nent,
-//                                                     sizeof (* entry));
-
-//     if (dynamic_section == NULL)
-//     {
-//         debug_printf("Out of memory\n");
-//         free (edyn);
-//         return 0;
-//     }
-
-//     for (ext = edyn, entry = dynamic_section;
-//          entry < dynamic_section + dynamic_nent;
-//          ext++, entry++)
-//     {
-//         entry->d_tag      = BYTE_GET (ext->d_tag);
-//         entry->d_un.d_val = BYTE_GET (ext->d_un.d_val);
-//     }
-
-//     free(edyn);
-
-//     return 1;
-
-// }
 
 int get_64bit_dynamic_section(FILE *file)
 {
 
-    Elf64_External_Dyn *edyn = (Elf64_External_Dyn *)malloc(dynamic_size);
-    Elf64_External_Dyn *ext;
+    Elf64_Dyn *edyn = (Elf64_Dyn *)malloc(dynamic_size);
+    Elf64_Dyn *ext;
     Elf64_Dyn *entry;
 
-    fseek(file, dynamic_addr, SEEK_SET);
+    fseek(file, dynamic_offset, SEEK_SET);
     if(fread(edyn, dynamic_size, 1, file) != 1) return -1;
 
     if (edyn == NULL)
@@ -1911,48 +1304,12 @@ int process_relocs(FILE *file)
     return 0;
 }
 
-// void get_32bit_rel(FILE *pFILE, unsigned int offset) {
-
-//     Elf32_External_Rel* rel= (Elf32_External_Rel *) malloc(rel_dyn_size);
-//     Elf32_External_Rel* ext;
-//     Elf32_Rel* relt;
-
-//     fseek(pFILE,offset,SEEK_SET);
-//     if(fread(rel,rel_dyn_size,1,pFILE) != 1) return -1;
-
-//     if(rel==NULL)
-//         return;
-
-//     for (ext = rel, rel_nent = 0;
-//          (char *) ext < (char *) rel + rel_dyn_size;
-//          ext++)
-//     {
-//         rel_nent++;
-//         if (BYTE_GET (rel->r_offset) == DT_NULL)
-//             break;
-//     }
-
-//     elf32_rel = (Elf32_Rel *) cmalloc (dynamic_nent,
-//                                        sizeof (* relt));
-
-//     for (ext = rel, relt = elf32_rel;
-//          relt < elf32_rel + rel_nent;
-//          ext++, relt++)
-//     {
-//         relt->r_offset     = BYTE_GET (ext->r_offset);
-//         relt->r_info       = BYTE_GET (ext->r_info);
-//     }
-
-//     free(rel);
-
-//     return;
-// }
 
 void get_64bit_rel(FILE *pFILE, unsigned int offset)
 {
 
-    Elf64_External_Rel *rel = (Elf64_External_Rel *)malloc(rel_dyn_size);
-    Elf64_External_Rel *ext;
+    Elf64_Rel *rel = (Elf64_Rel *)malloc(rel_dyn_size);
+    Elf64_Rel *ext;
     Elf64_Rel *relt;
 
     fseek(pFILE, offset, SEEK_SET);
@@ -2059,8 +1416,8 @@ void get_64bit_symbol_dyn(FILE *pFILE)
 {
     if(sym_dyn_size != 0)
     {
-        Elf64_External_Sym *exty = (Elf64_External_Sym *)malloc(sym_dyn_size);
-        Elf64_External_Sym *ext;
+        Elf64_Sym *exty = (Elf64_Sym *)malloc(sym_dyn_size);
+        Elf64_Sym *ext;
         Elf64_Sym *symbool;
 
         fseek(pFILE, sym_dyn_offset, SEEK_SET);
@@ -2108,8 +1465,8 @@ void get_64bit_symbol_tbl(FILE *pFILE)
 {
     if(sym_tbl_size != 0)
     {
-        Elf64_External_Sym *exty_tbl = (Elf64_External_Sym *)malloc(sym_tbl_size);
-        Elf64_External_Sym *ext_tbl;
+        Elf64_Sym *exty_tbl = (Elf64_Sym *)malloc(sym_tbl_size);
+        Elf64_Sym *ext_tbl;
         Elf64_Sym *symbool_tbl;
 
         fseek(pFILE, sym_tbl_offset, SEEK_SET);
@@ -2272,7 +1629,7 @@ char *get_func_name_ndx(int i)
 
 void free_all(void)
 {
-    free(section_headers);
+    free(section_headers[idx_of_elf]);
     free(program_headers);
     free(sym_dyn);
     free(sym_tbl);
@@ -2284,7 +1641,7 @@ void free_all(void)
 
 void free_useless(void)
 {
-    free(section_headers);
+    free(section_headers[idx_of_elf]);
     free(program_headers);
     free(sym_dyn);
     free(sym_tbl);

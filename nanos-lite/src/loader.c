@@ -154,22 +154,14 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
   Elf_Phdr *phdr = program_headers;
   for (size_t i = 0; i < elf_header.e_phnum; i++, phdr++)
   {
-    if(phdr->p_type == PT_LOAD){
-      if (phdr->p_offset == 0)
-      {
-        Elf64_Off offset_first = elf_header.e_ehsize + elf_header.e_phnum * elf_header.e_phentsize;
-        ramdisk_read((void *)phdr->p_vaddr, offset_first, phdr->p_filesz - offset_first);
-        memset((uint8_t *)phdr->p_vaddr + phdr->p_filesz - offset_first, 0, phdr->p_memsz - phdr->p_filesz);
-      }
-      else
-      {
+    if(phdr->p_type == PT_LOAD)
+    {
         ramdisk_read((void *)phdr->p_vaddr, phdr->p_offset, phdr->p_filesz);
         memset((uint8_t *)phdr->p_vaddr + phdr->p_filesz, 0, phdr->p_memsz - phdr->p_filesz);
-      }
     }
   }
   free(program_headers);
-  return 0x83000000;
+  return elf_header.e_entry;
 }
 
 void naive_uload(PCB *pcb, const char *filename) {

@@ -7,6 +7,9 @@
 //#define MULTIPROGRAM
 //#define TIME_SHARING
 
+#define CONFIG_STRACE 0
+#define CONFIG_SRINGBUF_DEPTH 16
+
 #include <am.h>
 #include <klib.h>
 #include <klib-macros.h>
