@@ -27,8 +27,9 @@ void init_disasm(const char *triple);
 void ringBufInit(void);
 
 #if CONFIG_FRINGBUF_DEPTH
-int  init_elf(char const *file_name);
-static char *elf_file = NULL;
+int init_elf(int file_num, char const *file_name[]);
+static const char *elf_file[64]; // 64 elf max
+static int elf_file_num = 0;
 #endif
 
 static void welcome() {
@@ -92,7 +93,8 @@ static int parse_args(int argc, char *argv[]) {
       case 'd': diff_so_file = optarg; break;
       case 'f': 
         #if CONFIG_FRINGBUF_DEPTH
-        elf_file = optarg; 
+        elf_file[elf_file_num] = optarg;
+        elf_file_num++;
         #endif
         break;
       case 1: img_file = optarg; return 0;
@@ -151,8 +153,11 @@ void init_monitor(int argc, char *argv[]) {
   ringBufInit();
   #endif
   #if CONFIG_FRINGBUF_DEPTH
-  if(init_elf(elf_file) == -1)
-    init_elf(img_file);
+  printf("elf %d : %s\n", elf_file_num, elf_file[0]);
+  if(init_elf(elf_file_num > 64 ? 64 : elf_file_num, elf_file) == -1){
+    Log("elf error!");
+    elf_file[0] = img_file;
+    init_elf(1, elf_file);}
   #endif
 
   /* Display welcome message. */

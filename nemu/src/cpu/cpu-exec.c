@@ -79,35 +79,35 @@ static void exec_once(Decode *s, vaddr_t pc) {
   #if CONFIG_FRINGBUF_DEPTH
     callBuf cb;
     if(strncmp(p, "jalr", 4) == 0){
-      cb.dnpc_fndx = is_func_start(s->dnpc | 0xffffffff00000000);
-      if (cb.dnpc_fndx  != -1)
+      cb.dnpc_sym_idx = is_func_start(s->dnpc | 0xffffffff00000000, &cb.dnpc_elf_idx);
+      if (cb.dnpc_sym_idx  != -1)
       {
         cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+        cb.pc_sym_idx = get_func_ndx(s->pc | 0xffffffff00000000, &cb.pc_elf_idx);
         ringBufWrite(&fringbuf, &cb);
       }
     }
     else if(strncmp(p, "jal", 3) == 0){
-      cb.dnpc_fndx = is_func_start(s->dnpc | 0xffffffff00000000);
-      if (cb.dnpc_fndx  != -1)
+      cb.dnpc_sym_idx = is_func_start(s->dnpc | 0xffffffff00000000, &cb.dnpc_elf_idx);
+      if (cb.dnpc_sym_idx  != -1)
       {
         cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+        cb.pc_sym_idx = get_func_ndx(s->pc | 0xffffffff00000000, &cb.pc_elf_idx);
         ringBufWrite(&fringbuf, &cb);
       }
     }
     else if(strncmp(p, "ret", 3) == 0){
-      cb.dnpc_fndx = get_func_ndx(s->dnpc | 0xffffffff00000000);
-      cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+      cb.dnpc_sym_idx = get_func_ndx(s->dnpc | 0xffffffff00000000, &cb.dnpc_elf_idx);
+      cb.pc_sym_idx = get_func_ndx(s->pc | 0xffffffff00000000, &cb.pc_elf_idx);
       cb.c_r = 'r'; cb.pc = s->pc; cb.dnpc = s->dnpc;
       ringBufWrite(&fringbuf, &cb);
     }
     else if(strncmp(p, "jr", 2) == 0){
-      cb.dnpc_fndx = is_func_start(s->dnpc | 0xffffffff00000000);
-      if (cb.dnpc_fndx  != -1)
+      cb.dnpc_sym_idx = is_func_start(s->dnpc | 0xffffffff00000000, &cb.dnpc_elf_idx);
+      if (cb.dnpc_sym_idx  != -1)
       {
         cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+        cb.pc_sym_idx = get_func_ndx(s->pc | 0xffffffff00000000, &cb.pc_elf_idx);
         ringBufWrite(&fringbuf, &cb);
       }
     }
@@ -186,9 +186,9 @@ static void print_trace(void) {
         _Log("    ");
       }
       if(cb->c_r == 'c')
-        _Log("%s -> %s\n", get_func_name_ndx(cb->pc_fndx), get_func_name_ndx(cb->dnpc_fndx));
+        _Log("%s -> %s\n", get_func_name_by_idx(cb->pc_sym_idx, cb->pc_elf_idx), get_func_name_by_idx(cb->dnpc_sym_idx, cb->dnpc_elf_idx));
       else
-        _Log("%s <- %s\n", get_func_name_ndx(cb->dnpc_fndx), get_func_name_ndx(cb->pc_fndx));
+        _Log("%s <- %s\n", get_func_name_by_idx(cb->dnpc_sym_idx, cb->dnpc_elf_idx), get_func_name_by_idx(cb->pc_sym_idx, cb->pc_elf_idx));
       
       if(cb->c_r == 'r')
         fun_depth = fun_depth == 0 ? 0 : fun_depth - 1;

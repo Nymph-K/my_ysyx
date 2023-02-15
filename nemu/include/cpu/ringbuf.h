@@ -23,8 +23,10 @@ typedef struct
     char c_r;//call or return
 	vaddr_t pc;
 	vaddr_t dnpc;
-	int pc_fndx;
-	int dnpc_fndx;
+	int pc_elf_idx;
+	int pc_sym_idx;
+	int dnpc_elf_idx;
+	int dnpc_sym_idx;
 } callBuf;
 
 extern ringBuf iringbuf;
