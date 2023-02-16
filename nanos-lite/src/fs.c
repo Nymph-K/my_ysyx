@@ -5,6 +5,9 @@ size_t ramdisk_read(void *buf, size_t offset, size_t len);
 size_t ramdisk_write(const void *buf, size_t offset, size_t len);
 size_t serial_write(const void *buf, size_t offset, size_t len);
 size_t events_read(void *buf, size_t offset, size_t len);
+size_t dispinfo_read(void *buf, size_t offset, size_t len);
+size_t fb_write(const void *buf, size_t offset, size_t len);
+void __am_gpu_config(AM_GPU_CONFIG_T *cfg);
 
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
@@ -18,7 +21,7 @@ typedef struct {
   size_t open_offset;
 } Finfo;
 
-enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_EVENTS, FD_FB};
+enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB, FD_EVENTS, FD_DISPINFO};
 
 size_t invalid_read(void *buf, size_t offset, size_t len) {
   panic("should not reach here");
@@ -35,12 +38,18 @@ static Finfo file_table[] __attribute__((used)) = {
   [FD_STDIN]  = {"stdin", 0, 0, invalid_read, invalid_write, 0},
   [FD_STDOUT] = {"stdout", 0, 0, invalid_read, serial_write, 0},
   [FD_STDERR] = {"stderr", 0, 0, invalid_read, serial_write, 0},
+  [FD_FB] = {"/dev/fb", 0, 0, invalid_read, fb_write, 0},
   [FD_EVENTS] = {"/dev/events", 0, 0, events_read, invalid_write, 0},
+  [FD_DISPINFO] = {"/proc/dispinfo", 0, 0, dispinfo_read, invalid_write, 0},
 #include "files.h"
 };
+
 static size_t file_num = sizeof(file_table)/sizeof(file_table[0]);
+
 void init_fs() {
-  // TODO: initialize the size of /dev/fb
+  AM_GPU_CONFIG_T cfg;
+  __am_gpu_config(&cfg);
+  file_table[FD_FB].size = cfg.vmemsz;
 }
 
 int fs_open(const char *pathname, int flags, int mode)
@@ -109,6 +118,10 @@ size_t fs_write(int fd, const void *buf, size_t len)
 size_t fs_lseek(int fd, size_t offset, int whence)
 {
   assert(FD_STDIN <= fd && fd < file_num);
+  if(fd == FD_FB) {
+    file_table[fd].open_offset = offset;
+    return offset;
+  }
   signed long long base;
   switch (whence)
   {

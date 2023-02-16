@@ -41,15 +41,35 @@ size_t events_read(void *buf, size_t offset, size_t len) {
   return 0;
 }
 
+void __am_gpu_config(AM_GPU_CONFIG_T *cfg);
+AM_GPU_CONFIG_T cfg;
+
 size_t dispinfo_read(void *buf, size_t offset, size_t len) {
-  return 0;
+  __am_gpu_config(&cfg);
+  Log("read_gpu_info: WIDTH:%d\nHEIGHT:%d\nVMEMSZ:%d\n", cfg.width, cfg.height, cfg.vmemsz);
+  return snprintf(buf, len, "WIDTH:%d\nHEIGHT:%d\nVMEMSZ:%d\n", cfg.width, cfg.height, cfg.vmemsz);
 }
 
-size_t fb_write(const void *buf, size_t offset, size_t len) {
-  return 0;
+void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl);
+AM_GPU_FBDRAW_T ctl;
+
+//     fb_write(const void *buf, size_t offset, size_t len);
+//                                x_y = offset      w_h = len
+size_t fb_write(const void *buf, size_t x_y, size_t w_h) {
+  ctl.x = (x_y >> 16) & 0xFFFF;
+  ctl.y = x_y & 0xFFFF;
+  ctl.w = (w_h >> 16) & 0xFFFF;
+  ctl.h = w_h & 0xFFFF;
+  ctl.pixels = (void *)buf;
+  ctl.sync = 1;
+  __am_gpu_fbdraw(&ctl);
+  return ctl.w*ctl.h*4;
 }
 
 void init_device() {
   Log("Initializing devices...");
   ioe_init();
+  __am_gpu_config(&cfg);
+  printf("WIDTH:%d\nHEIGHT:%d\nVMEMSZ:%d\n", cfg.width, cfg.height, cfg.vmemsz);
+  Log("Finish initialize");
 }
