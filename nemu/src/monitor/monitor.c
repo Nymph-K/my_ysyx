@@ -153,7 +153,6 @@ void init_monitor(int argc, char *argv[]) {
   ringBufInit();
   #endif
   #if CONFIG_FRINGBUF_DEPTH
-  printf("elf %d : %s\n", elf_file_num, elf_file[0]);
   if(init_elf(elf_file_num > 64 ? 64 : elf_file_num, elf_file) == -1){
     Log("elf error!");
     elf_file[0] = img_file;

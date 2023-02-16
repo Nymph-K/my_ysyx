@@ -35,9 +35,9 @@ int init_elf(int file_num, char const *file_name[])
     str_tbl = malloc(sizeof(char *) * file_num);
 
     sym_tbl = malloc(sizeof(Elf64_Sym *) * file_num);
+    sym_tbl_nent = malloc(sizeof(unsigned int) * file_num);
     sym_tbl_func = malloc(sizeof(Elf64_Sym *) * file_num);
     sym_func_num = malloc(sizeof(unsigned int) * file_num);
-    sym_tbl_nent = malloc(sizeof(unsigned int) * file_num);
     for (size_t i = 0; i < file_num; i++)
     {
         if (file_name[i] == NULL)
