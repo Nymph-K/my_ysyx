@@ -15,10 +15,29 @@ static const char *keyname[256] __attribute__((used)) = {
 };
 
 size_t serial_write(const void *buf, size_t offset, size_t len) {
-  return 0;
+  for (size_t i = 0; i < len; i++)
+  {
+    putch(*(char *)buf++);
+  }
+  return len;
 }
 
+void __am_input_keybrd(AM_INPUT_KEYBRD_T *kbd);
+
 size_t events_read(void *buf, size_t offset, size_t len) {
+  AM_INPUT_KEYBRD_T kbd;
+  __am_input_keybrd(&kbd);
+  if(kbd.keycode != AM_KEY_NONE)
+  {
+    if (kbd.keydown)
+    {
+      return snprintf(buf, len, "kd %s\n", keyname[kbd.keycode]);
+    }
+    else
+    {
+      return snprintf(buf, len, "ku %s\n", keyname[kbd.keycode]);
+    }
+  }
   return 0;
 }
 

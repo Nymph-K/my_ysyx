@@ -90,8 +90,7 @@ void *_sbrk(intptr_t increment) {
 
 
 int _gettimeofday(struct timeval *tv, struct timezone *tz) {
-  _exit(SYS_gettimeofday);
-  return 0;
+  return _syscall_(SYS_gettimeofday, tv, 0, 0);
 }
 
 int _execve(const char *fname, char * const argv[], char *const envp[]) {

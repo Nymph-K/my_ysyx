@@ -248,11 +248,230 @@ int sprintf(char *out, const char *fmt, ...) {
 }
 
 int snprintf(char *out, size_t n, const char *fmt, ...) {
-  panic("Not implemented");
+	va_list args;
+	int len;
+
+	va_start(args, fmt);
+	len = vsnprintf(out, n, fmt, args);
+	va_end(args);
+	return len;
 }
 
 int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
-  panic("Not implemented");
+  assert( out != NULL && fmt != NULL && n != 0);
+
+  int len = 0;
+  bool is_arg = false;
+  long int d;
+  char c;
+  char *s;
+  char d2s[32];
+  bool align_left = false;
+  bool sign_disp = false;
+  bool pad_zero = false;
+  int  width = 0;
+  int  precision = 0;
+  int  str_len = 0;
+  int  spc_len = 0;
+  int i;
+
+  while (*fmt){
+    if(is_arg)
+    {
+      switch (*fmt) {
+        case 's':              /* string */
+          s = va_arg(ap, char *);
+          str_len = strlen(s);//string length
+          spc_len = precision > 0 ? ((width > precision)?(width - precision):0) : (width > str_len ? width - str_len : 0);
+          str_len = (precision == 0 ? str_len : precision);//print length
+          if(align_left == false)// space' '
+            for(i = 0; i < spc_len; i++)
+            {
+              *out++ = ' ';
+              len++;if(len == n) return n;
+            }
+          for(i = 0; i < str_len && *s != '\0'; i++)// string
+          {
+            *out++ = *s;
+            len++;if(len == n) return n;
+            s++;
+          }
+          if(align_left == true)// space' '
+            for(i = 0; i < spc_len; i++)
+            {
+              *out++ = ' ';
+              len++;if(len == n) return n;
+            }
+          is_arg = false;
+          fmt++;
+          break;
+        case 'd':              /* int */
+        case 'u':              /* unsigned int */
+        case 'o':              /* unsigned int o*/
+        case 'x':  case 'X':   /* unsigned int x*/
+        case 'p':              /* pointer */
+        case 'l':              /* long */
+          switch (*fmt)
+          {
+            case 'd':              /* int */
+              d = va_arg(ap, int);
+              itoa(d, d2s, 10);
+              break;
+
+            case 'u':              /* unsigned int */
+              d = va_arg(ap, unsigned int);
+              itoa(d, d2s, 10);
+              break;
+            
+            case 'o':              /* unsigned int o*/
+              d = va_arg(ap, unsigned int);
+              itoa(d, d2s, 8);
+              break;
+
+            case 'x':  case 'X':    /* unsigned int */
+              d = va_arg(ap, unsigned int);
+              itoa(d, d2s, 16);
+              break;
+
+            case 'p':               /* unsigned int */
+              d = va_arg(ap, unsigned int);
+              itoa(d, d2s, 16);
+              // width = 16;
+              // pad_zero = false;
+              break;
+
+            case 'l':              /* long */
+              if (fmt[1] == 'u'){
+                d = va_arg(ap, unsigned long);
+                fmt++;
+                ltoa(d, d2s, 10);
+              }
+              else if (fmt[1] == 'x' || fmt[1] == 'X'){
+                d = va_arg(ap, unsigned long long);
+                fmt++;
+                ltoa(d, d2s, 16);
+              }
+              else{
+                d = va_arg(ap, long);
+                ltoa(d, d2s, 10);
+              }
+              break;
+
+            default:
+              break;
+          }
+          str_len = strlen(d2s);//string length
+          spc_len = width > str_len ? width - str_len : 0;
+          if (sign_disp && *d2s != '-')//sign +
+          {
+            spc_len -= 1;
+          }
+          if (*fmt == 'p')
+          {
+              *out++ = '0';len++;if(len == n) return n;
+              *out++ = 'x';len++;if(len == n) return n;
+          }
+          char padding = (pad_zero == true) ? '0' : ' ';
+          if(align_left == false) {// padding space' ' or zero'0'
+            for(i = 0; i < spc_len; i++)
+            {
+              *out++ = padding;
+              len++;if(len == n) return n;
+            }
+          }
+          if (sign_disp && *d2s != '-')//sign +
+          {
+            *out++ = '+';
+            len++;if(len == n) return n;
+            width--;
+          }
+          for(i = 0; i < str_len; i++)
+          {
+            *out++ = d2s[i];
+            len++;if(len == n) return n;
+          }
+          if(align_left == true)// padding space' '
+            for(i = 0; i < spc_len; i++)
+            {
+              *out++ = ' ';
+              len++;if(len == n) return n;
+            }
+          is_arg = false;
+          fmt++;
+          break;
+        case 'c':              /* char */
+          /* need a cast here since va_arg only
+            takes fully promoted types */
+          c = (char) va_arg(ap, int);
+          *out++ = c;
+          len++;if(len == n) return n;
+          is_arg = false;
+          fmt++;
+          break;
+        case '%':              /* % */
+          *out++ = '%';
+          len++;if(len == n) return n;
+          is_arg = false;
+          fmt++;
+          break;
+        case '-':              /* align left */
+          align_left = true;
+          fmt++;
+          break;
+        case '+':              /* +- sign */
+          sign_disp = true;
+          fmt++;
+          break;
+        case '0':              /* padding zero */
+          pad_zero = true;
+          fmt++;
+          break;
+        case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+          width = atoi(fmt);   /* width */
+          while (*fmt >= '0' && *fmt <= '9') fmt++;
+          break;
+        case '*':
+          width = va_arg(ap, int);   /* width */
+          fmt++;
+          break;
+        case '.':              /* precision */
+          fmt++;
+          if (*fmt == '*')
+          {
+            precision = va_arg(ap, int);
+            fmt++;
+          }
+          else
+          {
+            precision = atoi(fmt);
+            while (*fmt >= '0' && *fmt <= '9') fmt++;
+          }
+          pad_zero = false;
+          break;
+      }
+    }
+    else
+    {
+      if(*fmt == '%') {
+        is_arg = true;
+        align_left = false;
+        sign_disp = false;
+        pad_zero = false;
+        width = 0;
+        precision = 0;
+        str_len = 0;
+        spc_len = 0;
+      }
+      else{
+        *out++ = *fmt;
+        len++;if(len == n) return n;
+      }
+      fmt++;
+    }
+  }
+  *out++ = '\0';
+  return len;
 }
+
 
 #endif
