@@ -118,10 +118,6 @@ size_t fs_write(int fd, const void *buf, size_t len)
 size_t fs_lseek(int fd, size_t offset, int whence)
 {
   assert(FD_STDIN <= fd && fd < file_num);
-  if(fd == FD_FB) {
-    file_table[fd].open_offset = offset;
-    return offset;
-  }
   signed long long base;
   switch (whence)
   {
@@ -135,6 +131,10 @@ size_t fs_lseek(int fd, size_t offset, int whence)
       return file_table[fd].open_offset;
   }
   signed long long result = base + (signed long long)offset;
+  if(fd == FD_FB) {
+    file_table[fd].open_offset = result;
+    return result;
+  }
   if (result < 0)
     file_table[fd].open_offset = 0;
   else if(result > file_table[fd].size)

@@ -7,6 +7,7 @@
 static int evtdev = -1;
 static int fbdev = -1;
 static int screen_w = 0, screen_h = 0;
+static int window_w = 0, window_h = 0;
 static int fd_events = -1;
 static int fd_dispinfo = -1;
 static int fd_fb = -1;
@@ -21,36 +22,34 @@ int NDL_PollEvent(char *buf, int len) {
   return read(fd_events, buf, len);
 }
 
-void NDL_OpenCanvas(int *w, int *h) {
+void getWindowSize(void)
+{
+  char whbuf[64];
+  size_t i;
+  read(fd_dispinfo, whbuf, sizeof(whbuf));
+  for (i = 0; i < sizeof(whbuf); i++)// find 0-9
   {
-    char whbuf[64];
-    size_t i;
-    int cfg_w, cfg_h;
-    read(fd_dispinfo, whbuf, sizeof(whbuf));
-    for (i = 0; i < sizeof(whbuf); i++)
-    {
-      if('0' <= whbuf[i] && whbuf[i] <= '9') break;
-    }
-    cfg_w = atoi(whbuf+i);
-    for (; i < sizeof(whbuf); i++)
-    {
-      if('0' <= whbuf[i] && whbuf[i] <= '9') break;
-    }
-    cfg_h = atoi(whbuf+i);
-    if(*w == 0 && *h == 0)
-    {
-      *w = cfg_w;
-      *h = cfg_h;
-    }
-    else if (*w > cfg_w)
-    {
-      *w = cfg_w;
-    }
-    else if (*h = cfg_h)
-    {
-      *h = cfg_h;
-    }
+    if('0' <= whbuf[i] && whbuf[i] <= '9') break;
   }
+  window_w = atoi(whbuf+i);
+  for (; i < sizeof(whbuf); i++)// exit 0-9
+  {
+    if(whbuf[i] < '0' || '9' < whbuf[i]) break;
+  }
+  for (; i < sizeof(whbuf); i++)// find 0-9
+  {
+    if('0' <= whbuf[i] && whbuf[i] <= '9') break;
+  }
+  window_h = atoi(whbuf+i);
+}
+
+void NDL_OpenCanvas(int *w, int *h) {
+  getWindowSize();
+  if (*w == 0 || *w > window_w)
+    *w = window_w;
+  if (*h == 0 || *h > window_h)
+    *h = window_h;
+  
   if (getenv("NWM_APP")) {
     int fbctl = 4;
     fbdev = 5;
@@ -71,9 +70,14 @@ void NDL_OpenCanvas(int *w, int *h) {
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
+  getWindowSize();
+  int screen_x = (window_w - w) / 2;//center
+  int screen_y = (window_h - h) / 2;//center
+  x += screen_x;
+  y += screen_y;
   size_t x_y = x << 16 | y;
   size_t w_h = w << 16 | h;
-  fseek(fd_fb, x_y, SEEK_SET);
+  lseek(fd_fb, x_y, SEEK_SET);
   write(fd_fb, pixels, w_h);
 }
 
@@ -96,11 +100,11 @@ int NDL_Init(uint32_t flags) {
     evtdev = 3;
   }
   fd_events = open("/dev/events", 0, 0);
-  if(fd_events == 0) {Log("fd error!"); return 1;}
+  if(fd_events == 0) {return 1;}
   fd_dispinfo = open("/proc/dispinfo", 0, 0);
-  if(fd_dispinfo == 0) {Log("fd error!"); return 1;}
+  if(fd_dispinfo == 0) {return 1;}
   fd_fb = open("/dev/fb", 0, 0);
-  if(fd_fb == 0) {Log("fd error!"); return 1;}
+  if(fd_fb == 0) {return 1;}
   return 0;
 }
 
