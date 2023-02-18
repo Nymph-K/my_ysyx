@@ -72,10 +72,19 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
 
   ctl.x = (offset / 4) % cfg.width;
   ctl.y = (offset / 4) / cfg.width;
-  ctl.w = len / 4;
-  ctl.h = 1;
   ctl.pixels = (void *)buf;
-  ctl.sync = 1;
+  ctl.w = len / 4;
+  if (ctl.w > cfg.width && offset == 0)
+  {
+    ctl.h = ctl.w / cfg.width;
+    ctl.w = cfg.width;
+    ctl.sync = 1;
+  }
+  else
+  {
+    ctl.h = 1;
+    ctl.sync = 1;
+  }
   printf("x = %d, y = %d, w = %d, h = %d\n", ctl.x, ctl.y, ctl.w, ctl.h);
   ioe_write(AM_GPU_FBDRAW, &ctl);
   return len;
