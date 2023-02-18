@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect) {
   assert(dst && src);
@@ -13,6 +14,28 @@ void SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, uint32_t color) {
 }
 
 void SDL_UpdateRect(SDL_Surface *s, int x, int y, int w, int h) {
+  if ( (x | y | w | h) == 0)
+  {
+    w = s->w;
+    h = s->h;
+  }
+  if(s->format->BitsPerPixel == 32)
+  {
+    NDL_DrawRect((uint32_t *)s->pixels, x, y, w, h);
+  }
+  else if(s->format->BitsPerPixel == 8)
+  {
+    SDL_Color *color_palette = s->format->palette->colors;
+    uint8_t *index = s->pixels;
+    uint32_t *buf = malloc(w * h * 4);
+    for (size_t i = 0; i < w * h; i++)
+    {
+      buf[i] = color_palette[index[i]].val;
+    }
+    NDL_DrawRect(buf, x, y, w, h);
+    free(buf);
+  }
+  else assert(0);
 }
 
 // APIs below are already implemented.

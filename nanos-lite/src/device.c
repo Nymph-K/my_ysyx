@@ -42,32 +42,47 @@ size_t events_read(void *buf, size_t offset, size_t len) {
 size_t dispinfo_read(void *buf, size_t offset, size_t len) {
   AM_GPU_CONFIG_T cfg;
   ioe_read(AM_GPU_CONFIG, &cfg);
-  Log("read_gpu_info: WIDTH:%d\nHEIGHT:%d\nVMEMSZ:%d\n", cfg.width, cfg.height, cfg.vmemsz);
-  return snprintf(buf, len, "WIDTH:%d\nHEIGHT:%d\nVMEMSZ:%d\n", cfg.width, cfg.height, cfg.vmemsz);
+  return snprintf(buf, len, "WIDTH:%d\nHEIGHT:%d\n", cfg.width, cfg.height);
 }
 
+size_t get_fbsize(void)
+{
+  AM_GPU_CONFIG_T cfg;
+  ioe_read(AM_GPU_CONFIG, &cfg);
+  return cfg.vmemsz;
+}
 
-//     fb_write(const void *buf, size_t offset, size_t len);
-//                                x_y = offset      w_h = len
-size_t fb_write(const void *buf, size_t x_y, size_t w_h) {
-  // AM_GPU_CONFIG_T cfg;
-  // ioe_read(AM_GPU_CONFIG, &cfg);
+// size_t fb_write(const void *buf, size_t x_y, size_t w_h) {
+//   // AM_GPU_CONFIG_T cfg;
+//   // ioe_read(AM_GPU_CONFIG, &cfg);
+//   AM_GPU_FBDRAW_T ctl;
+//   ctl.x = (x_y >> 16) & 0xFFFF;
+//   ctl.y = x_y & 0xFFFF;
+//   ctl.w = (w_h >> 16) & 0xFFFF;
+//   ctl.h = w_h & 0xFFFF;
+//   ctl.pixels = (void *)buf;
+//   ctl.sync = 1;
+//   ioe_write(AM_GPU_FBDRAW, &ctl);
+//   return ctl.w*ctl.h*4;
+// }
+size_t fb_write(const void *buf, size_t offset, size_t len) {
+  AM_GPU_CONFIG_T cfg;
+  ioe_read(AM_GPU_CONFIG, &cfg);
   AM_GPU_FBDRAW_T ctl;
-  ctl.x = (x_y >> 16) & 0xFFFF;
-  ctl.y = x_y & 0xFFFF;
-  ctl.w = (w_h >> 16) & 0xFFFF;
-  ctl.h = w_h & 0xFFFF;
+
+  ctl.x = (offset / 4) % cfg.width;
+  ctl.y = (offset / 4) / cfg.width;
+  ctl.w = len / 4;
+  ctl.h = 1;
   ctl.pixels = (void *)buf;
   ctl.sync = 1;
+  printf("x = %d, y = %d, w = %d, h = %d\n", ctl.x, ctl.y, ctl.w, ctl.h);
   ioe_write(AM_GPU_FBDRAW, &ctl);
-  return ctl.w*ctl.h*4;
+  return len;
 }
 
 void init_device() {
   Log("Initializing devices...");
   ioe_init();
-  AM_GPU_CONFIG_T cfg;
-  ioe_read(AM_GPU_CONFIG, &cfg);
-  printf("WIDTH:%d\nHEIGHT:%d\nVMEMSZ:%d\n", cfg.width, cfg.height, cfg.vmemsz);
   Log("Finish initialize");
 }

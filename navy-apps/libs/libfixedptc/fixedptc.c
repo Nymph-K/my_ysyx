@@ -198,3 +198,25 @@ fixedpt fixedpt_ln(fixedpt x) {
 	return (fixedpt_mul(LN2, (log2 << FIXEDPT_FBITS)) + f
 	    - fixedpt_mul(s, f - R));
 }
+
+#define FLOAT_ONE 		(0x00800000)
+#define FLOAT_FRAC_MASK (0x007FFFFF)
+#define FLOAT_EXP_MASK  (0x7F800000)
+#define FLOAT_SIGN_MASK (0x80000000)
+fixedpt fixedpt_fromfloat(void *p)
+{
+	int32_t float_p = *(int32_t *)p;
+	fixedpt fixedpt_p;
+	int32_t float_frac = (float_p & FLOAT_FRAC_MASK) + FLOAT_ONE;
+	float_frac = (float_p & FLOAT_SIGN_MASK) == 0 ? float_frac : 0-float_frac;
+	int32_t float_exp =  ((float_p & FLOAT_EXP_MASK ) >> 23) - 23 + FIXEDPT_FBITS;
+	if (float_exp > 0)
+	{
+		fixedpt_p = float_frac << float_exp;
+	}
+	else
+	{
+		fixedpt_p = float_frac >> abs(float_exp);
+	}
+	return fixedpt_p;
+}

@@ -45,10 +45,14 @@ void getWindowSize(void)
 
 void NDL_OpenCanvas(int *w, int *h) {
   getWindowSize();
-  if (*w == 0 || *w > window_w)
+  if ((*w |*h) == 0)
+  {
     *w = window_w;
-  if (*h == 0 || *h > window_h)
     *h = window_h;
+  }
+  *h = *h > window_h ? window_h : *h;
+  *w = *w > window_w ? window_w : *w;
+  screen_w = *w; screen_h = *h;
   
   if (getenv("NWM_APP")) {
     int fbctl = 4;
@@ -71,15 +75,39 @@ void NDL_OpenCanvas(int *w, int *h) {
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   getWindowSize();
-  int screen_x = (window_w - w) / 2;//center
-  int screen_y = (window_h - h) / 2;//center
+  int screen_x = (window_w - screen_w) / 2;//center
+  int screen_y = (window_h - screen_h) / 2;//center
   x += screen_x;
   y += screen_y;
-  size_t x_y = x << 16 | y;
-  size_t w_h = w << 16 | h;
-  lseek(fd_fb, x_y, SEEK_SET);
-  write(fd_fb, pixels, w_h);
+  size_t offset = (y * window_w + x) * 4;
+  if (w == window_w)
+  {
+    lseek(fd_fb, offset, SEEK_SET);
+    write(fd_fb, pixels, w*h*sizeof(uint32_t));
+  }
+  else
+  {
+    size_t len = w*sizeof(uint32_t);
+    for (size_t i = 0; i < h; i++)
+    {
+      lseek(fd_fb, offset, SEEK_SET);
+      write(fd_fb, pixels, len);
+      offset += window_w * 4;
+      pixels += w;
+    }
+  }
 }
+// void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
+//   getWindowSize();
+//   int screen_x = (window_w - screen_w) / 2;//center
+//   int screen_y = (window_h - screen_h) / 2;//center
+//   x += screen_x;
+//   y += screen_y;
+//   size_t offset = y * window_w + x;
+//   size_t len = w * h;
+//   lseek(fd_fb, offset, SEEK_SET);
+//   write(fd_fb, pixels, len);
+// }
 
 void NDL_OpenAudio(int freq, int channels, int samples) {
 }

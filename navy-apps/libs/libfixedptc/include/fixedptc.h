@@ -102,17 +102,17 @@ typedef	__uint128_t fixedptud;
 
 #define FIXEDPT_VCSID "$Id$"
 
-#define FIXEDPT_FBITS	(FIXEDPT_BITS - FIXEDPT_WBITS)
-#define FIXEDPT_FMASK	(((fixedpt)1 << FIXEDPT_FBITS) - 1)
+#define FIXEDPT_FBITS	(FIXEDPT_BITS - FIXEDPT_WBITS)		//8
+#define FIXEDPT_FMASK	(((fixedpt)1 << FIXEDPT_FBITS) - 1)	//0xFF
 
-#define fixedpt_rconst(R) ((fixedpt)((R) * FIXEDPT_ONE + ((R) >= 0 ? 0.5 : -0.5)))
+#define fixedpt_rconst(R) ((fixedpt)((R) * FIXEDPT_ONE + ((R) >= 0 ? 0.5 : -0.5)))//+-0.5 for precise
 #define fixedpt_fromint(I) ((fixedptd)(I) << FIXEDPT_FBITS)
 #define fixedpt_toint(F) ((F) >> FIXEDPT_FBITS)
 #define fixedpt_add(A,B) ((A) + (B))
 #define fixedpt_sub(A,B) ((A) - (B))
 #define fixedpt_fracpart(A) ((fixedpt)(A) & FIXEDPT_FMASK)
 
-#define FIXEDPT_ONE	((fixedpt)((fixedpt)1 << FIXEDPT_FBITS))
+#define FIXEDPT_ONE	((fixedpt)((fixedpt)1 << FIXEDPT_FBITS))	//2^8
 #define FIXEDPT_ONE_HALF (FIXEDPT_ONE >> 1)
 #define FIXEDPT_TWO	(FIXEDPT_ONE + FIXEDPT_ONE)
 #define FIXEDPT_PI	fixedpt_rconst(3.14159265358979323846)
@@ -127,35 +127,50 @@ typedef	__uint128_t fixedptud;
 
 /* Multiplies a fixedpt number with an integer, returns the result. */
 static inline fixedpt fixedpt_muli(fixedpt A, int B) {
-	return 0;
+	//return fixedpt_mul(A, fixedpt_fromint(B));
+	return A*B;
 }
 
 /* Divides a fixedpt number with an integer, returns the result. */
 static inline fixedpt fixedpt_divi(fixedpt A, int B) {
-	return 0;
+	//return fixedpt_div(A, fixedpt_fromint(B));
+	assert(B != 0);
+	return A/B;
 }
 
 /* Multiplies two fixedpt numbers, returns the result. */
 static inline fixedpt fixedpt_mul(fixedpt A, fixedpt B) {
-	return 0;
+	fixedptd res = (fixedptd)A * (fixedptd)B / (fixedptd)FIXEDPT_ONE;
+	return (fixedpt)res;
 }
-
 
 /* Divides two fixedpt numbers, returns the result. */
 static inline fixedpt fixedpt_div(fixedpt A, fixedpt B) {
-	return 0;
+	fixedptd res = (fixedptd)A * (fixedptd)FIXEDPT_ONE / (fixedptd)B;
+	return (fixedpt)res;
 }
 
 static inline fixedpt fixedpt_abs(fixedpt A) {
-	return 0;
+	return A > 0 ? A : 0-A;
 }
 
+//  2.7 =  691 = 0000 0000 0000 0000 0000 0010 1011 0011
+//  2   =  512 = 0000 0000 0000 0000 0000 0010 0000 0000
+// -2.7 = -691 = 1111 1111 1111 1111 1111 1101 0100 1101
+// -3   = -768 = 1111 1111 1111 1111 1111 1101 0000 0000
 static inline fixedpt fixedpt_floor(fixedpt A) {
-	return 0;
+	return A & ~FIXEDPT_FMASK;
 }
 
+//  2.7 =  691 = 0000 0000 0000 0000 0000 0010 1011 0011
+//  3   =  768 = 0000 0000 0000 0000 0000 0011 0000 0000
+// -2.7 = -691 = 1111 1111 1111 1111 1111 1101 0100 1101
+// -2   = -512 = 1111 1111 1111 1111 1111 1110 0000 0000
 static inline fixedpt fixedpt_ceil(fixedpt A) {
-	return 0;
+	if (fixedpt_fracpart(A) == 0)
+		return A;
+	else
+		return (A & ~FIXEDPT_FMASK) + FIXEDPT_ONE;
 }
 
 /*
@@ -228,6 +243,7 @@ static inline fixedpt fixedpt_pow(fixedpt n, fixedpt exp) {
 	return (fixedpt_exp(fixedpt_mul(fixedpt_ln(n), exp)));
 }
 
+fixedpt fixedpt_fromfloat(void *p);
 #ifdef __cplusplus
 }
 #endif

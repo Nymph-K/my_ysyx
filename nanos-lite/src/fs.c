@@ -7,7 +7,7 @@ size_t serial_write(const void *buf, size_t offset, size_t len);
 size_t events_read(void *buf, size_t offset, size_t len);
 size_t dispinfo_read(void *buf, size_t offset, size_t len);
 size_t fb_write(const void *buf, size_t offset, size_t len);
-void __am_gpu_config(AM_GPU_CONFIG_T *cfg);
+size_t get_fbsize(void);
 
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
@@ -47,9 +47,7 @@ static Finfo file_table[] __attribute__((used)) = {
 static size_t file_num = sizeof(file_table)/sizeof(file_table[0]);
 
 void init_fs() {
-  AM_GPU_CONFIG_T cfg;
-  __am_gpu_config(&cfg);
-  file_table[FD_FB].size = cfg.vmemsz;
+  file_table[FD_FB].size = get_fbsize();
 }
 
 int fs_open(const char *pathname, int flags, int mode)
@@ -131,10 +129,6 @@ size_t fs_lseek(int fd, size_t offset, int whence)
       return file_table[fd].open_offset;
   }
   signed long long result = base + (signed long long)offset;
-  if(fd == FD_FB) {
-    file_table[fd].open_offset = result;
-    return result;
-  }
   if (result < 0)
     file_table[fd].open_offset = 0;
   else if(result > file_table[fd].size)
