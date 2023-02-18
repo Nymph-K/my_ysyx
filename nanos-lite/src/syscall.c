@@ -37,8 +37,6 @@ const char *myenumToString(int n) {
     }
 }
 
-void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime);
-
 void do_syscall(Context *c) {
   uintptr_t a[4];
   a[0] = c->GPR1;
@@ -76,10 +74,9 @@ void do_syscall(Context *c) {
       c->GPRx = 0; 
       break;
     case SYS_gettimeofday: 
-      AM_TIMER_UPTIME_T uptime;
-      __am_timer_uptime(&uptime);
-      ((struct timeval *)(a[1]))->tv_sec = 0;
-      ((struct timeval *)(a[1]))->tv_usec = uptime.us;
+      AM_TIMER_UPTIME_T uptime = io_read(AM_TIMER_UPTIME);
+      ((struct timeval *)(a[1]))->tv_sec = uptime.us / 1000000;
+      ((struct timeval *)(a[1]))->tv_usec = uptime.us % 1000000;
       c->GPRx = 0;
       break;
     default: panic("Unhandled syscall ID = %d", a[0]);

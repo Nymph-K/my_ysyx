@@ -11,11 +11,13 @@ static int window_w = 0, window_h = 0;
 static int fd_events = -1;
 static int fd_dispinfo = -1;
 static int fd_fb = -1;
+static uint32_t boot_time = 0;
+
 
 uint32_t NDL_GetTicks() {
   struct timeval tod;
   gettimeofday(&tod, NULL);
-  return tod.tv_usec/1000;
+  return (tod.tv_sec * 1000 + tod.tv_usec / 1000 - boot_time);
 }
 
 int NDL_PollEvent(char *buf, int len) {
@@ -133,6 +135,9 @@ int NDL_Init(uint32_t flags) {
   if(fd_dispinfo == 0) {return 1;}
   fd_fb = open("/dev/fb", 0, 0);
   if(fd_fb == 0) {return 1;}
+  struct timeval tod;
+  gettimeofday(&tod, NULL);
+  boot_time = tod.tv_sec * 1000 + tod.tv_usec / 1000;
   return 0;
 }
 
