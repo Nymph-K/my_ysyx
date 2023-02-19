@@ -52,19 +52,6 @@ size_t get_fbsize(void)
   return cfg.vmemsz;
 }
 
-// size_t fb_write(const void *buf, size_t x_y, size_t w_h) {
-//   // AM_GPU_CONFIG_T cfg;
-//   // ioe_read(AM_GPU_CONFIG, &cfg);
-//   AM_GPU_FBDRAW_T ctl;
-//   ctl.x = (x_y >> 16) & 0xFFFF;
-//   ctl.y = x_y & 0xFFFF;
-//   ctl.w = (w_h >> 16) & 0xFFFF;
-//   ctl.h = w_h & 0xFFFF;
-//   ctl.pixels = (void *)buf;
-//   ctl.sync = 1;
-//   ioe_write(AM_GPU_FBDRAW, &ctl);
-//   return ctl.w*ctl.h*4;
-// }
 size_t fb_write(const void *buf, size_t offset, size_t len) {
   AM_GPU_CONFIG_T cfg;
   ioe_read(AM_GPU_CONFIG, &cfg);

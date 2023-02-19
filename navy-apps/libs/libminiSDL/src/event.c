@@ -13,6 +13,7 @@ static const char *keyname[] = {
 uint8_t key_state[key_num] = {0};
 
 int SDL_PushEvent(SDL_Event *ev) {
+  printf("%s [line:%d]: function: %s is not support!\n", __FILE__, __LINE__, __FUNCTION__);
   return 0;
 }
 
@@ -23,13 +24,14 @@ int SDL_PollEvent(SDL_Event *event) {
   if(NDL_PollEvent(buf, sizeof(buf)) != 0)
   {
     if(sscanf(buf, "k%c %s\n", &kd_ku, key_name) != 2) return 0;
-    event->type = kd_ku == 'u' ? SDL_KEYUP : SDL_KEYDOWN;
+    if(event == NULL) return 1;
     for (size_t i = 0; i < key_num; i++)
     {
       if (strcmp(keyname[i], key_name) == 0)
       {
-        printf("k%c %s\n", kd_ku, keyname[i]);
+        //printf("k%c %s\n", kd_ku, keyname[i]);
         //event->key.type = event->type;
+        event->type = kd_ku == 'u' ? SDL_KEYUP : SDL_KEYDOWN;
         event->key.keysym.sym = i;
         key_state[i] = kd_ku == 'd';
         return 1;
@@ -46,13 +48,14 @@ int SDL_WaitEvent(SDL_Event *event) {
   while (!NDL_PollEvent(buf, sizeof(buf)));
   if(sscanf(buf, "k%c %s\n", &kd_ku, key_name) == 2)
   {
-    event->type = kd_ku == 'u' ? SDL_KEYUP : SDL_KEYDOWN;
+    if(event == NULL) return 1;
     for (size_t i = 0; i < key_num; i++)
     {
       if (strcmp(keyname[i], key_name) == 0)
       {
-        printf("k%c %s\n", kd_ku, keyname[i]);
+        //printf("k%c %s\n", kd_ku, keyname[i]);
         //event->key.type = event->type;
+        event->type = kd_ku == 'u' ? SDL_KEYUP : SDL_KEYDOWN;
         event->key.keysym.sym = i;
         key_state[i] = kd_ku == 'd';
         return 1;
@@ -63,6 +66,7 @@ int SDL_WaitEvent(SDL_Event *event) {
 }
 
 int SDL_PeepEvents(SDL_Event *ev, int numevents, int action, uint32_t mask) {
+  printf("%s [line:%d]: function: %s is not support!\n", __FILE__, __LINE__, __FUNCTION__);
   return 0;
 }
 

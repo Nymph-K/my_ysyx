@@ -99,17 +99,7 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
     }
   }
 }
-// void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-//   getWindowSize();
-//   int screen_x = (window_w - screen_w) / 2;//center
-//   int screen_y = (window_h - screen_h) / 2;//center
-//   x += screen_x;
-//   y += screen_y;
-//   size_t offset = y * window_w + x;
-//   size_t len = w * h;
-//   lseek(fd_fb, offset, SEEK_SET);
-//   write(fd_fb, pixels, len);
-// }
+
 
 void NDL_OpenAudio(int freq, int channels, int samples) {
 }

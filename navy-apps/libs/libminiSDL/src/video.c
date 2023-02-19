@@ -90,9 +90,15 @@ void SDL_UpdateRect(SDL_Surface *s, int x, int y, int w, int h) {
     SDL_Color *color_palette = s->format->palette->colors;
     uint8_t *index = s->pixels;
     uint32_t *buf = malloc(w * h * 4);
-    for (size_t i = 0; i < w * h; i++)
+    for (size_t i = 0; i < h; i++)
     {
-      buf[i] = color_palette[index[i]].val;
+      size_t buf_off = i * w;
+      size_t pal_off = (i + y) * s->w + x;
+      for (size_t j = 0; j < w; j++)
+      {
+        buf[buf_off] = color_palette[index[pal_off]].val;
+        buf_off++; pal_off++;
+      }
     }
     NDL_DrawRect(buf, x, y, w, h);
     free(buf);
