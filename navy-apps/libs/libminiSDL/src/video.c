@@ -23,7 +23,7 @@ void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_
     uint32_t *dst_pix = (uint32_t *)(dst->pixels);
     for (size_t i = 0; i < h; i++)
     {
-      src_off = (src_y+i) * w + src_x;
+      src_off = (src_y+i) * src->w + src_x;
       dst_off = (dst_y+i) * dst->w + dst_x;
       for (size_t j = 0; j < w; j++)
       {
@@ -37,13 +37,13 @@ void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_
     uint8_t *dst_pix = (uint8_t *)(dst->pixels);
     for (size_t i = 0; i < h; i++)
     {
-      src_off = (src_y+i) * w + src_x;
-      dst_off = (dst_y+i) * w + dst_x;
+      src_off = (src_y+i) * src->w + src_x;
+      dst_off = (dst_y+i) * dst->w + dst_x;
       for (size_t j = 0; j < w; j++)
       {
+        dst_pix[dst_off] = src_pix[src_off];
         src_off++;
         dst_off++;
-        dst_pix[dst_off] = src_pix[src_off];
       }
     }
   }
@@ -66,7 +66,7 @@ void SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, uint32_t color) {
   int offset;
   for (size_t i = y; i < y+h; i++)
   {
-    offset = w * i + x;
+    offset = dst->w * i + x;
     for (size_t j = x; j < x+w; j++)
     {
       ((uint32_t *)(dst->pixels))[offset] = color;
