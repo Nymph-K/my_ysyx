@@ -53,7 +53,7 @@ void device_update() {
   last = now;
 
   IFDEF(CONFIG_HAS_VGA, vga_update_screen());
-  IFDEF(CONFIG_HAS_CLINT, clint_mtime_update());
+  //IFDEF(CONFIG_HAS_CLINT, clint_mtime_update());
 
 #ifndef CONFIG_TARGET_AM
   SDL_Event event;
@@ -92,7 +92,7 @@ void init_device() {
   IFDEF(CONFIG_HAS_AUDIO, init_audio());
   IFDEF(CONFIG_HAS_DISK, init_disk());
   IFDEF(CONFIG_HAS_SDCARD, init_sdcard());
-  IFDEF(CONFIG_HAS_CLINT, init_clint());
+  //IFDEF(CONFIG_HAS_CLINT, init_clint());
 
   IFNDEF(CONFIG_TARGET_AM, init_alarm());
 }

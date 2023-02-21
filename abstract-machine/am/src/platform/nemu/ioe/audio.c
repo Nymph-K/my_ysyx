@@ -1,5 +1,6 @@
 #include <am.h>
 #include <nemu.h>
+#include <stdio.h>
 #include <string.h>
 
 #define AUDIO_FREQ_ADDR      (AUDIO_ADDR + 0x00)
@@ -11,12 +12,12 @@
 
 static uint32_t ring_queue_len(uint32_t head, uint32_t tail)
 {
-  return (tail > head) ? (tail - head) : (inl(AUDIO_SBUF_SIZE_ADDR) + tail - head);
+  return (tail >= head) ? (tail - head) : (inl(AUDIO_SBUF_SIZE_ADDR) + tail - head);
 }
 
 static uint32_t ring_queue_add(uint32_t ptr, uint32_t num)
 {
-  return (ptr + num >= inl(AUDIO_SBUF_SIZE_ADDR)) ? (ptr + num - inl(AUDIO_SBUF_SIZE_ADDR)) : (ptr + num);
+  return ((ptr + num) >= inl(AUDIO_SBUF_SIZE_ADDR)) ? ((ptr + num) - inl(AUDIO_SBUF_SIZE_ADDR)) : (ptr + num);
 }
 
 void __am_audio_init() {
@@ -77,4 +78,7 @@ void __am_audio_play(AM_AUDIO_PLAY_T *ctl) {
     }
   }
   outw(AUDIO_COUNT_ADDR, ring_queue_add(tail, audio_len));
+  tail = inw(AUDIO_COUNT_ADDR);
+  head = inw(AUDIO_COUNT_ADDR + 2);
+  // printf("play head = %d, tail = %d, count = %d\n", head, tail, ring_queue_len(head, tail));
 }

@@ -162,9 +162,9 @@ static int decode_exec(Decode *s) {
 word_t isa_query_intr(vaddr_t epc);
 
 int isa_exec_once(Decode *s) {
-  s->pc = isa_query_intr(s->pc);
-  if(s->pc == 0) {s->pc = s->snpc;}//no intr
-  else {s->snpc = s->pc;}//intr
+  // s->pc = isa_query_intr(s->pc);
+  // if(s->pc == 0) {s->pc = s->snpc;}//no intr
+  // else {s->snpc = s->pc;}//intr
   s->isa.inst.val = inst_fetch(&s->snpc, 4);
   return decode_exec(s);
 }

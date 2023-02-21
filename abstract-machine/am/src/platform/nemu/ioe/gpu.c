@@ -1,5 +1,6 @@
 #include <am.h>
 #include <nemu.h>
+#include <stdio.h>
 
 #define SYNC_ADDR (VGACTL_ADDR + 4)
 
@@ -36,6 +37,7 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
     }
   }
   if (ctl->sync) {
+    printf("sync!\n");
     outl(SYNC_ADDR, 1);
   }
 }

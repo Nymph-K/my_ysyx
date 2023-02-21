@@ -29,12 +29,12 @@ enum {
 
 static uint32_t ring_queue_len(uint32_t head, uint32_t tail)
 {
-  return (tail > head) ? (tail - head) : (CONFIG_SB_SIZE + tail - head);
+  return (tail >= head) ? (tail - head) : (CONFIG_SB_SIZE + tail - head);
 }
 
 static uint32_t ring_queue_add(uint32_t ptr, uint32_t num)
 {
-  return (ptr + num >= CONFIG_SB_SIZE) ? (ptr + num - CONFIG_SB_SIZE) : (ptr + num);
+  return ((ptr + num) >= CONFIG_SB_SIZE) ? ((ptr + num) - CONFIG_SB_SIZE) : (ptr + num);
 }
 
 static uint8_t *sbuf = NULL;
@@ -69,7 +69,7 @@ static void init_sdl_audio() {
 void callBack_fillAudioData(void *userdata, uint8_t *stream, int len)
 {
     uint32_t tail = audio_base[reg_count] & 0xffff;
-    uint32_t head = audio_base[reg_count] >> 16;
+    uint32_t head = (audio_base[reg_count] >> 16) & 0xffff;
     uint32_t count = ring_queue_len(head, tail);
 
     int real_len = (len > count ? count : len);
@@ -89,7 +89,8 @@ void callBack_fillAudioData(void *userdata, uint8_t *stream, int len)
       SDL_memset(stream + real_len, 0, len - real_len);
     }
     head = ring_queue_add(head, real_len);
-    audio_base[reg_count] = (head << 16) | (audio_base[reg_count] & ~0xffff0000);
+    audio_base[reg_count] = (head << 16) | tail;
+    //printf("head = %d, tail = %d, count = %d\n", head, tail, ring_queue_len(head, tail));
 }
 
 void destroy_sdl_audio(){
