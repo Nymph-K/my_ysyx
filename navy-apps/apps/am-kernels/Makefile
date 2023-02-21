@@ -3,8 +3,8 @@ ifeq ($(wildcard $(AM_KERNELS_PATH)/tests/am-tests/src),)
   $(error Please set $$AM_KERNELS_PATH in the Makefile to a valid path of an am-kernels repo)
 endif
 
-BENCHMARKS = coremark dhrystone
-KERNELS    = typing-game
+BENCHMARKS = coremark dhrystone microbench
+KERNELS    = typing-game hello
 APP_PATH   = $(AM_KERNELS_PATH)/$(if $(findstring $(1), $(BENCHMARKS)),benchmarks,kernels)/$(1)
 
 ALL = $(BENCHMARKS) $(KERNELS)

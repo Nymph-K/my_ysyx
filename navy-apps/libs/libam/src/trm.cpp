@@ -4,11 +4,6 @@
 
 Area heap;
 
-#ifndef MAINARGS
-#define MAINARGS ""
-#endif
-const char mainargs[] = MAINARGS;
-
 void putch(char ch) {
     putchar(ch);
 }
