@@ -12,5 +12,6 @@ endif
 
 NAME = libam
 SRCS = $(shell find ./src -name "*.c" -o -name "*.cpp")
-LIB_DEP = libndl
+LIB_DEP = libndl libminiSDL
+CFLAGS = -DMAINARGS=\"$(mainargs)\"
 include $(NAVY_HOME)/Makefile

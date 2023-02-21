@@ -17,6 +17,7 @@ void NDL_OpenAudio(int freq, int channels, int samples);
 void NDL_CloseAudio();
 int NDL_PlayAudio(void *buf, int len);
 int NDL_QueryAudio();
+void getWindowSize(int *win_w, int *win_h);
 
 #ifdef __cplusplus
 }

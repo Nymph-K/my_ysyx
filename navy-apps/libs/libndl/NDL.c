@@ -24,7 +24,7 @@ int NDL_PollEvent(char *buf, int len) {
   return read(fd_events, buf, len);
 }
 
-void getWindowSize(void)
+void getWindowSize(int *win_w, int *win_h)
 {
   char whbuf[64];
   size_t i;
@@ -33,7 +33,7 @@ void getWindowSize(void)
   {
     if('0' <= whbuf[i] && whbuf[i] <= '9') break;
   }
-  window_w = atoi(whbuf+i);
+  *win_w = atoi(whbuf+i);
   for (; i < sizeof(whbuf); i++)// exit 0-9
   {
     if(whbuf[i] < '0' || '9' < whbuf[i]) break;
@@ -42,11 +42,11 @@ void getWindowSize(void)
   {
     if('0' <= whbuf[i] && whbuf[i] <= '9') break;
   }
-  window_h = atoi(whbuf+i);
+  *win_h = atoi(whbuf+i);
 }
 
 void NDL_OpenCanvas(int *w, int *h) {
-  getWindowSize();
+  getWindowSize(&window_w, &window_h);
   if ((*w |*h) == 0)
   {
     *w = window_w;
@@ -76,7 +76,7 @@ void NDL_OpenCanvas(int *w, int *h) {
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  getWindowSize();
+  getWindowSize(&window_w, &window_h);
   int screen_x = (window_w - screen_w) / 2;//center
   int screen_y = (window_h - screen_h) / 2;//center
   x += screen_x;
@@ -132,4 +132,5 @@ int NDL_Init(uint32_t flags) {
 }
 
 void NDL_Quit() {
+  //exit(0);
 }
