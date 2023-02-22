@@ -31,7 +31,7 @@ enum {
 //Empty head = 0, tail = 0
 //FULL  tail +1 = head
 #define HEAD_MAX (CONFIG_SB_SIZE - 1)
-static uint32_t head = 0;
+static volatile uint32_t head = 0;
 
 static uint32_t ring_add(uint32_t ptr, uint32_t num)
 {
@@ -44,12 +44,19 @@ static bool sdl_sudio_is_inited = false;
 
 void callBack_fillAudioData(void *userdata, uint8_t *stream, int len);
 
+
+void destroy_sdl_audio(){
+  SDL_PauseAudio(1);
+  SDL_CloseAudio();
+}
+
 static void init_sdl_audio() {
   if (sdl_sudio_is_inited)
   {
-    SDL_PauseAudio(1);
-    SDL_CloseAudio();
+    destroy_sdl_audio();
   }
+  head = 0;
+  audio_base[reg_count] = 0;
   SDL_AudioSpec desired;
   desired.freq = audio_base[reg_freq];
   desired.channels = audio_base[reg_channels];
@@ -58,7 +65,6 @@ static void init_sdl_audio() {
   desired.format = AUDIO_S16SYS;
   desired.userdata = NULL;
   desired.callback = callBack_fillAudioData;
-  audio_base[reg_count] = 0;
   int ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
   if (ret == 0) {
     SDL_OpenAudio(&desired, NULL);
@@ -92,13 +98,15 @@ void callBack_fillAudioData(void *userdata, uint8_t *stream, int len)
     //printf("head = %d, tail = %d, count = %d\n", head, tail, ring_queue_len(head, tail));
 }
 
-void destroy_sdl_audio(){
-  SDL_PauseAudio(1);
-  SDL_CloseAudio();
-}
-
 static void audio_io_handler(uint32_t offset, int len, bool is_write) {
-  if(is_write && offset == reg_init) init_sdl_audio();
+  if(is_write && offset == reg_init * sizeof(uint32_t)) 
+  {
+    //printf("offset = %d, len = %d, is_write = %d\n", offset, len, is_write);
+    if(audio_base[reg_init])
+      init_sdl_audio();
+    else
+      destroy_sdl_audio();
+  }
 }
 
 void init_audio() {

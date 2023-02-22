@@ -76,6 +76,29 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
   return len;
 }
 
+// size_t sbctl_write(const void *buf, size_t offset, size_t len)
+// {
+//   if(buf==NULL || len!=12) return 0;
+//   ioe_write(AM_AUDIO_CTRL, (AM_AUDIO_CTRL_T *)buf);
+//   return len;
+// }
+
+// size_t sbctl_read(const void *buf, size_t offset, size_t len)
+// {
+//   if(buf==NULL || len!=sizeof(int)) return 0;
+//   ioe_read(AM_AUDIO_STATUS, (AM_AUDIO_STATUS_T *)buf);
+//   return len;
+// }
+
+// size_t sb_write(const void *buf, size_t offset, size_t len) {
+//   if(buf==NULL || len==0) return 0;
+//   AM_AUDIO_PLAY_T cfg;
+//   cfg.buf.start = buf;
+//   cfg.buf.end = ((uint8_t *)buf + len);
+//   ioe_write(AM_AUDIO_PLAY, &cfg);
+//   return len;
+// }
+
 void init_device() {
   Log("Initializing devices...");
   ioe_init();

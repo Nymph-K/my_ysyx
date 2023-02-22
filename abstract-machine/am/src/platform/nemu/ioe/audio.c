@@ -15,7 +15,7 @@
 //FULL  tail +1 = head
 
 #define COUNT_MAX (buf_size - 1)
-static uint32_t tail = 0;
+static volatile uint32_t tail = 0;
 
 static uint32_t ring_add(uint32_t ptr, uint32_t len)
 {
@@ -24,6 +24,7 @@ static uint32_t ring_add(uint32_t ptr, uint32_t len)
 
 void __am_audio_init()
 {
+  tail = 0;
   outl(AUDIO_COUNT_ADDR, 0);
 }
 
@@ -38,6 +39,7 @@ void __am_audio_ctrl(AM_AUDIO_CTRL_T *ctrl)
   outl(AUDIO_FREQ_ADDR, ctrl->freq);
   outl(AUDIO_CHANNELS_ADDR, ctrl->channels);
   outl(AUDIO_SAMPLES_ADDR, ctrl->samples);
+  outl(AUDIO_INIT_ADDR, 1);
 }
 
 void __am_audio_status(AM_AUDIO_STATUS_T *stat)
@@ -83,6 +85,4 @@ void __am_audio_play(AM_AUDIO_PLAY_T *ctl)
     tail = ring_add(tail, write_len);
     writed_count += write_len;
   }
-
-  // printf("play head = %d, tail = %d, count = %d\n", head, tail, ring_queue_len(head, tail));
 }

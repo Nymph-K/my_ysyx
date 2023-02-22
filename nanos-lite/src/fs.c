@@ -8,6 +8,9 @@ size_t events_read(void *buf, size_t offset, size_t len);
 size_t dispinfo_read(void *buf, size_t offset, size_t len);
 size_t fb_write(const void *buf, size_t offset, size_t len);
 size_t get_fbsize(void);
+// size_t sbctl_write(const void *buf, size_t offset, size_t len);
+// size_t sbctl_read(const void *buf, size_t offset, size_t len);
+// size_t sb_write(const void *buf, size_t offset, size_t len);
 
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
@@ -21,7 +24,15 @@ typedef struct {
   size_t open_offset;
 } Finfo;
 
-enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB, FD_EVENTS, FD_DISPINFO};
+enum {FD_STDIN, 
+      FD_STDOUT, 
+      FD_STDERR, 
+      FD_EVENTS, 
+      FD_DISPINFO,
+      FD_FB, 
+      // FD_SBCTL,
+      // FD_SB,
+};
 
 size_t invalid_read(void *buf, size_t offset, size_t len) {
   panic("should not reach here");
@@ -38,10 +49,12 @@ static Finfo file_table[] __attribute__((used)) = {
   [FD_STDIN]  = {"stdin", 0, 0, invalid_read, invalid_write, 0},
   [FD_STDOUT] = {"stdout", 0, 0, invalid_read, serial_write, 0},
   [FD_STDERR] = {"stderr", 0, 0, invalid_read, serial_write, 0},
-  [FD_FB] = {"/dev/fb", 0, 0, invalid_read, fb_write, 0},
   [FD_EVENTS] = {"/dev/events", 0, 0, events_read, invalid_write, 0},
   [FD_DISPINFO] = {"/proc/dispinfo", 0, 0, dispinfo_read, invalid_write, 0},
-#include "files.h"
+  [FD_FB] = {"/dev/fb", 0, 0, invalid_read, fb_write, 0},
+  // [FD_SBCTL] = {"/dev/sbctl", 0, 0, sbctl_read, sbctl_write, 0},
+  // [FD_SB] = {"/dev/sb", 0, 0, invalid_read, sb_write, 0},
+  #include "files.h"
 };
 
 static size_t file_num = sizeof(file_table)/sizeof(file_table[0]);

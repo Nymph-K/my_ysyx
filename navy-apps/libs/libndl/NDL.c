@@ -11,6 +11,8 @@ static int window_w = 0, window_h = 0;
 static int fd_events = -1;
 static int fd_dispinfo = -1;
 static int fd_fb = -1;
+// static int fd_sb = -1;
+// static int fd_sbctl = -1;
 static uint32_t boot_time = 0;
 
 
@@ -102,17 +104,25 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
 
 
 void NDL_OpenAudio(int freq, int channels, int samples) {
+  // int buf[3] = {freq, channels, samples};
+  // write(fd_sbctl, buf, sizeof(buf));
 }
 
 void NDL_CloseAudio() {
+  // printf("file: %s line: %d func: %s is not support!\n", __FILE__, __LINE__, __FUNCTION__);
 }
 
 int NDL_PlayAudio(void *buf, int len) {
-  return 0;
+  // if(buf==NULL || len==0) return 0;
+  // return write(fd_sb, buf, len);
 }
 
 int NDL_QueryAudio() {
-  return 0;
+  // int count;
+  // if(read(fd_sbctl, &count, 4))
+  //   return count;
+  // else
+  //   return 0;
 }
 
 int NDL_Init(uint32_t flags) {
@@ -125,6 +135,11 @@ int NDL_Init(uint32_t flags) {
   if(fd_dispinfo == 0) {return 1;}
   fd_fb = open("/dev/fb", 0, 0);
   if(fd_fb == 0) {return 1;}
+  // fd_sb = open("/dev/sb", 0, 0);
+  // if(fd_sb == 0) {return 1;}
+  // fd_sbctl = open("/dev/sbctl", 0, 0);
+  // if(fd_sbctl == 0) {return 1;}
+
   struct timeval tod;
   gettimeofday(&tod, NULL);
   boot_time = tod.tv_sec * 1000 + tod.tv_usec / 1000;
