@@ -23,16 +23,17 @@ enum {
   reg_samples,
   reg_sbuf_size,
   reg_init,
-  reg_count,// [31:16] head, [15:0] tail
+  reg_count,
   nr_reg
 };
 
-static uint32_t ring_queue_len(uint32_t head, uint32_t tail)
-{
-  return (tail >= head) ? (tail - head) : (CONFIG_SB_SIZE + tail - head);
-}
+//tail = 0 in abstract-machine/am/src/platform/nemu/ioe/audio.c
+//Empty head = 0, tail = 0
+//FULL  tail +1 = head
+#define HEAD_MAX (CONFIG_SB_SIZE - 1)
+static uint32_t head = 0;
 
-static uint32_t ring_queue_add(uint32_t ptr, uint32_t num)
+static uint32_t ring_add(uint32_t ptr, uint32_t num)
 {
   return ((ptr + num) >= CONFIG_SB_SIZE) ? ((ptr + num) - CONFIG_SB_SIZE) : (ptr + num);
 }
@@ -68,15 +69,13 @@ static void init_sdl_audio() {
 
 void callBack_fillAudioData(void *userdata, uint8_t *stream, int len)
 {
-    uint32_t tail = audio_base[reg_count] & 0xffff;
-    uint32_t head = (audio_base[reg_count] >> 16) & 0xffff;
-    uint32_t count = ring_queue_len(head, tail);
+    uint32_t count = audio_base[reg_count];
 
     int real_len = (len > count ? count : len);
 
-    if(head + real_len >= CONFIG_SB_SIZE)
+    if(head + real_len > HEAD_MAX)
     {
-      uint32_t len1 = CONFIG_SB_SIZE - head;
+      uint32_t len1 = HEAD_MAX - head;
       SDL_memcpy(stream, sbuf + head, len1);
       SDL_memcpy(stream + len1, sbuf, real_len - len1);
     }
@@ -88,8 +87,8 @@ void callBack_fillAudioData(void *userdata, uint8_t *stream, int len)
     {
       SDL_memset(stream + real_len, 0, len - real_len);
     }
-    head = ring_queue_add(head, real_len);
-    audio_base[reg_count] = (head << 16) | tail;
+    head = ring_add(head, real_len);
+    audio_base[reg_count] = count - real_len;
     //printf("head = %d, tail = %d, count = %d\n", head, tail, ring_queue_len(head, tail));
 }
 

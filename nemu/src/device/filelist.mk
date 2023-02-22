@@ -22,7 +22,7 @@ SRCS-$(CONFIG_HAS_VGA) += src/device/vga.c
 SRCS-$(CONFIG_HAS_AUDIO) += src/device/audio.c
 SRCS-$(CONFIG_HAS_DISK) += src/device/disk.c
 SRCS-$(CONFIG_HAS_SDCARD) += src/device/sdcard.c
-SRCS-$(CONFIG_HAS_CLINT) += src/device/clint.c
+#SRCS-$(CONFIG_HAS_CLINT) += src/device/clint.c
 
 SRCS-BLACKLIST-$(CONFIG_TARGET_AM) += src/device/alarm.c
 

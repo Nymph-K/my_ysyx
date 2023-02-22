@@ -5,8 +5,8 @@ AM_SRCS := platform/nemu/trm.c \
            platform/nemu/ioe/gpu.c \
            platform/nemu/ioe/audio.c \
            platform/nemu/ioe/disk.c \
-           platform/nemu/mpe.c \
-           platform/nemu/ioe/clint.c
+           platform/nemu/mpe.c #\
+           #platform/nemu/ioe/clint.c
 
 CFLAGS    += -fdata-sections -ffunction-sections
 LDFLAGS   += -T $(AM_HOME)/scripts/linker.ld \
