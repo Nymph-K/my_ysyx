@@ -135,11 +135,16 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   checkregs(&ref_r, pc);
 }
 
+void difftest_copy_to_ref(void)
+{
+  ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), CONFIG_MSIZE, DIFFTEST_TO_REF);
+  ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
+}
+
 void difftest_attach(void)
 {
   printf("Memory coping...\n");
-  ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), CONFIG_MSIZE, DIFFTEST_TO_REF);
-  ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
+  difftest_copy_to_ref();
   printf("Memory cope finish!\n");
 }
 

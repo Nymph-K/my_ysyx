@@ -25,6 +25,8 @@ static int is_batch_mode = false;
 void init_regex();
 void init_wp_pool();
 void init_bp_pool();
+bool save_status(const char *abs_path);
+bool load_status(const char *abs_path);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -244,6 +246,18 @@ static int cmd_attach(char *args) {
 }
 #endif
 
+static int cmd_save(char *args) {
+  if (save_status(args))
+    return 0;
+  return 1; 
+}
+
+static int cmd_load(char *args) {
+  if (load_status(args))
+    return 0;
+  return 1; 
+}
+
 static struct {
   const char *name;
   const char *description;
@@ -264,6 +278,8 @@ static struct {
   { "detach", "Exit DiffTest mode.\t Example: (nemu) detach", cmd_detach },
   { "attach", "Enter DiffTest mode.\t Example: (nemu) attach", cmd_attach },
 #endif
+  { "save", "Creat Snapshot.\t arg: file_path or NULL. Example: (nemu) save", cmd_save },
+  { "load", "Load Snapshot.\t arg: file_path or NULL. Example: (nemu) load", cmd_load },
 
   /* TODO: Add more commands */
 
