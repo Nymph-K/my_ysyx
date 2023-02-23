@@ -21,6 +21,8 @@
 #include <elf_pars.h>
 #include "../isa/riscv64/local-include/reg.h"
 
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.

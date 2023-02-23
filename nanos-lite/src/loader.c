@@ -99,7 +99,10 @@ int process_program_headers(int fd)
 int get_program_headers(int fd)
 {
     if (program_headers != NULL)
-        return 1;
+    {
+        free(program_headers);
+    }
+
 
     Elf_Phdr *phdrs;
 

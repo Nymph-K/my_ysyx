@@ -7,10 +7,10 @@ static BDF_Font *font = NULL;
 static SDL_Surface *screen = NULL;
 Terminal *term = NULL;
 
-void builtin_sh_run();
+void builtin_sh_run(char *envp[]);
 void extern_app_run(const char *app_path);
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[], char *envp[]) {
   SDL_Init(0);
   font = new BDF_Font(font_fname);
 
@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
   term = new Terminal(W, H);
 
-  if (argc < 2) { builtin_sh_run(); }
+  if (argc < 2) { builtin_sh_run(envp); }
   else { extern_app_run(argv[1]); }
 
   // should not reach here
@@ -155,4 +155,8 @@ char handle_key(SDL_Event *ev) {
     }
   }
   return '\0';
+}
+
+void clear_display(void) {
+  SDL_FillRect(screen, NULL, 0);
 }

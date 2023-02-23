@@ -2,6 +2,7 @@
 #include "syscall.h"
 #include <fs.h>
 #include <sys/time.h>
+#include <proc.h>
 
 #define MY_ENUM_VALUES \
                 X(SYS_exit) \
@@ -37,6 +38,8 @@ const char *myenumToString(int n) {
     }
 }
 
+void naive_uload(PCB *pcb, const char *filename);
+
 void do_syscall(Context *c) {
   uintptr_t a[4];
   a[0] = c->GPR1;
@@ -51,7 +54,9 @@ void do_syscall(Context *c) {
       #endif
       return;
     case SYS_exit: 
-      halt(a[1]); break;
+      //halt(a[1]); 
+      naive_uload(NULL, "/bin/nterm");
+      break;
     case SYS_yield: 
       yield(); c->GPRx = 0; 
       break;
@@ -71,6 +76,10 @@ void do_syscall(Context *c) {
       c->GPRx = fs_lseek(a[1], a[2], a[3]); 
       break;
     case SYS_brk: 
+      c->GPRx = 0; 
+      break;
+    case SYS_execve: 
+      naive_uload(NULL, (const char *)(a[1]));
       c->GPRx = 0; 
       break;
     case SYS_gettimeofday: 

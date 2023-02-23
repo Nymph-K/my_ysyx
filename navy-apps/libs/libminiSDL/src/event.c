@@ -13,7 +13,7 @@ static const char *keyname[] = {
 uint8_t key_state[key_num] = {0};
 
 int SDL_PushEvent(SDL_Event *ev) {
-  printf("%s [line:%d]: function: %s is not support!\n", __FILE__, __LINE__, __FUNCTION__);
+  //printf("%s [line:%d]: function: %s is not support!\n", __FILE__, __LINE__, __FUNCTION__);
   return 0;
 }
 
@@ -66,7 +66,7 @@ int SDL_WaitEvent(SDL_Event *event) {
 }
 
 int SDL_PeepEvents(SDL_Event *ev, int numevents, int action, uint32_t mask) {
-  printf("%s [line:%d]: function: %s is not support!\n", __FILE__, __LINE__, __FUNCTION__);
+  //printf("%s [line:%d]: function: %s is not support!\n", __FILE__, __LINE__, __FUNCTION__);
   return 0;
 }
 
