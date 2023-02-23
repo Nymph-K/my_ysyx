@@ -15,9 +15,11 @@
 
 #include "sdb.h"
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 #define NR_WP 32
 #define WP_TP uint64_t
-#define EXP_SIZE 1024
+#define EXP_SIZE 128
 
 typedef struct watchpoint {
   int NO;
@@ -45,7 +47,7 @@ void init_wp_pool() {
   free_ = wp_pool;
 }
 
-void backPush(WP *head, WP *tail, WP *newNode)
+static void backPush(WP *head, WP *tail, WP *newNode)
 {
   if(head == NULL)
   {
@@ -59,13 +61,13 @@ void backPush(WP *head, WP *tail, WP *newNode)
   }
 }
 
-void frontPush(WP **head_ptr, WP *newNode)
+static void frontPush(WP **head_ptr, WP *newNode)
 {
   newNode->next = *head_ptr;
   *head_ptr = newNode;
 } 
 
-WP* frontPop(WP **head_ptr)
+static WP* frontPop(WP **head_ptr)
 {
   if (*head_ptr == NULL)
   {
@@ -80,7 +82,7 @@ WP* frontPop(WP **head_ptr)
   }
 }
 
-WP_TP get_CurrentResult(WP *tmp)
+static WP_TP get_CurrentResult(WP *tmp)
 {
   for (WP* cur = head; cur ; cur = cur->next)
   {
@@ -96,12 +98,12 @@ WP_TP get_CurrentResult(WP *tmp)
   return -1;
 }
 
-WP_TP get_CurrentResultNo(int no)
+static WP_TP get_CurrentResultNo(int no)
 {
   return get_CurrentResult(wp_pool + no);
 }
 
-WP_TP get_LastResult(WP *tmp)
+static WP_TP get_LastResult(WP *tmp)
 {
   for (WP* cur = head; cur ; cur = cur->next)
   {
@@ -113,7 +115,7 @@ WP_TP get_LastResult(WP *tmp)
   return -1;
 }
 
-WP_TP get_LastResultNo(int no)
+static WP_TP get_LastResultNo(int no)
 {
   return get_LastResult(wp_pool + no);
 }
@@ -121,6 +123,12 @@ WP_TP get_LastResultNo(int no)
 
 int new_wp(char * expression)
 {
+  if(expression == NULL) return -1;
+  if(strlen(expression) > EXP_SIZE)
+  {
+    printf("Expression too long!\n");
+    return -1;
+  }
   if (free_ != NULL)
   {
     WP * tmp = frontPop(&free_);
@@ -128,11 +136,6 @@ int new_wp(char * expression)
     strncpy(tmp->exp, expression, EXP_SIZE);
     tmp->next = NULL;
     frontPush(&head, tmp);
-    if(tmp->exp[EXP_SIZE] != '\0') 
-    {
-      printf("Expression too long!\n");
-      return -1;
-    }
     get_CurrentResult(tmp);
     printf("wp%d : %s \t current = %lu\n", tmp->NO, tmp->exp, tmp->lastResult);
     return tmp->NO;

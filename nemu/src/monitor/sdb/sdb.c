@@ -24,6 +24,7 @@ static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+void init_bp_pool();
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -75,6 +76,7 @@ static int cmd_si(char *args) {
 }
 
 void info_wp(void);
+void info_bp(void);
 static int cmd_info(char *args) {
   if (args == NULL) { 
       printf("Too few arguments!\n");
@@ -82,15 +84,25 @@ static int cmd_info(char *args) {
   }else{
     char arg;
     sscanf(args, "%c", &arg);
-    if(arg == 'r'){
-      isa_reg_display();
-      return 0;
-    }else if(arg == 'w'){
-      info_wp();
-      return 0;
-    }else{
-      printf("Argument illegal!\n");
-      return 1;
+    switch (arg)
+    {
+      case 'r':
+        isa_reg_display();
+        return 0;
+        break;
+      case 'w':
+        info_wp();
+        return 0;
+        break;
+      case 'b':
+        info_bp();
+        return 0;
+        break;
+      
+      default:
+        printf("Argument illegal!\n");
+        return 1;
+        break;
     }
   }
 }
@@ -177,6 +189,61 @@ static int cmd_d(char *args) {
   }
 }
 
+bool new_bp(char * fname);
+static int cmd_b(char *args) {
+  if (args == NULL) { 
+    printf("Too few arguments!\n");
+    return 1;
+  }else{
+    bool success = new_bp(args);
+    if(success){
+      //uint64_t result = get_LastResultNo(no);
+      printf("Set break point success!\n");
+      return 0;
+    }
+    else{
+      printf("Set break point failed!\n");
+      return 1;
+    }
+  }
+}
+
+bool free_bp_no(int no);
+static int cmd_db(char *args) {
+  if (args == NULL) { 
+    printf("Too few arguments!\n");
+    return 1;
+  }else{
+    int num;
+    char *arg;
+    arg = strtok(args, " ");
+    sscanf(arg, "%d", &num);
+    if (free_bp_no(num)){
+      printf("bp %d deleted success!\n", num);
+      return 0;}
+    else{
+      printf("bp %d deleted faild!\n", num);
+      return 1;}
+  }
+}
+
+#ifdef CONFIG_DIFFTEST
+extern bool disable_diff;
+static int cmd_detach(char *args) {
+  disable_diff = true;
+  printf("\033[0m\033[1;31mExit \033[0mDiffTest  mode!\n");
+  return 0;
+}
+
+void difftest_attach(void);
+static int cmd_attach(char *args) {
+  disable_diff = false;
+  difftest_attach();
+  printf("\033[0m\033[1;32mEnter \033[0mDiffTest mode!\n");
+  return 0;
+}
+#endif
+
 static struct {
   const char *name;
   const char *description;
@@ -186,11 +253,17 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
   { "si", "Single step execute the program.\t arg: N. Example: (nemu) si 10", cmd_si },
-  { "info", "Print program status.\t arg: r|w. Example: (nemu) info r", cmd_info },
+  { "info", "Print program status.\t arg: r|w|b. Example: (nemu) info r", cmd_info },
   { "x", "Scan memory.\t arg: N EXPR. Example: (nemu) x 10 $esp", cmd_x },
   { "p", "Expression evaluation.\t arg: EXPR. Example: (nemu) p $esp", cmd_p },
   { "w", "Set watch point.\t arg: EXPR. Example: (nemu) w $esp", cmd_w },
   { "d", "Delete watch point.\t arg: N. Example: (nemu) d 2", cmd_d },
+  { "b", "Set break point by function name.\t arg: name. Example: (nemu) b func_name", cmd_b },
+  { "db", "Delete break point by number.\t arg: number. Example: (nemu) db 0", cmd_db },
+#ifdef CONFIG_DIFFTEST
+  { "detach", "Exit DiffTest mode.\t Example: (nemu) detach", cmd_detach },
+  { "attach", "Enter DiffTest mode.\t Example: (nemu) attach", cmd_attach },
+#endif
 
   /* TODO: Add more commands */
 
@@ -267,6 +340,9 @@ void init_sdb() {
   /* Compile the regular expressions. */
   init_regex();
 
-  /* Initialize the watchpoint pool. */
+  /* Initialize the watch point pool. */
   init_wp_pool();
+  
+  /* Initialize the break point pool. */
+  init_bp_pool();
 }

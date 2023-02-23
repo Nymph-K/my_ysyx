@@ -6,6 +6,12 @@ config WATCHPOINT
   help
     Every time the CPU executes an instruction, it scans the watchpoints.
 
+config BREAKPOINT
+  bool "Scan Breakpoint when jump"
+  default y
+  help
+    Every time the program executes an jump, it scans the breakpoints.
+
 choice
   prompt "Base ISA"
   default ISA_riscv32

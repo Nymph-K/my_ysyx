@@ -401,3 +401,22 @@ char *get_func_name_by_idx(int idx_of_sym, int idx_of_elf)
     }
     return str_tbl[idx_of_elf]+sym_tbl_func[idx_of_elf][idx_of_sym].st_name;
 }
+
+int is_func_name(char *str, int *idxOfSym, int *idxOfElf)
+{
+    Elf64_Sym *sym;
+    for (size_t idx_of_elf = 0; idx_of_elf < num_of_elf; idx_of_elf++)
+    {
+        sym = sym_tbl_func[idx_of_elf];
+        for (int idx_of_sym = 0; idx_of_sym < sym_func_num[idx_of_elf]; sym++, idx_of_sym++)
+        {
+            if (strcmp(str, str_tbl[idx_of_elf]+sym->st_name) == 0)
+            {
+                if(idxOfSym) *idxOfSym = idx_of_sym;
+                if(idxOfElf) *idxOfElf = idx_of_elf;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}

@@ -36,6 +36,10 @@ static bool g_print_step = false;
 void device_update();
 
 int scan_wp(void);
+bool scan_bp(char *fname);
+
+static char *funcName = NULL;
+
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   #if CONFIG_IRINGBUF_DEPTH
@@ -49,6 +53,12 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_WATCHPOINT// 1 for c, y for makefile
   if(scan_wp()) nemu_state.state = NEMU_STOP;
 #endif
+#ifdef CONFIG_BREAKPOINT// 1 for c, y for makefile
+  if(funcName && scan_bp(funcName)) {
+    funcName = NULL;
+    nemu_state.state = NEMU_STOP;
+  }
+#endif
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
@@ -56,7 +66,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   s->snpc = pc;
   isa_exec_once(s);
   cpu.pc = s->dnpc;
-#if defined CONFIG_ITRACE || defined CONFIG_FTRACE || defined CONFIG_ETRACE
+#if defined CONFIG_ITRACE || defined CONFIG_FTRACE || defined CONFIG_ETRACE || defined CONFIG_BREAKPOINT
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
   int ilen = s->snpc - s->pc;
@@ -77,23 +87,20 @@ static void exec_once(Decode *s, vaddr_t pc) {
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst.val, ilen);
 
   #if CONFIG_FRINGBUF_DEPTH
-    callBuf cb;
-    if(strncmp(p, "jalr", 4) == 0){
+    callBuf cb = {.dnpc_sym_idx = -1, .dnpc_elf_idx = -1, .pc_sym_idx = -1, .pc_elf_idx = -1};
+    
+    if((strncmp(p, "jalr", 4) == 0) || 
+       (strncmp(p, "jal", 3) == 0)  ||
+       (strncmp(p, "jr", 2) == 0)){
       cb.dnpc_sym_idx = is_func_start(s->dnpc, &cb.dnpc_elf_idx);
       if (cb.dnpc_sym_idx  != -1)
       {
         cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
         cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
         ringBufWrite(&fringbuf, &cb);
-      }
-    }
-    else if(strncmp(p, "jal", 3) == 0){
-      cb.dnpc_sym_idx = is_func_start(s->dnpc, &cb.dnpc_elf_idx);
-      if (cb.dnpc_sym_idx  != -1)
-      {
-        cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
-        ringBufWrite(&fringbuf, &cb);
+        #ifdef CONFIG_BREAKPOINT
+          funcName = get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx);
+        #endif
       }
     }
     else if(strncmp(p, "ret", 3) == 0){
@@ -101,15 +108,6 @@ static void exec_once(Decode *s, vaddr_t pc) {
       cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
       cb.c_r = 'r'; cb.pc = s->pc; cb.dnpc = s->dnpc;
       ringBufWrite(&fringbuf, &cb);
-    }
-    else if(strncmp(p, "jr", 2) == 0){
-      cb.dnpc_sym_idx = is_func_start(s->dnpc, &cb.dnpc_elf_idx);
-      if (cb.dnpc_sym_idx  != -1)
-      {
-        cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
-        ringBufWrite(&fringbuf, &cb);
-      }
     }
   #endif
   #if CONFIG_ERINGBUF_DEPTH

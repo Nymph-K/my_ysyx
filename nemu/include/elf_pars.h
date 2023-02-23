@@ -24,5 +24,6 @@ int is_func_start(Elf64_Addr addr, int *idx);
 int get_func_ndx(Elf64_Addr addr, int *idx);
 char *get_func_name(Elf64_Addr addr);
 char *get_func_name_by_idx(int idx_of_sym, int idx_of_elf);
+int is_func_name(char *str, int *idxOfSym, int *idxOfElf);
 
 #endif /* _ELF_PARS_H*/
