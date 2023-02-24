@@ -3,7 +3,7 @@
 
 #include <common.h>
 
-#if CONFIG_IRINGBUF_DEPTH|CONFIG_MRINGBUF_DEPTH|CONFIG_FRINGBUF_DEPTH|CONFIG_DRINGBUF_DEPTH
+#if CONFIG_IRINGBUF_DEPTH||CONFIG_MRINGBUF_DEPTH||CONFIG_FRINGBUF_DEPTH||CONFIG_DRINGBUF_DEPTH||CONFIG_ERINGBUF_DEPTH
 
 #define LOG_LEN 128
 #define FTC_WIDTH sizeof(callBuf)
@@ -23,8 +23,10 @@ typedef struct
     char c_r;//call or return
 	vaddr_t pc;
 	vaddr_t dnpc;
-	int pc_fndx;
-	int dnpc_fndx;
+	int pc_elf_idx;
+	int pc_sym_idx;
+	int dnpc_elf_idx;
+	int dnpc_sym_idx;
 } callBuf;
 
 extern ringBuf iringbuf;

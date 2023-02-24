@@ -13,7 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include "sdb.h"
+#include <common.h>
 #include <elf_pars.h>
 
 #pragma GCC diagnostic ignored "-Wunused-function"

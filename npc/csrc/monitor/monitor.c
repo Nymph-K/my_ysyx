@@ -29,8 +29,9 @@ void ringBufInit(void);
 void timer_init();
 
 #if CONFIG_FRINGBUF_DEPTH
-int  init_elf(char const *file_name);
-static char *elf_file = NULL;
+int init_elf(int file_num, char const *file_name[]);
+static const char *elf_file[64]; // 64 elf max
+static int elf_file_num = 0;
 #endif
 
 static void welcome() {
@@ -52,36 +53,6 @@ static char *log_file = NULL;
 static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static int difftest_port = 1234;
-
-// char base_name[50];//base_name: dummy
-// char abso_name[100];//Absolute path
-// int load_bin(char *bin_file){
-//   FILE *binFile = NULL;
-//   if(bin_file[0] == '/'){
-//     //Absolute path: /home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/dummy-riscv64-npc.bin
-//     strcpy(abso_name, bin_file);
-//     strcpy(base_name, strrchr(bin_file, '/')+1);
-//     size_t j = strlen(base_name) - 16;
-//     base_name[j] = '\0';
-//   } else {
-//     // base_name: dummy
-//     strcpy(base_name, bin_file);
-//     strcpy(abso_name, "/home/k/ysyx-workbench/am-kernels/tests/cpu-tests/build/");
-//     strcat(abso_name, bin_file);
-//     strcat(abso_name, "-riscv64-npc.bin");
-//   }
-//   binFile = fopen(abso_name, "rb");
-//   long size = ftell(binFile);
-//   if(binFile != NULL){
-//     fread(mem_data, size, 1, binFile);
-//     fclose(binFile);
-//     return 0;
-//   }else{
-//     printf("NO such file: %s !\n", abso_name);
-//     fclose(binFile);
-//     return 1;
-//   }
-// }
 
 static long load_img() {
   if (img_file == NULL) {
@@ -124,7 +95,8 @@ static int parse_args(int argc, char *argv[]) {
       case 'd': diff_so_file = optarg; break;
       case 'f': 
         #if CONFIG_FRINGBUF_DEPTH
-        elf_file = optarg; 
+        elf_file[elf_file_num] = optarg;
+        elf_file_num++;
         #endif
         break;
       case 1: img_file = optarg; return 0;
@@ -161,8 +133,6 @@ void init_monitor(int argc, char *argv[]) {
   //IFDEF(CONFIG_DEVICE, init_device());
   timer_init();
 
-  /* Perform ISA dependent initialization. */
-  //init_isa();
 
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img();
@@ -182,8 +152,10 @@ void init_monitor(int argc, char *argv[]) {
   ringBufInit();
   #endif
   #if CONFIG_FRINGBUF_DEPTH
-  if(init_elf(elf_file) == -1)
-    init_elf(img_file);
+  if(init_elf(elf_file_num > 64 ? 64 : elf_file_num, elf_file) == -1){
+    Log("elf error!");
+    elf_file[0] = img_file;
+    init_elf(1, elf_file);}
   #endif
 
   /* Display welcome message. */

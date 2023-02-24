@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include <common.h>
+#include <memory/paddr.h>
 
 NPCState npc_state = { .state = NPC_STOP };
 
@@ -24,4 +25,61 @@ int is_exit_status_bad() {
     (npc_state.state == NPC_QUIT);
   exit_cpu();
   return !good;
+}
+
+bool save_status(const char *abs_path)
+{
+  const char *file_path = abs_path ? abs_path : "/home/k/ysyx-workbench/npc/npc-status.bkp";
+  FILE *fp = fopen(file_path, "w");
+  if(!fp){
+    printf("Creat Snapshot failed: File open failed!\n");
+    return false;
+  }
+  if(fwrite(mycpu, sizeof(TOP_NAME), 1, fp) != 1)
+  {
+    fclose(fp);
+    printf("Creat Snapshot failed: Save cpu status failed!\n");
+    return false;
+  }
+  if(fwrite(guest_to_host(RESET_VECTOR), CONFIG_MSIZE, 1, fp) != 1)
+  {
+    fclose(fp);
+    printf("Creat Snapshot failed: Save memory failed!\n");
+    return false;
+  }
+  fclose(fp);
+  printf("Creat Snapshot success!\n");
+  return true;
+}
+
+void difftest_copy_to_ref(void);
+bool load_status(const char *abs_path)
+{
+  const char *file_path = abs_path ? abs_path : "/home/k/ysyx-workbench/npc/npc-status.bkp";
+  FILE *fp = fopen(file_path, "r");
+  if(!fp){
+    printf("Load Snapshot failed: File open failed!\n");
+    return false;
+  }
+  if(fread(mycpu, sizeof(TOP_NAME), 1, fp) != 1)
+  {
+    fclose(fp);
+    npc_state.state = NPC_ABORT;
+    printf("Load Snapshot failed: Load cpu status failed!\n");
+    return false;
+  }
+  if(fread(guest_to_host(RESET_VECTOR), CONFIG_MSIZE, 1, fp) != 1)
+  {
+    fclose(fp);
+    npc_state.state = NPC_ABORT;
+    printf("Load Snapshot failed: Load memory failed!\n");
+    return false;
+  }
+  fclose(fp);
+  npc_state.state = NPC_STOP;
+  #ifdef CONFIG_DIFFTEST
+    difftest_copy_to_ref();
+  #endif
+  printf("Load Snapshot success!\n");
+  return true;
 }

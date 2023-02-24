@@ -112,11 +112,7 @@ extern "C" void inst_fetch(long long  pc, int *inst) {
 #define CLINT_MTIMECMP_ADDR (0x2004000)
 #define CLINT_MTIME_ADDR (0x200BFF8)
 
-static struct timeval boot_time = {};
-void timer_init() {
-  gettimeofday(&boot_time, NULL);
-}
-
+uint64_t get_time();
 extern "C" void paddr_read(long long raddr, long long *rdata) {
   // 总是读取地址为`raddr & ~0x7ull`的8字节返回给`rdata`
   paddr_t addr = raddr & ~0x7ull;
@@ -124,11 +120,7 @@ extern "C" void paddr_read(long long raddr, long long *rdata) {
     *rdata = pmem_read(addr, 8);
   }
   else if(addr == RTC_ADDR){
-    struct timeval now;
-    gettimeofday(&now, NULL);
-    long int seconds = now.tv_sec - boot_time.tv_sec;
-    long int useconds = now.tv_usec - boot_time.tv_usec;
-    *rdata = seconds * 1000000 + (useconds + 500);
+    *rdata = get_time();
     #if CONFIG_DRINGBUF_DEPTH
       char str[128];
       sprintf(str, "Device R: %10s[%d] = %016llX \tlen = %d", "Timer", 0, *rdata, 8);
@@ -138,12 +130,12 @@ extern "C" void paddr_read(long long raddr, long long *rdata) {
       difftest_skip_ref();
     #endif
   }
-  else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
-  {
-    #ifdef CONFIG_DIFFTEST
-      difftest_skip_ref();
-    #endif
-  }
+  // else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
+  // {
+  //   #ifdef CONFIG_DIFFTEST
+  //     difftest_skip_ref();
+  //   #endif
+  // }
   else out_of_bound(addr);
 }
 
@@ -184,11 +176,11 @@ extern "C" void paddr_write(long long waddr, long long wdata, char wmask) {
       #endif
     }
   }
-  else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
-  {
-    #ifdef CONFIG_DIFFTEST
-      difftest_skip_ref();
-    #endif
-  }
+  // else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
+  // {
+  //   #ifdef CONFIG_DIFFTEST
+  //     difftest_skip_ref();
+  //   #endif
+  // }
   else out_of_bound(addr);
 }

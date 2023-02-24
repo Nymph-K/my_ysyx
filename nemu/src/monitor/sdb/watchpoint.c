@@ -124,7 +124,7 @@ static WP_TP get_LastResultNo(int no)
 int new_wp(char * expression)
 {
   if(expression == NULL) return -1;
-  if(strlen(expression) > EXP_SIZE)
+  if(strlen(expression) >= EXP_SIZE)
   {
     printf("Expression too long!\n");
     return -1;

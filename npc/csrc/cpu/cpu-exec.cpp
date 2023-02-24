@@ -56,7 +56,6 @@ void stopCPU(void)
   npc_state.halt_ret = GPR(10);
 }
 
-
 #define MAX_INST_TO_PRINT 10
 
 uint64_t g_nr_guest_inst = 0;
@@ -66,6 +65,10 @@ static bool g_print_step = false;
 void device_update();
 
 int scan_wp(void);
+bool scan_bp(char *fname);
+
+static char *funcName = NULL;
+
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   #if CONFIG_IRINGBUF_DEPTH
@@ -78,6 +81,12 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 #ifdef CONFIG_WATCHPOINT// 1 for c, y for makefile
   if(scan_wp()) npc_state.state = NPC_STOP;
+#endif
+#ifdef CONFIG_BREAKPOINT// 1 for c, y for makefile
+  if(funcName && scan_bp(funcName)) {
+    funcName = NULL;
+    npc_state.state = NPC_STOP;
+  }
 #endif
 }
 
@@ -114,41 +123,33 @@ static void exec_once(Decode *s) {
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst.val, ilen);
 
-  #if CONFIG_FRINGBUF_DEPTH
-    callBuf cb;
-    if(strncmp(p, "jalr", 4) == 0){
-      cb.dnpc_fndx = is_func_start(s->dnpc | 0xffffffff00000000);
-      if (cb.dnpc_fndx  != -1)
+  #if CONFIG_FRINGBUF_DEPTH || CONFIG_BREAKPOINT
+    callBuf cb = {.pc_elf_idx = -1, .pc_sym_idx = -1, .dnpc_elf_idx = -1, .dnpc_sym_idx = -1};
+
+    if((strncmp(p, "jalr", 4) == 0) || 
+       (strncmp(p, "jal", 3) == 0)  ||
+       (strncmp(p, "jr", 2) == 0)){
+      cb.dnpc_sym_idx = is_func_start(s->dnpc, &cb.dnpc_elf_idx);
+      if (cb.dnpc_sym_idx  != -1)
       {
+        #if CONFIG_FRINGBUF_DEPTH
         cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+        cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
         ringBufWrite(&fringbuf, &cb);
+        #endif
+        #ifdef CONFIG_BREAKPOINT
+          funcName = get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx);
+        #endif
       }
     }
-    else if(strncmp(p, "jal", 3) == 0){
-      cb.dnpc_fndx = is_func_start(s->dnpc | 0xffffffff00000000);
-      if (cb.dnpc_fndx  != -1)
-      {
-        cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
-        ringBufWrite(&fringbuf, &cb);
-      }
-    }
+    #if CONFIG_FRINGBUF_DEPTH
     else if(strncmp(p, "ret", 3) == 0){
-      cb.dnpc_fndx = get_func_ndx(s->dnpc | 0xffffffff00000000);
-      cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
+      cb.dnpc_sym_idx = get_func_ndx(s->dnpc, &cb.dnpc_elf_idx);
+      cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
       cb.c_r = 'r'; cb.pc = s->pc; cb.dnpc = s->dnpc;
       ringBufWrite(&fringbuf, &cb);
     }
-    else if(strncmp(p, "jr", 2) == 0){
-      cb.dnpc_fndx = is_func_start(s->dnpc | 0xffffffff00000000);
-      if (cb.dnpc_fndx  != -1)
-      {
-        cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        cb.pc_fndx = get_func_ndx(s->pc | 0xffffffff00000000);
-        ringBufWrite(&fringbuf, &cb);
-      }
-    }
+    #endif
   #endif
   #if CONFIG_ERINGBUF_DEPTH
     char etrace_log[128];
@@ -178,6 +179,7 @@ static void execute(uint64_t n) {
     IFDEF(CONFIG_DIFFTEST, if(is_interrupt) difftest_skip_ref());
     trace_and_difftest(&s, mycpu->dnpc);
     if (npc_state.state != NPC_RUNNING) break;
+    //IFDEF(CONFIG_DEVICE, device_update());
   }
 }
 
@@ -226,9 +228,9 @@ static void print_trace(void) {
         _Log("    ");
       }
       if(cb->c_r == 'c')
-        _Log("%s -> %s\n", get_func_name_ndx(cb->pc_fndx), get_func_name_ndx(cb->dnpc_fndx));
+        _Log("%s -> %s\n", get_func_name_by_idx(cb->pc_sym_idx, cb->pc_elf_idx), get_func_name_by_idx(cb->dnpc_sym_idx, cb->dnpc_elf_idx));
       else
-        _Log("%s <- %s\n", get_func_name_ndx(cb->dnpc_fndx), get_func_name_ndx(cb->pc_fndx));
+        _Log("%s <- %s\n", get_func_name_by_idx(cb->dnpc_sym_idx, cb->dnpc_elf_idx), get_func_name_by_idx(cb->pc_sym_idx, cb->pc_elf_idx));
       
       if(cb->c_r == 'r')
         fun_depth = fun_depth == 0 ? 0 : fun_depth - 1;

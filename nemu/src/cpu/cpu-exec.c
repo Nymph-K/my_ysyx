@@ -88,7 +88,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst.val, ilen);
 
-  #if CONFIG_FRINGBUF_DEPTH
+  #if CONFIG_FRINGBUF_DEPTH || CONFIG_BREAKPOINT
     callBuf cb = {.dnpc_sym_idx = -1, .dnpc_elf_idx = -1, .pc_sym_idx = -1, .pc_elf_idx = -1};
     
     if((strncmp(p, "jalr", 4) == 0) || 
@@ -97,20 +97,24 @@ static void exec_once(Decode *s, vaddr_t pc) {
       cb.dnpc_sym_idx = is_func_start(s->dnpc, &cb.dnpc_elf_idx);
       if (cb.dnpc_sym_idx  != -1)
       {
+        #if CONFIG_FRINGBUF_DEPTH
         cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
         cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
         ringBufWrite(&fringbuf, &cb);
+        #endif
         #ifdef CONFIG_BREAKPOINT
           funcName = get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx);
         #endif
       }
     }
+    #if CONFIG_FRINGBUF_DEPTH
     else if(strncmp(p, "ret", 3) == 0){
       cb.dnpc_sym_idx = get_func_ndx(s->dnpc, &cb.dnpc_elf_idx);
       cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
       cb.c_r = 'r'; cb.pc = s->pc; cb.dnpc = s->dnpc;
       ringBufWrite(&fringbuf, &cb);
     }
+    #endif
   #endif
   #if CONFIG_ERINGBUF_DEPTH
     char etrace_log[128];

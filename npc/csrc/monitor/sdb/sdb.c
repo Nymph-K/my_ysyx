@@ -22,6 +22,9 @@ static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+void init_bp_pool();
+bool save_status(const char *abs_path);
+bool load_status(const char *abs_path);
 void cpu_exec(uint64_t n);
 
 word_t vaddr_read(vaddr_t addr, int len);
@@ -76,6 +79,7 @@ static int cmd_si(char *args) {
 }
 
 void info_wp(void);
+void info_bp(void);
 static int cmd_info(char *args) {
   if (args == NULL) { 
       printf("Too few arguments!\n");
@@ -83,15 +87,25 @@ static int cmd_info(char *args) {
   }else{
     char arg;
     sscanf(args, "%c", &arg);
-    if(arg == 'r'){
-      isa_reg_display();
-      return 0;
-    }else if(arg == 'w'){
-      info_wp();
-      return 0;
-    }else{
-      printf("Argument illegal!\n");
-      return 1;
+    switch (arg)
+    {
+      case 'r':
+        isa_reg_display();
+        return 0;
+        break;
+      case 'w':
+        info_wp();
+        return 0;
+        break;
+      case 'b':
+        info_bp();
+        return 0;
+        break;
+      
+      default:
+        printf("Argument illegal!\n");
+        return 1;
+        break;
     }
   }
 }
@@ -180,6 +194,73 @@ static int cmd_d(char *args) {
   }
 }
 
+bool new_bp(char * fname);
+static int cmd_b(char *args) {
+  if (args == NULL) { 
+    printf("Too few arguments!\n");
+    return 1;
+  }else{
+    bool success = new_bp(args);
+    if(success){
+      //uint64_t result = get_LastResultNo(no);
+      printf("Set break point success!\n");
+      return 0;
+    }
+    else{
+      printf("Set break point failed!\n");
+      return 1;
+    }
+  }
+}
+
+bool free_bp_no(int no);
+static int cmd_db(char *args) {
+  if (args == NULL) { 
+    printf("Too few arguments!\n");
+    return 1;
+  }else{
+    int num;
+    char *arg;
+    arg = strtok(args, " ");
+    sscanf(arg, "%d", &num);
+    if (free_bp_no(num)){
+      printf("bp %d deleted success!\n", num);
+      return 0;}
+    else{
+      printf("bp %d deleted faild!\n", num);
+      return 1;}
+  }
+}
+
+#ifdef CONFIG_DIFFTEST
+extern bool disable_diff;
+static int cmd_detach(char *args) {
+  disable_diff = true;
+  printf("\033[0m\033[1;31mExit \033[0mDiffTest  mode!\n");
+  return 0;
+}
+
+void difftest_attach(void);
+static int cmd_attach(char *args) {
+  disable_diff = false;
+  difftest_attach();
+  printf("\033[0m\033[1;32mEnter \033[0mDiffTest mode!\n");
+  return 0;
+}
+#endif
+
+static int cmd_save(char *args) {
+  if (save_status(args))
+    return 0;
+  return 1; 
+}
+
+static int cmd_load(char *args) {
+  if (load_status(args))
+    return 0;
+  return 1; 
+}
+
 static struct {
   const char *name;
   const char *description;
@@ -194,6 +275,14 @@ static struct {
   { "p", "Expression evaluation.\t arg: EXPR. Example: (npc) p $esp", cmd_p },
   { "w", "Set watch point.\t arg: EXPR. Example: (npc) w $esp", cmd_w },
   { "d", "Delete watch point.\t arg: N. Example: (npc) d 2", cmd_d },
+  { "b", "Set break point by function name.\t arg: name. Example: (npc) b func_name", cmd_b },
+  { "db", "Delete break point by number.\t arg: number. Example: (npc) db 0", cmd_db },
+#ifdef CONFIG_DIFFTEST
+  { "detach", "Exit DiffTest mode.\t Example: (npc) detach", cmd_detach },
+  { "attach", "Enter DiffTest mode.\t Example: (npc) attach", cmd_attach },
+#endif
+  { "save", "Creat Snapshot.\t arg: file_path or NULL. Example: (npc) save", cmd_save },
+  { "load", "Load Snapshot.\t arg: file_path or NULL. Example: (npc) load", cmd_load },
 
   /* TODO: Add more commands */
 
@@ -249,10 +338,6 @@ void sdb_mainloop() {
       args = NULL;
     }
 
-// #ifdef CONFIG_DEVICE
-//     extern void sdl_clear_event_queue();
-//     sdl_clear_event_queue();
-// #endif
 
     int i;
     for (i = 0; i < NR_CMD; i ++) {
@@ -272,6 +357,9 @@ void init_sdb() {
 
   /* Initialize the watchpoint pool. */
   init_wp_pool();
+  
+  /* Initialize the break point pool. */
+  init_bp_pool();
 }
 
 void engine_start() {
