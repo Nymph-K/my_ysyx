@@ -9,6 +9,8 @@
 `define CLINT_MTIMECMP_ADDR `XLEN'h2004000
 `define CLINT_MTIME_ADDR    `XLEN'h200BFF8
 
+`ifdef CLINT_ENABLE
+
 module CLINT (
 	input  clk,
 	input  rst,
@@ -67,5 +69,6 @@ module CLINT (
         .wen(msip_wen));
 
 endmodule //CLINT
+`endif
 
 `endif /* CLINT_V */

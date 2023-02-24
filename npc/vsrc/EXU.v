@@ -278,18 +278,31 @@ module EXU (
 	);
 
 	wire [`XLEN-1:0] ld_data;
-    wire msip, mtip;
-	MAU u_mau(
-		.clk(clk),
-		.rst(rst),
-		.funct3(funct3),
-		.opcode(opcode),
-		.src2(src2),
-		.alu_result(alu_result),
-		.ld_data(ld_data),
-		.msip(msip),
-		.mtip(mtip)
-	);
+	`ifdef CLINT_ENABLE
+		wire msip, mtip;
+		MAU u_mau(
+			.clk(clk),
+			.rst(rst),
+			.funct3(funct3),
+			.opcode(opcode),
+			.src2(src2),
+			.alu_result(alu_result),
+			.ld_data(ld_data),
+			.msip(msip),
+			.mtip(mtip)
+		);
+	`else
+		MAU u_mau(
+			.clk(clk),
+			.rst(rst),
+			.funct3(funct3),
+			.opcode(opcode),
+			.src2(src2),
+			.alu_result(alu_result),
+			.ld_data(ld_data)
+		);
+	`endif
+		
 
 	MuxKeyWithDefault #(12, 7, 1) u_rd_wen (
 		.out(rd_wen),
@@ -348,8 +361,13 @@ module EXU (
 		.wt_en(csr_wt_en & op_is_system),
 		.csr_idx(csr_idx),
 		.source(alu_result),
-		.msip(msip),
-		.mtip(mtip),
+		`ifdef CLINT_ENABLE
+			.msip(msip),
+			.mtip(mtip),
+		`else
+			.msip(1'b0),
+			.mtip(1'b0),
+		`endif
 		.interrupt(interrupt),
 		.csr(csr),
 		.csr_mtvec(csr_mtvec)

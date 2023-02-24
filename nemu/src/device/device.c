@@ -60,8 +60,8 @@ void device_update() {
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
       case SDL_QUIT:
-        destroy_sdl_audio();
-        destroy_screen();
+        IFDEF(CONFIG_HAS_AUDIO, destroy_sdl_audio());
+        IFDEF(CONFIG_HAS_VGA, destroy_screen());
         sdl_clear_event_queue();
         nemu_state.state = NEMU_QUIT;
         break;
