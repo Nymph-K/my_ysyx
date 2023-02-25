@@ -1,4 +1,4 @@
-#include <ringbuf.h>
+#include <cpu/ringbuf.h>
 #include <string.h>
 
 #if CONFIG_IRINGBUF_DEPTH||CONFIG_MRINGBUF_DEPTH||CONFIG_FRINGBUF_DEPTH||CONFIG_DRINGBUF_DEPTH||CONFIG_ERINGBUF_DEPTH

@@ -4,7 +4,7 @@
 
 #include <paddr.h>
 #include <reg.h>
-#include <ringbuf.h>
+#include <cpu/ringbuf.h>
 #include <elf_pars.h>
 #include <cpu/difftest.h>
 //void nvboard_bind_all_pins(TOP_NAME* dut);
@@ -179,7 +179,7 @@ static void execute(uint64_t n) {
     IFDEF(CONFIG_DIFFTEST, if(is_interrupt) difftest_skip_ref());
     trace_and_difftest(&s, mycpu->dnpc);
     if (npc_state.state != NPC_RUNNING) break;
-    //IFDEF(CONFIG_DEVICE, device_update());
+    IFDEF(CONFIG_DEVICE, device_update());
   }
 }
 

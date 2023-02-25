@@ -32,6 +32,7 @@
 #define STACK_DP 0x8000000
 
 // ----------- timer -----------
+#define TIMER_HZ 60
 uint64_t get_time();
 
 // ----------- wave trace -----------

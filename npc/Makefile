@@ -38,7 +38,7 @@ LDFLAGS += -lasan -lSDL2 -lSDL2_image -lreadline -ldl $(shell llvm-config --libs
 
 override ARGS ?= --log=$(BUILD_DIR)/npc-log.txt
 # override ARGS += $(ARGS_DIFF)
-NEMU_EXEC := $(BIN) $(ARGS) $(IMG)
+NPC_EXEC := $(BIN) $(ARGS) $(IMG)
 
 $(BIN): $(VSRCS) $(CSRCS) $(NVBOARD_ARCHIVE)
 	@rm -rf $(OBJ_DIR)
@@ -56,13 +56,13 @@ clean:
 sim: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	@echo "**************sim ***************"
-	$(NEMU_EXEC)
+	$(NPC_EXEC)
 
 
 run: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	@echo "**************run***************"
-	$(NEMU_EXEC)
+	$(NPC_EXEC)
 
 .PHONY: default clean run sim
 

@@ -15,8 +15,8 @@
 
 #include <memory/host.h>
 #include <memory/paddr.h>
-//#include <device/mmio.h>
-#include <ringbuf.h>
+#include <device/mmio.h>
+#include <cpu/ringbuf.h>
 
 #include "svdpi.h"//DPI-C
 #include "Vtop__Dpi.h"//DPI-C
@@ -75,20 +75,6 @@ void init_mem() {
       (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1);
 }
 
-// word_t paddr_read(paddr_t addr, int len) {
-//   if (likely(in_pmem(addr))) return pmem_read(addr, len);
-//   //IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
-//   out_of_bound(addr);
-//   return 0;
-// }
-
-// void paddr_write(paddr_t addr, int len, word_t data) {
-//   if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
-//   //IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
-//   out_of_bound(addr);
-// }
-
-
 extern "C" void inst_fetch(long long  pc, int *inst) {
     if (likely(in_pmem(pc))){
       *inst = host_read(guest_to_host(pc), 4);
@@ -99,44 +85,24 @@ extern "C" void inst_fetch(long long  pc, int *inst) {
     }
 }
 
-#define DEVICE_BASE 0xa0000000
-#define SERIAL_PORT     (DEVICE_BASE + 0x00003f8)
-#define KBD_ADDR        (DEVICE_BASE + 0x0000060)
-#define RTC_ADDR        (DEVICE_BASE + 0x0000048)
-#define VGACTL_ADDR     (DEVICE_BASE + 0x0000100)
-#define AUDIO_ADDR      (DEVICE_BASE + 0x0000200)
-#define DISK_ADDR       (DEVICE_BASE + 0x0000300)
-#define FB_ADDR         (MMIO_BASE   + 0x1000000)
-#define AUDIO_SBUF_ADDR (MMIO_BASE   + 0x1200000)
-#define CLINT_MSIP_ADDR (0x2000000)
-#define CLINT_MTIMECMP_ADDR (0x2004000)
-#define CLINT_MTIME_ADDR (0x200BFF8)
-
-uint64_t get_time();
 extern "C" void paddr_read(long long raddr, long long *rdata) {
   // 总是读取地址为`raddr & ~0x7ull`的8字节返回给`rdata`
   paddr_t addr = raddr & ~0x7ull;
   if (likely(in_pmem(addr))) {
     *rdata = pmem_read(addr, 8);
+    return;
   }
-  else if(addr == RTC_ADDR){
-    *rdata = get_time();
-    #if CONFIG_DRINGBUF_DEPTH
-      char str[128];
-      sprintf(str, "Device R: %10s[%d] = %016llX \tlen = %d", "Timer", 0, *rdata, 8);
-      ringBufWrite(&dringbuf, str);
-    #endif
-    #ifdef CONFIG_DIFFTEST
-      difftest_skip_ref();
-    #endif
-  }
+  #ifdef CONFIG_DEVICE
+  *rdata = mmio_read(addr, 8);
+  return;
+  #endif
   // else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
   // {
   //   #ifdef CONFIG_DIFFTEST
   //     difftest_skip_ref();
   //   #endif
   // }
-  else out_of_bound(addr);
+  out_of_bound(addr);
 }
 
 extern "C" void paddr_write(long long waddr, long long wdata, char wmask) {
@@ -144,43 +110,36 @@ extern "C" void paddr_write(long long waddr, long long wdata, char wmask) {
   // `wmask`中每比特表示`wdata`中1个字节的掩码,
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变
   paddr_t addr = waddr & ~0x7ull;
+  size_t off, len;
+  for (off = 0; off < 8; off++)
+  {
+    if ((wmask & 1) == 0)
+    {
+      wmask = (unsigned char)wmask >> 1;
+    }
+    else break;
+  }
+  switch ((unsigned char)wmask)
+  {
+    case 1: len = 1; break;
+    case 3: len = 2; break;
+    case 15: len = 4; break;
+    case 255: len = 8; break;
+    default: len = 0; break;
+  }
   if (likely(in_pmem(addr))) { 
-    size_t i;
-    for (i = 0; i < 8; i++)
-    {
-      if ((wmask & 1) == 0)
-      {
-        wmask = (unsigned char)wmask >> 1;
-      }
-      else break;
-    }
-    switch ((unsigned char)wmask)
-    {
-      case 1: pmem_write(addr + i, 1, wdata); break;
-      case 3: pmem_write(addr + i, 2, wdata); break;
-      case 15: pmem_write(addr + i, 4, wdata); break;
-      case 255: pmem_write(addr + i, 8, wdata); break;
-      default: break;
-    }
+    pmem_write(addr + off, len, wdata);
+    return;
   }
-  else if(addr == SERIAL_PORT){// && wmask == 1
-    {
-      putchar(wdata);
-      #if CONFIG_DRINGBUF_DEPTH
-        char str[128];
-        sprintf(str, "Device W: %10s[%d] = %016llX \tlen = %d", "Serial", 0, wdata, 1);
-        ringBufWrite(&dringbuf, str);
-      #endif
-      #ifdef CONFIG_DIFFTEST
-        difftest_skip_ref();
-      #endif
-    }
-  }
+  #ifdef CONFIG_DEVICE
+  mmio_write(addr + off, len, wdata);
+  return;
+  #endif
   // else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
   // {
   //   #ifdef CONFIG_DIFFTEST
   //     difftest_skip_ref();
   //   #endif
   // }
-  else out_of_bound(addr);
+  out_of_bound(addr);
 }
