@@ -11,13 +11,13 @@ void __am_timer_uptime(AM_TIMER_UPTIME_T *);
 void __am_gpu_config(AM_GPU_CONFIG_T *);
 void __am_gpu_status(AM_GPU_STATUS_T *);
 void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *);
-// void __am_audio_config(AM_AUDIO_CONFIG_T *);
-// void __am_audio_ctrl(AM_AUDIO_CTRL_T *);
-// void __am_audio_status(AM_AUDIO_STATUS_T *);
-// void __am_audio_play(AM_AUDIO_PLAY_T *);
-// void __am_disk_config(AM_DISK_CONFIG_T *cfg);
-// void __am_disk_status(AM_DISK_STATUS_T *stat);
-// void __am_disk_blkio(AM_DISK_BLKIO_T *io);
+void __am_audio_config(AM_AUDIO_CONFIG_T *);
+void __am_audio_ctrl(AM_AUDIO_CTRL_T *);
+void __am_audio_status(AM_AUDIO_STATUS_T *);
+void __am_audio_play(AM_AUDIO_PLAY_T *);
+void __am_disk_config(AM_DISK_CONFIG_T *cfg);
+void __am_disk_status(AM_DISK_STATUS_T *stat);
+void __am_disk_blkio(AM_DISK_BLKIO_T *io);
 // void __am_clint_msip(AM_CLINT_MSIP_T *ptr);
 // void __am_clint_mtimecmp(AM_CLINT_MTIMECMP_T *ptr);
 // void __am_clint_mtime(AM_CLINT_MTIME_T *ptr);
@@ -38,13 +38,13 @@ static void *lut[128] = {
   [AM_GPU_FBDRAW  ] = __am_gpu_fbdraw,
   [AM_GPU_STATUS  ] = __am_gpu_status,
   [AM_UART_CONFIG ] = __am_uart_config,
-  // [AM_AUDIO_CONFIG] = __am_audio_config,
-  // [AM_AUDIO_CTRL  ] = __am_audio_ctrl,
-  // [AM_AUDIO_STATUS] = __am_audio_status,
-  // [AM_AUDIO_PLAY  ] = __am_audio_play,
-  // [AM_DISK_CONFIG ] = __am_disk_config,
-  // [AM_DISK_STATUS ] = __am_disk_status,
-  // [AM_DISK_BLKIO  ] = __am_disk_blkio,
+  [AM_AUDIO_CONFIG] = __am_audio_config,
+  [AM_AUDIO_CTRL  ] = __am_audio_ctrl,
+  [AM_AUDIO_STATUS] = __am_audio_status,
+  [AM_AUDIO_PLAY  ] = __am_audio_play,
+  [AM_DISK_CONFIG ] = __am_disk_config,
+  [AM_DISK_STATUS ] = __am_disk_status,
+  [AM_DISK_BLKIO  ] = __am_disk_blkio,
   [AM_NET_CONFIG  ] = __am_net_config,
   // [AM_CLINT_MSIP  ] = __am_clint_msip,
   // [AM_CLINT_MTIMECMP] = __am_clint_mtimecmp,

@@ -61,7 +61,7 @@ bool load_status(const char *abs_path)
     printf("Load Snapshot failed: File open failed!\n");
     return false;
   }
-  if(fread(mycpu, sizeof(TOP_NAME), 1, fp) != 1)
+  if(fread(mycpu, sizeof(TOP_NAME), 1, fp) != 1)//private can not write
   {
     fclose(fp);
     npc_state.state = NPC_ABORT;

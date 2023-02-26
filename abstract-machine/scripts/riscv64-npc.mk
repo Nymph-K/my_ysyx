@@ -10,7 +10,9 @@ AM_SRCS := riscv/npc/start.S \
            riscv/npc/trap.S \
            platform/dummy/vme.c \
            platform/dummy/mpe.c \
-           riscv/npc/gpu.c
+           riscv/npc/gpu.c \
+           riscv/npc/audio.c \
+           riscv/npc/disk.c 
            #riscv/npc/clint.c
 
 CFLAGS    += -fdata-sections -ffunction-sections
