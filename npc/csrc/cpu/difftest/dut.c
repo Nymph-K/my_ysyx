@@ -147,7 +147,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   {// npc is one cycle ahead of nemu
     reg_copy_to(&ref_r);
     ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
-    is_skip_ref_old = false;
+    is_skip_ref_old = is_skip_ref;
     return;
   }
   if (is_skip_ref) {
