@@ -17,6 +17,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <reg.h>
+#include <common.h>
 
 static int is_batch_mode = false;
 
@@ -233,18 +234,21 @@ static int cmd_db(char *args) {
 }
 
 #ifdef CONFIG_DIFFTEST
-extern bool disable_diff;
 static int cmd_detach(char *args) {
   disable_diff = true;
-  printf("\033[0m\033[1;31mExit \033[0mDiffTest  mode!\n");
+  enable_trace = false;
+  printf("%s DiffTest mode!\n", ANSI_FMT("Exit", ANSI_FG_RED));
+  printf("%s Tracer mode!\n", ANSI_FMT("Close", ANSI_FG_RED));
   return 0;
 }
 
 void difftest_attach(void);
 static int cmd_attach(char *args) {
   disable_diff = false;
+  enable_trace = true;
   difftest_attach();
-  printf("\033[0m\033[1;32mEnter \033[0mDiffTest mode!\n");
+  printf("%s DiffTest mode!\n", ANSI_FMT("Enter", ANSI_FG_GREEN));
+  printf("%s Tracer mode!\n", ANSI_FMT("Open", ANSI_FG_GREEN));
   return 0;
 }
 #endif

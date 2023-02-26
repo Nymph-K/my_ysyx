@@ -20,6 +20,7 @@ LDFLAGS   += -T $(AM_HOME)/scripts/linker.ld --defsym=_pmem_start=0x80000000 --d
 LDFLAGS   += --gc-sections -e _start
 CFLAGS += -DMAINARGS=\"$(mainargs)\"
 NPCFLAGS += -l $(shell dirname $(IMAGE).elf)/npc-log.txt -f$(IMAGE).elf -b
+#NPCFLAGS += -f/home/k/ysyx-workbench/navy-apps/fsimg/bin/pal
 ifeq ($(CONFIG_DIFFTEST), y)
 	REF_SO_FILE = $(abspath $(NEMU_HOME)/build/riscv64-nemu-interpreter-so)
 	NPCFLAGS += -d$(REF_SO_FILE)

@@ -72,7 +72,7 @@ static char *funcName = NULL;
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   #if CONFIG_IRINGBUF_DEPTH
-  ringBufWrite(&iringbuf, _this->logbuf);
+  if(enable_trace) ringBufWrite(&iringbuf, _this->logbuf);
   #else
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }//ITRACE_COND see nemu/Makefile:line 48
   #endif
@@ -133,9 +133,11 @@ static void exec_once(Decode *s) {
       if (cb.dnpc_sym_idx  != -1)
       {
         #if CONFIG_FRINGBUF_DEPTH
-        cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
-        ringBufWrite(&fringbuf, &cb);
+        if(enable_trace) {
+          cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
+          cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
+          ringBufWrite(&fringbuf, &cb);
+        }
         #endif
         #ifdef CONFIG_BREAKPOINT
           funcName = get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx);
@@ -144,26 +146,34 @@ static void exec_once(Decode *s) {
     }
     #if CONFIG_FRINGBUF_DEPTH
     else if(strncmp(p, "ret", 3) == 0){
-      cb.dnpc_sym_idx = get_func_ndx(s->dnpc, &cb.dnpc_elf_idx);
-      cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
-      cb.c_r = 'r'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-      ringBufWrite(&fringbuf, &cb);
+      if(enable_trace) {
+        cb.dnpc_sym_idx = get_func_ndx(s->dnpc, &cb.dnpc_elf_idx);
+        cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
+        cb.c_r = 'r'; cb.pc = s->pc; cb.dnpc = s->dnpc;
+        ringBufWrite(&fringbuf, &cb);
+      }
     }
     #endif
   #endif
   #if CONFIG_ERINGBUF_DEPTH
     char etrace_log[128];
     if(strncmp(p, "ecall", 5) == 0){
-      sprintf(etrace_log, "Exception-ecall: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
-      ringBufWrite(&eringbuf, &etrace_log);
+      if(enable_trace){
+        sprintf(etrace_log, "Exception-ecall: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
+        ringBufWrite(&eringbuf, &etrace_log);
+      }
     }
     else if(strncmp(p, "ebreak", 6) == 0){
-      sprintf(etrace_log, "Exception-ebreak: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
-      ringBufWrite(&eringbuf, &etrace_log);
+      if(enable_trace){
+        sprintf(etrace_log, "Exception-ebreak: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
+        ringBufWrite(&eringbuf, &etrace_log);
+      }
     }
     else if(strncmp(p, "mret", 4) == 0){
-      sprintf(etrace_log, "Exception-mret: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
-      ringBufWrite(&eringbuf, &etrace_log);
+      if(enable_trace){
+        sprintf(etrace_log, "Exception-mret: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
+        ringBufWrite(&eringbuf, &etrace_log);
+      }
     }
   #endif
 #endif

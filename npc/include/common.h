@@ -168,5 +168,7 @@ typedef struct {
 // ----------- extern variables -----------
 extern NPCState npc_state;
 extern TOP_NAME* mycpu;
+extern bool disable_diff;
+extern bool enable_trace;
 
 #endif /* __NPC_COMMON_H__ */

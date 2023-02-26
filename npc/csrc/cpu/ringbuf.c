@@ -1,6 +1,8 @@
 #include <cpu/ringbuf.h>
 #include <string.h>
 
+bool enable_trace = false;
+
 #if CONFIG_IRINGBUF_DEPTH||CONFIG_MRINGBUF_DEPTH||CONFIG_FRINGBUF_DEPTH||CONFIG_DRINGBUF_DEPTH||CONFIG_ERINGBUF_DEPTH
 
 #define H_NEXT_NBUF(cur, n) (cur->head+n)%(cur->depth)
