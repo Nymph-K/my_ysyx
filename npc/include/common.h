@@ -160,7 +160,7 @@ typedef struct {
   vaddr_t snpc; // static next pc
   vaddr_t dnpc; // dynamic next pc
   riscv64_ISADecodeInfo isa;
-  IFDEF(CONFIG_ITRACE, char logbuf[128]);
+  char logbuf[128];//IFDEF(CONFIG_ITRACE, logbuf[128])
 } Decode;
 
 
@@ -169,6 +169,7 @@ typedef struct {
 extern NPCState npc_state;
 extern TOP_NAME* mycpu;
 extern bool disable_diff;
-extern bool enable_trace;
+extern bool enable_ringbuf;
+extern bool trace_print;
 
 #endif /* __NPC_COMMON_H__ */

@@ -28,7 +28,7 @@ void ringBufInit(void);
 
 void timer_init();
 
-#if CONFIG_FRINGBUF_DEPTH
+#if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE
 int init_elf(int file_num, char const *file_name[]);
 static const char *elf_file[64]; // 64 elf max
 static int elf_file_num = 0;
@@ -94,7 +94,7 @@ static int parse_args(int argc, char *argv[]) {
       case 'l': log_file = optarg; break;
       case 'd': diff_so_file = optarg; break;
       case 'f': 
-        #if CONFIG_FRINGBUF_DEPTH
+        #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE
         elf_file[elf_file_num] = optarg;
         elf_file_num++;
         #endif
@@ -144,12 +144,14 @@ void init_monitor(int argc, char *argv[]) {
   /* Initialize the simple debugger. */
   init_sdb();
 
-  IFDEF(CONFIG_ITRACE, init_disasm("riscv64-pc-linux-gnu"));
+  #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE
+  init_disasm("riscv64-pc-linux-gnu");
+  #endif
 
   #if CONFIG_IRINGBUF_DEPTH | CONFIG_MRINGBUF_DEPTH | CONFIG_FRINGBUF_DEPTH | CONFIG_ERINGBUF_DEPTH
   ringBufInit();
   #endif
-  #if CONFIG_FRINGBUF_DEPTH
+  #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE
   if(init_elf(elf_file_num > 64 ? 64 : elf_file_num, elf_file) == -1){
     Log("elf error!");
     elf_file[0] = img_file;

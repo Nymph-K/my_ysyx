@@ -3,7 +3,7 @@
 
 #include <common.h>
 
-#if CONFIG_IRINGBUF_DEPTH||CONFIG_MRINGBUF_DEPTH||CONFIG_FRINGBUF_DEPTH||CONFIG_DRINGBUF_DEPTH||CONFIG_ERINGBUF_DEPTH
+//#if CONFIG_IRINGBUF_DEPTH||CONFIG_MRINGBUF_DEPTH||CONFIG_FRINGBUF_DEPTH||CONFIG_DRINGBUF_DEPTH||CONFIG_ERINGBUF_DEPTH
 
 #define LOG_LEN 128
 #define FTC_WIDTH sizeof(callBuf)
@@ -42,6 +42,6 @@ int ringBufLen(ringBuf *ringbuf);
 bool ringBufEmpty(ringBuf *ringbuf);
 bool ringBufFull(ringBuf *ringbuf);
 
-#endif//CONFIG_RINGBUF_LEN
+//#endif//CONFIG_RINGBUF_LEN
 
 #endif//_RINGBUF_H

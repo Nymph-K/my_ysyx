@@ -11,6 +11,7 @@
 
 static VerilatedContext* contextp = new VerilatedContext;
 TOP_NAME* mycpu = new TOP_NAME{contextp};
+bool trace_print = true;
 
 #if WAVE_TRACE
 #include "verilated.h"
@@ -72,7 +73,7 @@ static char *funcName = NULL;
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   #if CONFIG_IRINGBUF_DEPTH
-  if(enable_trace) ringBufWrite(&iringbuf, _this->logbuf);
+  if(enable_ringbuf) ringBufWrite(&iringbuf, _this->logbuf);
   #else
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }//ITRACE_COND see nemu/Makefile:line 48
   #endif
@@ -103,7 +104,7 @@ static void exec_once(Decode *s) {
   s->snpc = mycpu->pc + 4;
   s->dnpc = mycpu->dnpc;
   s->isa.inst.val = mycpu->inst;
-#if defined CONFIG_ITRACE || defined CONFIG_FTRACE || defined CONFIG_ETRACE
+#if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
   int ilen = s->snpc - s->pc;
@@ -120,57 +121,61 @@ static void exec_once(Decode *s) {
   p += space_len;
 
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-  disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
-      MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst.val, ilen);
+  disassemble(p, s->logbuf + sizeof(s->logbuf) - p, s->pc, (uint8_t *)&s->isa.inst.val, ilen);
 
-  #if CONFIG_FRINGBUF_DEPTH || CONFIG_BREAKPOINT
+  #if CONFIG_FTRACE || CONFIG_BREAKPOINT
     callBuf cb = {.pc_elf_idx = -1, .pc_sym_idx = -1, .dnpc_elf_idx = -1, .dnpc_sym_idx = -1};
 
     if((strncmp(p, "jalr", 4) == 0) || 
        (strncmp(p, "jal", 3) == 0)  ||
-       (strncmp(p, "jr", 2) == 0)){
+       (strncmp(p, "jr", 2) == 0)  ||
+       (strncmp(p, "j", 1) == 0)){
       cb.dnpc_sym_idx = is_func_start(s->dnpc, &cb.dnpc_elf_idx);
       if (cb.dnpc_sym_idx  != -1)
       {
-        #if CONFIG_FRINGBUF_DEPTH
-        if(enable_trace) {
           cb.c_r = 'c'; cb.pc = s->pc; cb.dnpc = s->dnpc;
           cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
-          ringBufWrite(&fringbuf, &cb);
-        }
-        #endif
-        #ifdef CONFIG_BREAKPOINT
-          funcName = get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx);
-        #endif
+          // if(trace_print)
+          //   printf("call :%s ->> %s\n", get_func_name_by_idx(cb.pc_sym_idx, cb.pc_elf_idx), get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx));
+          #if CONFIG_FRINGBUF_DEPTH
+          if(enable_ringbuf){
+            ringBufWrite(&fringbuf, &cb);
+          }
+          #endif
+          #ifdef CONFIG_BREAKPOINT
+            funcName = get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx);
+          #endif
       }
     }
-    #if CONFIG_FRINGBUF_DEPTH
     else if(strncmp(p, "ret", 3) == 0){
-      if(enable_trace) {
         cb.dnpc_sym_idx = get_func_ndx(s->dnpc, &cb.dnpc_elf_idx);
         cb.pc_sym_idx = get_func_ndx(s->pc, &cb.pc_elf_idx);
         cb.c_r = 'r'; cb.pc = s->pc; cb.dnpc = s->dnpc;
-        ringBufWrite(&fringbuf, &cb);
-      }
+        // if(trace_print)
+        //   printf("ret  :%s <<- %s\n", get_func_name_by_idx(cb.pc_sym_idx, cb.pc_elf_idx), get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx));
+        #if CONFIG_FRINGBUF_DEPTH
+          if(enable_ringbuf){
+              ringBufWrite(&fringbuf, &cb);
+          }
+        #endif
     }
-    #endif
   #endif
   #if CONFIG_ERINGBUF_DEPTH
     char etrace_log[128];
     if(strncmp(p, "ecall", 5) == 0){
-      if(enable_trace){
+      if(enable_ringbuf){
         sprintf(etrace_log, "Exception-ecall: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
         ringBufWrite(&eringbuf, &etrace_log);
       }
     }
     else if(strncmp(p, "ebreak", 6) == 0){
-      if(enable_trace){
+      if(enable_ringbuf){
         sprintf(etrace_log, "Exception-ebreak: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
         ringBufWrite(&eringbuf, &etrace_log);
       }
     }
     else if(strncmp(p, "mret", 4) == 0){
-      if(enable_trace){
+      if(enable_ringbuf){
         sprintf(etrace_log, "Exception-mret: mepc = %lx,  mcause= %lx, mtvec = %lx\n", csr[9], csr[10], csr[5]);
         ringBufWrite(&eringbuf, &etrace_log);
       }

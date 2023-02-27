@@ -60,7 +60,7 @@ word_t map_read(paddr_t addr, int len, IOMap *map) {
   invoke_callback(map->callback, offset, len, false); // prepare data to read
   word_t ret = host_read((uint8_t *)(map->space) + offset, len);
   #if CONFIG_DRINGBUF_DEPTH
-    if(enable_trace){
+    if(enable_ringbuf){
       char str[128];
       sprintf(str, "Device R: %10s[%ld] = " FMT_WORD " \tlen = %d", map->name, offset, ret, len);
       ringBufWrite(&dringbuf, str);
@@ -76,7 +76,7 @@ void map_write(paddr_t addr, int len, word_t data, IOMap *map) {
   host_write((uint8_t *)(map->space) + offset, len, data);
   invoke_callback(map->callback, offset, len, true);
   #if CONFIG_DRINGBUF_DEPTH
-    if(enable_trace){
+    if(enable_ringbuf){
       char str[128];
       sprintf(str, "Device W: %10s[%ld] = " FMT_WORD " \tlen = %d", map->name, offset, data, len);
       ringBufWrite(&dringbuf, str);

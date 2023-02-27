@@ -38,7 +38,7 @@ void difftest_skip_ref();
 static word_t pmem_read(paddr_t addr, int len) {
   word_t ret = host_read(guest_to_host(addr), len);
   #if CONFIG_MRINGBUF_DEPTH
-    if(enable_trace){
+    if(enable_ringbuf){
       char str[128];
       sprintf(str, "Read : Mem[ " FMT_PADDR " ] = " FMT_WORD "\tlen = %d", addr, ret, len);
       ringBufWrite(&mringbuf, str);
@@ -50,7 +50,7 @@ static word_t pmem_read(paddr_t addr, int len) {
 static void pmem_write(paddr_t addr, int len, word_t data) {
   host_write(guest_to_host(addr), len, data);
   #if CONFIG_MRINGBUF_DEPTH
-    if(enable_trace){
+    if(enable_ringbuf){
       char str[128];
       sprintf(str, "Write: Mem[ " FMT_PADDR " ] = " FMT_WORD "\tlen = %d", addr, data, len);
       ringBufWrite(&mringbuf, str);

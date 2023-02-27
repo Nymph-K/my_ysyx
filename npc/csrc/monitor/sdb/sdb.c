@@ -235,21 +235,66 @@ static int cmd_db(char *args) {
 
 #ifdef CONFIG_DIFFTEST
 static int cmd_detach(char *args) {
-  disable_diff = true;
-  enable_trace = false;
-  printf("%s DiffTest mode!\n", ANSI_FMT("Exit", ANSI_FG_RED));
-  printf("%s Tracer mode!\n", ANSI_FMT("Close", ANSI_FG_RED));
-  return 0;
+  if (args == NULL) { 
+    disable_diff = true;
+    enable_ringbuf = false;
+    printf("%s DiffTest mode!\n", ANSI_FMT("Exit", ANSI_FG_RED));
+    printf("%s Tracer mode!\n", ANSI_FMT("Close", ANSI_FG_RED));
+    return 0;
+  }else{
+    char arg;
+    sscanf(args, "%c", &arg);
+    switch (arg)
+    {
+      case 'r':
+        enable_ringbuf = false;
+        printf("%s Tracer mode!\n", ANSI_FMT("Close", ANSI_FG_RED));
+        return 0;
+        break;
+      case 'd':
+        disable_diff = true;
+        printf("%s DiffTest mode!\n", ANSI_FMT("Exit", ANSI_FG_RED));
+        return 0;
+        break;
+      default:
+        printf("Argument illegal!\n");
+        return 1;
+        break;
+    }
+  }
 }
 
 void difftest_attach(void);
 static int cmd_attach(char *args) {
-  disable_diff = false;
-  enable_trace = true;
-  difftest_attach();
-  printf("%s DiffTest mode!\n", ANSI_FMT("Enter", ANSI_FG_GREEN));
-  printf("%s Tracer mode!\n", ANSI_FMT("Open", ANSI_FG_GREEN));
-  return 0;
+  if (args == NULL) { 
+    disable_diff = false;
+    enable_ringbuf = true;
+    difftest_attach();
+    printf("%s DiffTest mode!\n", ANSI_FMT("Enter", ANSI_FG_GREEN));
+    printf("%s Tracer mode!\n", ANSI_FMT("Open", ANSI_FG_GREEN));
+    return 0;
+  }else{
+    char arg;
+    sscanf(args, "%c", &arg);
+    switch (arg)
+    {
+      case 'r':
+        enable_ringbuf = true;
+        printf("%s Tracer mode!\n", ANSI_FMT("Open", ANSI_FG_GREEN));
+        return 0;
+        break;
+      case 'd':
+        disable_diff = false;
+        difftest_attach();
+        printf("%s DiffTest mode!\n", ANSI_FMT("Enter", ANSI_FG_GREEN));
+        return 0;
+        break;
+      default:
+        printf("Argument illegal!\n");
+        return 1;
+        break;
+    }
+  }
 }
 #endif
 
@@ -274,7 +319,7 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NPC", cmd_q },
   { "si", "Single step execute the program.\t arg: N. Example: (npc) si 10", cmd_si },
-  { "info", "Print program status.\t arg: r|w. Example: (npc) info r", cmd_info },
+  { "info", "Print program status.\t arg: r|w|b. Example: (npc) info r", cmd_info },
   { "x", "Scan memory.\t arg: N EXPR. Example: (npc) x 10 $esp", cmd_x },
   { "p", "Expression evaluation.\t arg: EXPR. Example: (npc) p $esp", cmd_p },
   { "w", "Set watch point.\t arg: EXPR. Example: (npc) w $esp", cmd_w },
@@ -282,8 +327,8 @@ static struct {
   { "b", "Set break point by function name.\t arg: name. Example: (npc) b func_name", cmd_b },
   { "db", "Delete break point by number.\t arg: number. Example: (npc) db 0", cmd_db },
 #ifdef CONFIG_DIFFTEST
-  { "detach", "Exit DiffTest mode.\t Example: (npc) detach", cmd_detach },
-  { "attach", "Enter DiffTest mode.\t Example: (npc) attach", cmd_attach },
+  { "detach", "Exit DiffTest mode.\t arg: d|r Example: (npc) detach", cmd_detach },
+  { "attach", "Enter DiffTest mode.\t arg: d|r Example: (npc) attach", cmd_attach },
 #endif
   { "save", "Creat Snapshot.\t arg: file_path or NULL. Example: (npc) save", cmd_save },
   { "load", "Load Snapshot.\t arg: file_path or NULL. Example: (npc) load", cmd_load },

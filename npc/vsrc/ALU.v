@@ -54,8 +54,8 @@ module ALU (
 	wire [`HXLEN-1:0] out_sra_32;
 	assign out_sll = is_op_x_32 ? (a << b[4:0]) : (a << b[5:0]);
 	assign out_srl = is_op_x_32 ? (a >> b[4:0]) : (a >> b[5:0]);
-	assign out_sra_32 = $signed(a[`HXLEN-1:0]) >>> b[4:0];
-	assign out_sra = is_op_x_32 ? ({`HXLEN'b0, out_sra_32}) : ({a >>> b[5:0]});
+	assign out_sra_32 = $signed(($signed(a[`HXLEN-1:0])) >>> b[4:0]);
+	assign out_sra = is_op_x_32 ? ({`HXLEN'b0, out_sra_32}) : $signed(($signed(a[`XLEN-1:0])) >>> b[5:0]);
 
 	MuxKeyWithDefault #(8, `LEN_SEL, `XLEN) u_result (
 		.out(result),
