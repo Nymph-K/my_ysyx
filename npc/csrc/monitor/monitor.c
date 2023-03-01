@@ -139,7 +139,9 @@ void init_monitor(int argc, char *argv[]) {
   init_cpu();
 
   /* Initialize differential testing. */
+  #if CONFIG_DIFFTEST
   init_difftest(diff_so_file, img_size, difftest_port);
+  #endif
 
   /* Initialize the simple debugger. */
   init_sdb();

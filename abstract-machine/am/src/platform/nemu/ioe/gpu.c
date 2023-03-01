@@ -28,11 +28,13 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
   for (size_t j = 0; j < ctl->h; j++)
   {
     uint32_t y = ctl->y + j;
-    if(y >= height) continue;
+    //if(y >= height) continue;
+    if(y >= height) y %= height;
     for (size_t i = 0; i < ctl->w; i++)
     {
       uint32_t x = ctl->x + i;
-      if(x >= width) continue;
+      //if(x >= width) continue;
+      if(x >= width) x %= width;
       fb[y*width + x] = ((uint32_t *)(ctl->pixels))[j*ctl->w + i];
     }
   }

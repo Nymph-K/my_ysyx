@@ -24,11 +24,14 @@ ifeq ($(wildcard $(NAVY_HOME)/libs/libos/src/syscall.h),)
   $(error $$NAVY_HOME must be a Navy-apps repo)
 endif
 
+delete:
+	rm -rf build/ $(NAVY_HOME)/build/ $(NAVY_HOME)/libs/libndl/build $(NAVY_HOME)/libs/libminiSDL/build $(NAVY_HOME)/apps/pal/build
+
 update:
 	$(MAKE) -s -C $(NAVY_HOME) ISA=$(ISA) ramdisk
 	@ln -sf $(NAVY_HOME)/build/ramdisk.img $(RAMDISK_FILE)
 	@ln -sf $(NAVY_HOME)/build/ramdisk.h src/files.h
 	@ln -sf $(NAVY_HOME)/libs/libos/src/syscall.h src/syscall.h
 
-.PHONY: update
+.PHONY: update delete
 endif

@@ -21,7 +21,7 @@ Context* __am_irq_handle(Context *c) {
     //printf("mcause = 0x%16lX,   mstatus = 0x%lX,   mepc = 0x%lX\n", c->mcause, c->mstatus, c->mepc - 4);
     assert(c != NULL);
   }
-  asm volatile("csrs mstatus, 0x8");//MIE=1
+  //asm volatile("csrs mstatus, 0x8");//MIE=1
   return c;
 }
 
@@ -48,7 +48,10 @@ void yield() {
 }
 
 bool ienabled() {
-  return false;
+  uint64_t mstatus_en, mie_en;
+  asm volatile("csrr %0,mstatus" : "=r"(mstatus_en) : );
+  asm volatile("csrr %0,mie" : "=r"(mie_en) : );
+  return ((mstatus_en & 0x8) && (mie_en & 0x888));
 }
 
 void iset(bool enable) {

@@ -61,13 +61,13 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
   ctl.y = (offset / 4) / cfg.width;
   ctl.pixels = (void *)buf;
   ctl.w = len / 4;
-  if (ctl.w > cfg.width && offset == 0)
-  {
-    ctl.h = ctl.w / cfg.width;
-    ctl.w = cfg.width;
-    ctl.sync = 1;
-  }
-  else
+  // if (ctl.w > cfg.width && offset == 0)
+  // {
+  //   ctl.h = ctl.w / cfg.width;
+  //   ctl.w = cfg.width;
+  //   ctl.sync = 1;
+  // }
+  // else
   {
     ctl.h = 1;
     ctl.sync = 1;
