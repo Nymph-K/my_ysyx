@@ -25,7 +25,7 @@ ifeq ($(wildcard $(NAVY_HOME)/libs/libos/src/syscall.h),)
 endif
 
 delete:
-	rm -rf build/ $(NAVY_HOME)/build/ $(NAVY_HOME)/libs/libndl/build $(NAVY_HOME)/libs/libminiSDL/build $(NAVY_HOME)/apps/pal/build
+	rm -rf build/ $(NAVY_HOME)/build/ $(NAVY_HOME)/libs/libndl/build $(NAVY_HOME)/libs/libminiSDL/build $(NAVY_HOME)/apps/pal/build $(AM_HOME)/build
 
 update:
 	$(MAKE) -s -C $(NAVY_HOME) ISA=$(ISA) ramdisk
