@@ -1,7 +1,7 @@
 /***************************************************************************************
 * Copyright (c) 2014-2022 Zihao Yu, Nanjing University
 *
-* NEMU is licensed under Mulan PSL v2.
+* NPC is licensed under Mulan PSL v2.
 * You can use this software according to the terms and conditions of the Mulan PSL v2.
 * You may obtain a copy of Mulan PSL v2 at:
 *          http://license.coscl.org.cn/MulanPSL2
@@ -13,6 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include <isa.h>
 #include <memory/paddr.h>
 
 void init_rand();
@@ -25,8 +26,6 @@ void init_disasm(const char *triple);
 void init_cpu(void);
 
 void ringBufInit(void);
-
-void timer_init();
 
 #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE
 int init_elf(int file_num, char const *file_name[]);
@@ -132,6 +131,9 @@ void init_monitor(int argc, char *argv[]) {
   /* Initialize devices. */
   IFDEF(CONFIG_DEVICE, init_device());
 
+  /* Perform ISA dependent initialization. */
+  init_isa();
+
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img();
 
@@ -147,7 +149,12 @@ void init_monitor(int argc, char *argv[]) {
   init_sdb();
 
   #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE
-  init_disasm("riscv64-pc-linux-gnu");
+  init_disasm(
+    MUXDEF(CONFIG_ISA_x86,     "i686",
+    MUXDEF(CONFIG_ISA_mips32,  "mipsel",
+    MUXDEF(CONFIG_ISA_riscv32, "riscv32",
+    MUXDEF(CONFIG_ISA_riscv64, "riscv64", "bad")))) "-pc-linux-gnu"
+  );
   #endif
 
   #if CONFIG_IRINGBUF_DEPTH | CONFIG_MRINGBUF_DEPTH | CONFIG_FRINGBUF_DEPTH | CONFIG_ERINGBUF_DEPTH

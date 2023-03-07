@@ -1,61 +1,12 @@
-#include <common.h>
-#include "svdpi.h"//DPI-C
-#include "Vtop__Dpi.h"//DPI-C
-
-#include <paddr.h>
-#include <reg.h>
+#include <cpu/cpu.h>
+#include <cpu/decode.h>
+#include <cpu/difftest.h>
+#include <locale.h>
 #include <cpu/ringbuf.h>
 #include <elf_pars.h>
-#include <cpu/difftest.h>
-//void nvboard_bind_all_pins(TOP_NAME* dut);
+#include "../isa/riscv64/local-include/reg.h"
 
-static VerilatedContext* contextp = new VerilatedContext;
-TOP_NAME* mycpu = new TOP_NAME{contextp};
-bool trace_print = true;
-
-#if WAVE_TRACE
-#include "verilated.h"
-#include "verilated_vcd_c.h"
-
-static VerilatedVcdC* tfp = new VerilatedVcdC;
-
-static void posedge_half_cycle() {
-  mycpu->clk = 1; mycpu->eval();tfp->dump(contextp->time());contextp->timeInc(1);
-}
-static void negedge_half_cycle() {
-  mycpu->clk = 0; mycpu->eval();tfp->dump(contextp->time());contextp->timeInc(1);
-}
-
-#else
-
-static void posedge_half_cycle() {
-  mycpu->clk = 1; mycpu->eval();
-}
-static void negedge_half_cycle() {
-  mycpu->clk = 0; mycpu->eval();
-}
-
-#endif
-
-static void single_cycle() {
-  posedge_half_cycle();
-  negedge_half_cycle();
-}
-
-static void reset(int n) {
-  mycpu->rst = 1;
-  while (n -- > 0) single_cycle();
-  mycpu->clk = 1; mycpu->eval();
-  mycpu->rst = 0; mycpu->eval();
-}
-
-void stopCPU(void)
-{
-  //difftest_skip_ref();
-  npc_state.state = NPC_END;
-  npc_state.halt_pc = mycpu->pc;
-  npc_state.halt_ret = GPR(10);
-}
+#pragma GCC diagnostic ignored "-Wunused-variable"
 
 #define MAX_INST_TO_PRINT 10
 
@@ -75,7 +26,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   #if CONFIG_IRINGBUF_DEPTH
   if(enable_ringbuf) ringBufWrite(&iringbuf, _this->logbuf);
   #else
-  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }//ITRACE_COND see nemu/Makefile:line 48
+  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }//ITRACE_COND see npc/Makefile:line 48
   #endif
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
@@ -91,20 +42,9 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #endif
 }
 
-int riscv64_exec_once(void) {
-  mycpu->clk = 1; mycpu->eval();
-  posedge_half_cycle();
-  negedge_half_cycle();
-  return 0;
-}
-
 static void exec_once(Decode *s) {
-  riscv64_exec_once();
-  s->pc = mycpu->pc;
-  s->snpc = mycpu->pc + 4;
-  s->dnpc = mycpu->dnpc;
-  s->isa.inst.val = mycpu->inst;
-#if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE
+  isa_exec_once(s);
+#if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE || CONFIG_BREAKPOINT
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
   int ilen = s->snpc - s->pc;
@@ -121,7 +61,8 @@ static void exec_once(Decode *s) {
   p += space_len;
 
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-  disassemble(p, s->logbuf + sizeof(s->logbuf) - p, s->pc, (uint8_t *)&s->isa.inst.val, ilen);
+  disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
+      MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst.val, ilen);
 
   #if CONFIG_FTRACE || CONFIG_BREAKPOINT
     callBuf cb = {.pc_elf_idx = -1, .pc_sym_idx = -1, .dnpc_elf_idx = -1, .dnpc_sym_idx = -1};
@@ -185,7 +126,6 @@ static void exec_once(Decode *s) {
 }
 
 #define is_interrupt mycpu->rootp->top__DOT__u_exu__DOT__interrupt
-void difftest_skip_ref();
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
@@ -274,7 +214,7 @@ void cpu_exec(uint64_t n) {
   g_print_step = (n < MAX_INST_TO_PRINT);
   switch (npc_state.state) {
     case NPC_END: case NPC_ABORT:
-      printf("Program execution has ended. To restart the program, exit NEMU and run again.\n");
+      printf("Program execution has ended. To restart the program, exit NPC and run again.\n");
       return;
     default: npc_state.state = NPC_RUNNING;
   }
@@ -300,23 +240,4 @@ void cpu_exec(uint64_t n) {
     
     case NPC_QUIT: statistic();
   }
-}
-
-void init_cpu(void)
-{
-  // IFNVBOARD(nvboard_bind_all_pins(mycpu));
-  // IFNVBOARD(nvboard_init());
-  #if WAVE_TRACE
-  contextp->traceEverOn(true);
-  mycpu->trace(tfp, 0);
-  tfp->open("wave.vcd");
-  #endif
-  reset(10);
-  IFDEF(CONFIG_DIFFTEST, riscv64_exec_once());
-}
-
-void exit_cpu(void)
-{
-  IFWAVE(tfp->close());
-  delete contextp;
 }

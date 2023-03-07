@@ -1,7 +1,7 @@
 /***************************************************************************************
 * Copyright (c) 2014-2022 Zihao Yu, Nanjing University
 *
-* NEMU is licensed under Mulan PSL v2.
+* NPC is licensed under Mulan PSL v2.
 * You can use this software according to the terms and conditions of the Mulan PSL v2.
 * You may obtain a copy of Mulan PSL v2 at:
 *          http://license.coscl.org.cn/MulanPSL2
@@ -13,11 +13,12 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <common.h>
 #include <device/map.h>
+#include <utils.h>
 
 #define KEYDOWN_MASK 0x8000
 
+#ifndef CONFIG_TARGET_AM
 #include <SDL2/SDL.h>
 
 // Note that this is not the standard
@@ -69,6 +70,15 @@ void send_key(uint8_t scancode, bool is_keydown) {
     key_enqueue(am_scancode);
   }
 }
+#else // !CONFIG_TARGET_AM
+#define _KEY_NONE 0
+
+static uint32_t key_dequeue() {
+  AM_INPUT_KEYBRD_T ev = io_read(AM_INPUT_KEYBRD);
+  uint32_t am_scancode = ev.keycode | (ev.keydown ? KEYDOWN_MASK : 0);
+  return am_scancode;
+}
+#endif
 
 static uint32_t *i8042_data_port_base = NULL;
 
@@ -81,6 +91,10 @@ static void i8042_data_io_handler(uint32_t offset, int len, bool is_write) {
 void init_i8042() {
   i8042_data_port_base = (uint32_t *)new_space(4);
   i8042_data_port_base[0] = _KEY_NONE;
+#ifdef CONFIG_HAS_PORT_IO
+  add_pio_map ("keyboard", CONFIG_I8042_DATA_PORT, i8042_data_port_base, 4, i8042_data_io_handler);
+#else
   add_mmio_map("keyboard", CONFIG_I8042_DATA_MMIO, i8042_data_port_base, 4, i8042_data_io_handler);
+#endif
   IFNDEF(CONFIG_TARGET_AM, init_keymap());
 }

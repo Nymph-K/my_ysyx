@@ -1,7 +1,7 @@
 /***************************************************************************************
 * Copyright (c) 2014-2022 Zihao Yu, Nanjing University
 *
-* NEMU is licensed under Mulan PSL v2.
+* NPC is licensed under Mulan PSL v2.
 * You can use this software according to the terms and conditions of the Mulan PSL v2.
 * You may obtain a copy of Mulan PSL v2 at:
 *          http://license.coscl.org.cn/MulanPSL2
@@ -13,14 +13,13 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include <isa.h>
+#include <memory/vaddr.h>
 
 /* We use the POSIX regex functions to process regular expressions.
  * Type 'man regex' for more information about POSIX regex functions.
  */
-#include <common.h>
 #include <regex.h>
-#include <macro.h>
-#include <reg.h>
 
 enum {
   TK_NOTYPE = 256, TK_EQ, TK_NEQ, TK_GE, TK_LE, TK_SR, TK_SL, 
@@ -213,8 +212,6 @@ bool check_parentheses(uint16_t p, uint16_t q) {
 
 #define UNSIGNED_CALCU 0//1: 在计算过程中就使用的无符号. 0: 在计算过程中使用有符号计算仅将最终结果转换为无符号
 #define SHORT_CIRCUIT_OPERATOR 1
-
-word_t vaddr_read(vaddr_t addr, int len);
 
 uint32_t eval(uint16_t p, uint16_t q, bool *success) {
   if (p > q) {

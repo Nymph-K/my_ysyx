@@ -1,7 +1,7 @@
 /***************************************************************************************
 * Copyright (c) 2014-2022 Zihao Yu, Nanjing University
 *
-* NEMU is licensed under Mulan PSL v2.
+* NPC is licensed under Mulan PSL v2.
 * You can use this software according to the terms and conditions of the Mulan PSL v2.
 * You may obtain a copy of Mulan PSL v2 at:
 *          http://license.coscl.org.cn/MulanPSL2
@@ -16,12 +16,10 @@
 #include <common.h>
 
 #pragma GCC diagnostic ignored "-Wunused-function"
+
 #define NR_WP 32
 #define WP_TP uint64_t
 #define EXP_SIZE 128
-
-
-word_t expr(char *e, bool *success);
 
 typedef struct watchpoint {
   int NO;
@@ -84,6 +82,7 @@ static WP* frontPop(WP **head_ptr)
   }
 }
 
+word_t expr(char *e, bool *success);
 static WP_TP get_CurrentResult(WP *tmp)
 {
   for (WP* cur = head; cur ; cur = cur->next)

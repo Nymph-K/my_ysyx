@@ -1,7 +1,7 @@
 /***************************************************************************************
 * Copyright (c) 2014-2022 Zihao Yu, Nanjing University
 *
-* NEMU is licensed under Mulan PSL v2.
+* NPC is licensed under Mulan PSL v2.
 * You can use this software according to the terms and conditions of the Mulan PSL v2.
 * You may obtain a copy of Mulan PSL v2 at:
 *          http://license.coscl.org.cn/MulanPSL2
@@ -13,8 +13,11 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <common.h>
+#include <isa.h>
+#include <cpu/cpu.h>
+#include <difftest-def.h>
 #include <memory/paddr.h>
+#include "../../isa/riscv64/local-include/reg.h"
 
 void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   assert(0);

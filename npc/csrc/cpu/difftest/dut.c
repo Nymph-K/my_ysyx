@@ -1,7 +1,7 @@
 /***************************************************************************************
 * Copyright (c) 2014-2022 Zihao Yu, Nanjing University
 *
-* NEMU is licensed under Mulan PSL v2.
+* NPC is licensed under Mulan PSL v2.
 * You can use this software according to the terms and conditions of the Mulan PSL v2.
 * You may obtain a copy of Mulan PSL v2 at:
 *          http://license.coscl.org.cn/MulanPSL2
@@ -13,11 +13,13 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <common.h>
 #include <dlfcn.h>
+
+#include <isa.h>
+#include <cpu/cpu.h>
 #include <memory/paddr.h>
-#include <cpu/difftest.h>
-#include <reg.h>
+#include <utils.h>
+#include <difftest-def.h>
 
 bool disable_diff = false;
 
@@ -36,7 +38,7 @@ static bool is_skip_ref_old = false;
 static int skip_dut_nr_inst = 0;
 
 // this is used to let ref skip instructions which
-// can not produce consistent behavior with NEMU
+// can not produce consistent behavior with NPC
 void difftest_skip_ref() {
   if(disable_diff) return;
   is_skip_ref = true;
@@ -44,7 +46,7 @@ void difftest_skip_ref() {
   // (see below), we end the process of catching up with QEMU's pc to
   // keep the consistent behavior in our best.
   // Note that this is still not perfect: if the packed instructions
-  // already write some memory, and the incoming instruction in NEMU
+  // already write some memory, and the incoming instruction in NPC
   // will load that memory, we will encounter false negative. But such
   // situation is infrequent.
   skip_dut_nr_inst = 0;
@@ -52,7 +54,7 @@ void difftest_skip_ref() {
 
 // this is used to deal with instruction packing in QEMU.
 // Sometimes letting QEMU step once will execute multiple instructions.
-// We should skip checking until NEMU's pc catches up with QEMU's pc.
+// We should skip checking until NPC's pc catches up with QEMU's pc.
 // The semantic is
 //   Let REF run `nr_ref` instructions first.
 //   We expect that DUT will catch up with REF within `nr_dut` instructions.
@@ -99,25 +101,7 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
   reg_copy_to(&reg_syn);ref_difftest_regcpy(&reg_syn, DIFFTEST_TO_REF);
 }
 
-bool isa_difftest_checkregs(riscv64_CPU_state *ref_r, vaddr_t pc) {
-  for (size_t i = 0; i < 32; i++)
-  {
-    if(ref_r->gpr[i] != cpu_gpr[i]) {
-      printf("<------ Capture differences  ------>\n");
-      printf("ref->gpr[%ld] = 0x%016lX, \tcpu_gpr[%ld] = 0x%016lX\n", i, ref_r->gpr[i], i, cpu_gpr[i]);
-      printf("At pc = " ANSI_FG_RED "0x%016lX\n" ANSI_NONE, pc);
-      return false;
-    }
-  }
-  if (ref_r->pc != pc) {
-    printf("<------ Capture differences  ------>\n");
-    printf("ref->pc = 0x%016lX, \tmycpu->pc = " ANSI_FG_RED "0x%016lX\n" ANSI_NONE, ref_r->pc, pc);
-    return false;
-  }
-  return true;
-}
-
-static void checkregs(riscv64_CPU_state *ref, vaddr_t pc) {
+static void checkregs(CPU_state *ref, vaddr_t pc) {
   if (!isa_difftest_checkregs(ref, pc)) {
     npc_state.state = NPC_ABORT;
     npc_state.halt_pc = pc;
@@ -128,7 +112,7 @@ static void checkregs(riscv64_CPU_state *ref, vaddr_t pc) {
 
 void difftest_step(vaddr_t pc, vaddr_t npc) {
   if(disable_diff) return;
-  riscv64_CPU_state ref_r;
+  CPU_state ref_r;
 
   if (skip_dut_nr_inst > 0) {
     ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);reg_set_from(&ref_r);
@@ -153,7 +137,8 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   if (is_skip_ref) {
     // to skip the checking of an instruction, just copy the reg state to reference design
     is_skip_ref_old = true;
-    is_skip_ref = false;
+    is_skip_ref_old = is_skip_ref;
+    return;
   }
   ref_difftest_exec(1);
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
@@ -164,7 +149,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
 void difftest_copy_to_ref(void)
 {
   ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), CONFIG_MSIZE, DIFFTEST_TO_REF);
-  riscv64_CPU_state ref_r;
+  CPU_state ref_r;
   reg_copy_to(&ref_r);
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
 }

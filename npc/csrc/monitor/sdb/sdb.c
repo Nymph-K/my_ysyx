@@ -1,7 +1,7 @@
 /***************************************************************************************
 * Copyright (c) 2014-2022 Zihao Yu, Nanjing University
 *
-* NEMU is licensed under Mulan PSL v2.
+* NPC is licensed under Mulan PSL v2.
 * You can use this software according to the terms and conditions of the Mulan PSL v2.
 * You may obtain a copy of Mulan PSL v2 at:
 *          http://license.coscl.org.cn/MulanPSL2
@@ -13,11 +13,11 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-//#include <memory/paddr.h>
+#include <isa.h>
+#include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <reg.h>
-#include <common.h>
+#include <memory/vaddr.h>
 
 static int is_batch_mode = false;
 
@@ -26,9 +26,8 @@ void init_wp_pool();
 void init_bp_pool();
 bool save_status(const char *abs_path);
 bool load_status(const char *abs_path);
-void cpu_exec(uint64_t n);
 
-word_t vaddr_read(vaddr_t addr, int len);
+word_t expr(char *e, bool *success);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -387,6 +386,10 @@ void sdb_mainloop() {
       args = NULL;
     }
 
+#ifdef CONFIG_DEVICE
+    extern void sdl_clear_event_queue();
+    sdl_clear_event_queue();
+#endif
 
     int i;
     for (i = 0; i < NR_CMD; i ++) {
@@ -404,18 +407,9 @@ void init_sdb() {
   /* Compile the regular expressions. */
   init_regex();
 
-  /* Initialize the watchpoint pool. */
+  /* Initialize the watch point pool. */
   init_wp_pool();
   
   /* Initialize the break point pool. */
   init_bp_pool();
-}
-
-void engine_start() {
-#ifdef CONFIG_TARGET_AM
-  cpu_exec(-1);
-#else
-  /* Receive commands from user. */
-  sdb_mainloop();
-#endif
 }

@@ -5,10 +5,10 @@ module IFU (
 	output [31:0] inst
 );
 
-import "DPI-C" function void inst_fetch(input longint pc, output int inst);
+import "DPI-C" function void instruction_fetch(input longint pc, output int inst);
 	always_latch @(*) begin
 		if (~rst) begin
-			inst_fetch(pc, inst);
+			instruction_fetch(pc, inst);
 		end
 	end
 
