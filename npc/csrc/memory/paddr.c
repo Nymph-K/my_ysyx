@@ -22,6 +22,8 @@
 #include "svdpi.h"//DPI-C
 #include "Vtop__Dpi.h"//DPI-C
 
+#define ADDR_ALIGN 0
+
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
 #else // CONFIG_PMEM_GARRAY
@@ -85,6 +87,7 @@ extern "C" void instruction_fetch(long long  pc, int *inst) {
     }
 }
 
+#if ADDR_ALIGN
 extern "C" void paddr_read(long long raddr, long long *rdata) {
   // 总是读取地址为`raddr & ~0x7ull`的8字节返回给`rdata`
   paddr_t addr = raddr & ~0x7ull;
@@ -143,3 +146,42 @@ extern "C" void paddr_write(long long waddr, long long wdata, char wmask) {
   // }
   out_of_bound(addr);
 }
+#else//ADDR_ALIGN
+extern "C" void paddr_read(long long addr, long long *rdata) {
+  if (likely(in_pmem(addr))) {
+    *rdata = pmem_read(addr, 8);
+    return;
+  }
+  #ifdef CONFIG_DEVICE
+  *rdata = mmio_read(addr, 8);
+  return;
+  #endif
+  // else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
+  // {
+  //   #ifdef CONFIG_DIFFTEST
+  //     difftest_skip_ref();
+  //   #endif
+  // }
+  out_of_bound(addr);
+}
+
+extern "C" void paddr_write(long long addr, long long wdata, char wmask) {
+  size_t len = wmask;
+  if (likely(in_pmem(addr))) { 
+    pmem_write(addr, len, wdata);
+    return;
+  }
+  #ifdef CONFIG_DEVICE
+  mmio_write(addr, len, wdata);
+  return;
+  #endif
+  // else if(addr == CLINT_MSIP_ADDR || addr == CLINT_MTIME_ADDR || addr == CLINT_MTIMECMP_ADDR)
+  // {
+  //   #ifdef CONFIG_DIFFTEST
+  //     difftest_skip_ref();
+  //   #endif
+  // }
+  out_of_bound(addr);
+}
+
+#endif//ADDR_ALIGN

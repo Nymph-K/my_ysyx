@@ -6,6 +6,7 @@
 `define HXLEN 32//half XLEN
 `define START_ADDR `XLEN'h80000000
 `define EXTENSION_M 1
+//`define ADDR_ALIGN 1
 //`define CLINT_ENABLE 1
 
 module top(

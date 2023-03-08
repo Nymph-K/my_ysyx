@@ -17,7 +17,8 @@
 #define __DIFFTEST_DEF_H__
 
 #include <stdint.h>
-#include <generated/autoconf.h>
+//#include <generated/autoconf.h>
+#include "/home/k/ysyx-workbench/nemu/include/generated/autoconf.h"
 
 enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
 

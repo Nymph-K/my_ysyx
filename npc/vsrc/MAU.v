@@ -7,19 +7,6 @@
 `include "IDU.v"
 `include "CLINT.v"
 
-`ifdef CLINT_ENABLE
-module MAU (
-    input clk,
-	input rst,
-	input  [2:0] funct3,
-	input  [6:0] opcode,
-	input  [`XLEN-1:0] src2,
-    input  [`XLEN-1:0] alu_result,
-	output [`XLEN-1:0] ld_data,
-    output msip,
-    output mtip
-);
-`else
 module MAU (
     input clk,
 	input rst,
@@ -28,9 +15,12 @@ module MAU (
 	input  [`XLEN-1:0] src2,
     input  [`XLEN-1:0] alu_result,
 	output [`XLEN-1:0] ld_data
-);
+`ifdef CLINT_ENABLE
+	,
+    output msip,
+    output mtip
 `endif
-
+);
 	//LOAD
 	localparam LB		= 3'b000;
 	localparam LH		= 3'b001;
@@ -56,6 +46,8 @@ module MAU (
 	assign mem_wdata = (mem_w == 1'b1) ? src2 : `XLEN'b0;
 	assign mem_addr = mem_w || mem_r ? alu_result : `XLEN'b0;
 
+
+	`ifdef ADDR_ALIGN
 
 	wire [7:0] mem_r8bit;
 	MuxKeyWithDefault #(8, 3, 8) u_mem_r8bit (
@@ -131,6 +123,26 @@ module MAU (
 			SD, 8'b1111_1111
 		})
 	);
+	`else//ADDR_ALIGN
+
+
+	wire [7:0] wmask = 8'b1 << funct3[1:0];
+
+	MuxKeyWithDefault #(7, 3, `XLEN) u_ld_data (
+		.out(ld_data),
+		.key(funct3),
+		.default_out(`XLEN'b0),
+		.lut({
+			LB, {{(`XLEN-8){mem_rdata[7]}}, mem_rdata[7:0]},
+			LH,	{{(`XLEN-16){mem_rdata[15]}}, mem_rdata[15:0]},
+			LW,	{{(`XLEN-32){mem_rdata[31]}}, mem_rdata[31:0]},
+			LBU,{{(`XLEN-8){1'b0}}, mem_rdata[7:0]},
+			LHU,{{(`XLEN-16){1'b0}}, mem_rdata[15:0]},
+			LWU,{{(`XLEN-32){1'b0}}, mem_rdata[31:0]},
+			LD,	mem_rdata
+		})
+	);
+	`endif//ADDR_ALIGN
 	
 	`ifdef CLINT_ENABLE
 		wire [`XLEN-1:0] mtime, mtimecmp;
@@ -145,7 +157,7 @@ module MAU (
 			.mtime(mtime),
 			.mtimecmp(mtimecmp)
 		);
-	`endif
+	`endif //CLINT_ENABLE
 
 import "DPI-C" function void paddr_read(input longint raddr, output longint rdata);
 import "DPI-C" function void paddr_write(input longint waddr, input longint wdata, input byte wmask);

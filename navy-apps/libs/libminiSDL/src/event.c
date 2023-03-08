@@ -23,6 +23,7 @@ int SDL_PollEvent(SDL_Event *event) {
   char key_name[20];
   if(NDL_PollEvent(buf, sizeof(buf)) != 0)
   {
+    printf("%s\n", buf);
     if(sscanf(buf, "k%c %s\n", &kd_ku, key_name) != 2) return 0;
     if(event == NULL) return 1;
     for (size_t i = 0; i < key_num; i++)
@@ -30,8 +31,8 @@ int SDL_PollEvent(SDL_Event *event) {
       if (strcmp(keyname[i], key_name) == 0)
       {
         //printf("k%c %s\n", kd_ku, keyname[i]);
-        //event->key.type = event->type;
         event->type = kd_ku == 'u' ? SDL_KEYUP : SDL_KEYDOWN;
+        event->key.type = event->type;
         event->key.keysym.sym = i;
         key_state[i] = kd_ku == 'd';
         return 1;

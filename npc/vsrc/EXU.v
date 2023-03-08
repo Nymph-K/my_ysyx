@@ -364,9 +364,6 @@ module EXU (
 		`ifdef CLINT_ENABLE
 			.msip(msip),
 			.mtip(mtip),
-		`else
-			.msip(1'b0),
-			.mtip(1'b0),
 		`endif
 		.interrupt(interrupt),
 		.csr(csr),

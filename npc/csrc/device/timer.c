@@ -12,10 +12,10 @@
 *
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
-
 #include <device/map.h>
 #include <device/alarm.h>
 #include <utils.h>
+#if CONFIG_HAS_TIMER
 
 static uint32_t *rtc_port_base = NULL;
 
@@ -46,3 +46,4 @@ void init_timer() {
 #endif
   IFNDEF(CONFIG_TARGET_AM, add_alarm_handle(timer_intr));
 }
+#endif

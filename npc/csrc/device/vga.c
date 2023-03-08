@@ -12,9 +12,9 @@
 *
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
-
 #include <common.h>
 #include <device/map.h>
+#if CONFIG_HAS_VGA
 
 #define SCREEN_W (MUXDEF(CONFIG_VGA_SIZE_800x600, 800, 400))
 #define SCREEN_H (MUXDEF(CONFIG_VGA_SIZE_800x600, 600, 300))
@@ -102,3 +102,4 @@ void init_vga() {
   IFDEF(CONFIG_VGA_SHOW_SCREEN, init_screen());
   IFDEF(CONFIG_VGA_SHOW_SCREEN, memset(vmem, 0, screen_size()));
 }
+#endif

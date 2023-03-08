@@ -14,8 +14,10 @@ module CSR (
 	input  wt_en,
 	input  [11:0] csr_idx,
 	input  [`XLEN-1:0] source,
+`ifdef CLINT_ENABLE
     input  msip,
     input  mtip,
+`endif
 	output interrupt,
 	output [`XLEN-1:0] csr,
 	output [`XLEN-1:0] csr_mtvec
@@ -78,8 +80,10 @@ module CSR (
 	localparam INST_INTR	= 4'b1000;
 
 	wire [`XLEN-1:0] mcsr[15:0];
+`ifdef CLINT_ENABLE
 	wire [`XLEN-1:0] mip_dout;
 	assign mcsr[idx_mip] = mip_dout | (msip ? mask_mip_msip : `XLEN'b0) | (mtip ? mask_mip_mtip : `XLEN'b0);
+`endif
 	generate
 		for (genvar n = 0; n < 15; n = n + 1) begin: csr_gen
 			if (n == idx_mstatus) //mstatus
@@ -103,6 +107,8 @@ module CSR (
 					.din(mcause_source), 
 					.dout(mcsr[n]), 
 					.wen(((mcsr_idx == n && wt_en == 1'b1) || exception == 1'b1) ? 1'b1 : 1'b0));
+					
+`ifdef CLINT_ENABLE
 			else if (n == idx_mip) //mip
 				Reg #(`XLEN, `XLEN'b0) u_csr (
 					.clk(clk), 
@@ -110,6 +116,7 @@ module CSR (
 					.din(source), 
 					.dout(mip_dout), 
 					.wen((mcsr_idx == n && wt_en == 1'b1) ? 1'b1 : 1'b0));
+`endif
 			else
 				Reg #(`XLEN, `XLEN'b0) u_csr (
 					.clk(clk), 

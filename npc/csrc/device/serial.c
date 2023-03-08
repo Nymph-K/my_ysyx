@@ -12,9 +12,9 @@
 *
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
-
 #include <utils.h>
 #include <device/map.h>
+#if CONFIG_HAS_SERIAL
 
 /* http://en.wikibooks.org/wiki/Serial_Programming/8250_UART_Programming */
 // NOTE: this is compatible to 16550
@@ -49,3 +49,4 @@ void init_serial() {
 #endif
 
 }
+#endif

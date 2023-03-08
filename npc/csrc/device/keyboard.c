@@ -15,6 +15,7 @@
 
 #include <device/map.h>
 #include <utils.h>
+#if CONFIG_HAS_KEYBOARD
 
 #define KEYDOWN_MASK 0x8000
 
@@ -98,3 +99,4 @@ void init_i8042() {
 #endif
   IFNDEF(CONFIG_TARGET_AM, init_keymap());
 }
+#endif
