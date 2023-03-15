@@ -131,7 +131,7 @@ static void execute(uint64_t n) {
   for (;n > 0; n --) {
     exec_once(&s);
     g_nr_guest_inst ++;
-    IFDEF(CONFIG_DIFFTEST, if(is_interrupt) difftest_skip_ref());
+    //IFDEF(CONFIG_DIFFTEST, if(is_interrupt) difftest_skip_ref());
     trace_and_difftest(&s, mycpu->dnpc);
     if (npc_state.state != NPC_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());

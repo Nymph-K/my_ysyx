@@ -21,7 +21,7 @@
 #define DPI_C_SET_GPR_PTR 1
 //#define GPR(n) mycpu->rootp->top__DOT__u_gir__DOT____Vcellout__gir_gen__BRA__##n##__KET____DOT__genblk1__DOT__u_gir__dout
 #define gpr(n) cpu_gpr[check_reg_idx(n)]
-#define csr mycpu->rootp->top__DOT__u_exu__DOT__u_csr__DOT__mcsr
+#define csr mycpu->rootp->top__DOT__u_csr__DOT__mcsr
 
 extern uint64_t *cpu_gpr;
 

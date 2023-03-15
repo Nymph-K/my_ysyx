@@ -61,7 +61,7 @@ typedef uint16_t ioaddr_t;
 #define STACK_DP 0x8000000
 
 // ----------- wave trace -----------
-#define WAVE_TRACE 0
+#define WAVE_TRACE 1
 #if WAVE_TRACE
 #define IFWAVE(...) do{__VA_ARGS__;}while(0)
 #else

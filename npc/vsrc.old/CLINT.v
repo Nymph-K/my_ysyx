@@ -3,7 +3,11 @@
 `ifndef CLINT_V
 `define CLINT_V
 
-`include "common.v"
+`include "top.v"
+
+`define CLINT_MSIP_ADDR     `XLEN'h2000000
+`define CLINT_MTIMECMP_ADDR `XLEN'h2004000
+`define CLINT_MTIME_ADDR    `XLEN'h200BFF8
 
 `ifdef CLINT_ENABLE
 
