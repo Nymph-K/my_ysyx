@@ -7,6 +7,7 @@
 static int evtdev = -1;
 static int fbdev = -1;
 static int screen_w = 0, screen_h = 0;
+static int screen_x = 0, screen_y = 0;
 static int window_w = 0, window_h = 0;
 static int fd_events = -1;
 static int fd_dispinfo = -1;
@@ -75,17 +76,16 @@ void NDL_OpenCanvas(int *w, int *h) {
     }
     close(fbctl);
   }
+  screen_x = (window_w - screen_w) / 2;//center
+  screen_y = (window_h - screen_h) / 2;//center
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  getWindowSize(&window_w, &window_h);
-  int screen_x = (window_w - screen_w) / 2;//center
-  int screen_y = (window_h - screen_h) / 2;//center
-  static int count = 0;
-  printf("x = %d, y = %d, w = %d, h = %d, window_w = %d, window_h = %d, screen_w = %d, screen_h = %d, screen_x = %d, screen_y = %d, count = %d\n", x, y, w, h, window_w, window_h, screen_w, screen_h, screen_x, screen_y, count);
-  count++;
-  // x += screen_x;
-  // y += screen_y;
+  //static int count = 0;
+  //printf("x = %d, y = %d, w = %d, h = %d, window_w = %d, window_h = %d, screen_w = %d, screen_h = %d, screen_x = %d, screen_y = %d, count = %d\n", x, y, w, h, window_w, window_h, screen_w, screen_h, screen_x, screen_y, count);
+  //count++;
+  x += screen_x;
+  y += screen_y;
   // if (w == window_w && (x|y) == 0)
   // {
   //   lseek(fd_fb, 0, SEEK_SET);

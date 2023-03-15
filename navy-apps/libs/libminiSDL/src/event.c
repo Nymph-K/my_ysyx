@@ -23,7 +23,7 @@ int SDL_PollEvent(SDL_Event *event) {
   char key_name[20];
   if(NDL_PollEvent(buf, sizeof(buf)) != 0)
   {
-    printf("%s\n", buf);
+    //printf("%s\n", buf);
     if(sscanf(buf, "k%c %s\n", &kd_ku, key_name) != 2) return 0;
     if(event == NULL) return 1;
     for (size_t i = 0; i < key_num; i++)
