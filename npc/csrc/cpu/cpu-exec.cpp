@@ -126,13 +126,18 @@ static void exec_once(Decode *s) {
 }
 
 #define is_interrupt mycpu->rootp->top__DOT__u_exu__DOT__interrupt
+#define is_inst_valid mycpu->rootp->top__DOT__u_ifu_axi_4_lite__DOT__u_inst_mem_axi_4_lite_0__DOT__axi_rvalid
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
     exec_once(&s);
     g_nr_guest_inst ++;
     //IFDEF(CONFIG_DIFFTEST, if(is_interrupt) difftest_skip_ref());
-    trace_and_difftest(&s, mycpu->dnpc);
+    #if USE_AXI_IFU
+      if(is_inst_valid) trace_and_difftest(&s, mycpu->dnpc);
+    #else
+      trace_and_difftest(&s, mycpu->dnpc);
+    #endif
     if (npc_state.state != NPC_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
   }

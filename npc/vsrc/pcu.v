@@ -24,6 +24,12 @@ module pcu (
 		input  interrupt,
 		input  [`XLEN-1:0] csr_mtvec,
 	`endif
+	`ifdef USE_AXI_IFU
+		input   pc_ready,
+		output  reg pc_valid,
+		input   inst_valid,
+		input   inst_ready,
+	`endif
 	output [`XLEN-1:0] pc,
 	output [`XLEN-1:0] dnpc
 );
@@ -33,7 +39,12 @@ module pcu (
 		.rst(rst), 
 		.din(dnpc), 
 		.dout(pc), 
-		.wen(1'b1));
+	`ifdef USE_AXI_IFU
+		.wen(inst_valid && inst_ready)
+	`else
+		.wen(1'b1)
+	`endif
+	);
 
 	wire [`XLEN-1:0] npc_base, npc_offs, npc_sum, npc;
 	assign npc_sum = npc_base + npc_offs;
@@ -50,6 +61,21 @@ module pcu (
 		assign dnpc = npc;
 	`endif
 	
+	`ifdef USE_AXI_IFU
+
+		always @(posedge clk ) begin
+			if (rst) begin
+				pc_valid <= 1'b0;
+			end else begin
+				if (pc_valid && pc_ready) begin
+					pc_valid <= 1'b0;
+				end else begin
+					pc_valid <= 1'b1;
+				end
+			end
+		end
+
+	`endif
 
 endmodule //pcu
 

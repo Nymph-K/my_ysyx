@@ -58,7 +58,6 @@ static void single_cycle() {
 static void reset(int n) {
   mycpu->rst = 1;
   while (n -- > 0) single_cycle();
-  mycpu->clk = 1; mycpu->eval();
   mycpu->rst = 0; mycpu->eval();
 }
 
@@ -71,7 +70,6 @@ void stopCPU(void)
 }
 
 int riscv64_exec_once(void) {
-  mycpu->clk = 1; mycpu->eval();
   posedge_half_cycle();
   negedge_half_cycle();
   return 0;
@@ -96,7 +94,14 @@ void init_cpu(void)
   tfp->open("wave.vcd");
   #endif
   reset(10);
-  IFDEF(CONFIG_DIFFTEST, riscv64_exec_once());
+  #if CONFIG_DIFFTEST
+    riscv64_exec_once();
+    #if USE_AXI_IFU
+      riscv64_exec_once();
+      riscv64_exec_once();
+      riscv64_exec_once();
+    #endif
+  #endif
 }
 
 void exit_cpu(void)

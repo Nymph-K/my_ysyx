@@ -57,6 +57,9 @@ typedef uint16_t ioaddr_t;
 #include <nvboard.h>
 #endif
 
+// ----------- AXI ifu use -----------
+#define USE_AXI_IFU 1
+
 // ----------- ram 128MB -----------
 #define STACK_DP 0x8000000
 

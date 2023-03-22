@@ -19,7 +19,6 @@ module top(
 );
 
 	wire pc_src1, pc_src2;
-	wire inst_sys_jump, inst_jalr;
 	wire [`XLEN-1:0] csr_r_data;
 	wire [`XLEN-1:0] x_rs1, x_rs2, imm;
 	reg [`XLEN-1:0] x_rd;
@@ -27,6 +26,10 @@ module top(
 	`ifdef CLINT_ENABLE
 		wire interrupt, msip, mtip;
 		wire [`XLEN-1:0] csr_mtvec;
+	`endif
+
+	`ifdef USE_AXI_IFU
+		wire pc_valid, pc_ready, inst_ready, inst_valid;
 	`endif
 
 	wire [4:0] rs1, rs2, rd;
@@ -59,21 +62,49 @@ module top(
 			.interrupt(interrupt),
 			.csr_mtvec(csr_mtvec),
 		`endif
+		`ifdef USE_AXI_IFU
+			.pc_ready(pc_ready),
+			.pc_valid(pc_valid),
+			.inst_valid(inst_valid),
+			.inst_ready(inst_ready),
+		`endif
 		.pc(pc),
 		.dnpc(dnpc)
 	);
 
 	/********************* ifu *********************/
-	ifu u_ifu (
-	  	.clk(clk),
-	  	.rst(rst),
-		.pc(pc),
-		.inst(inst)
-	);
+	`ifdef USE_AXI_IFU
+
+		ifu_axi_4_lite u_ifu_axi_4_lite(
+			.clk(clk),
+			.rst(rst),
+			.pc_valid(pc_valid),
+			.pc_ready(pc_ready),
+			.pc(pc),
+			.inst_ready(inst_ready),
+			.inst_valid(inst_valid),
+			.inst(inst)
+		);
+
+	`else
+
+		ifu u_ifu (
+			.clk(clk),
+			.rst(rst),
+			.pc(pc),
+			.inst(inst)
+		);
+	`endif
 
 	/********************* idu *********************/
 	idu u_idu(
 		.inst(inst),
+		`ifdef USE_AXI_IFU
+			.clk(clk),
+			.rst(rst),
+			.inst_valid(inst_valid),
+			.inst_ready(inst_ready),
+		`endif
 		.opcode(opcode),
 		.funct3(funct3),
 		.funct7(funct7),
@@ -120,7 +151,11 @@ module top(
 		.rs1(rs1),
 		.rs2(rs2),
 		.rd(rd),
-		.rd_w_en(rd_w_en),
+		`ifdef USE_AXI_IFU
+			.rd_w_en(inst_valid && inst_ready && rd_w_en),
+		`else
+			.rd_w_en(rd_w_en),
+		`endif
 		.x_rd(x_rd),
 		.x_rs1(x_rs1),
 		.x_rs2(x_rs2)
@@ -182,8 +217,13 @@ module top(
 	mau u_mau(
 		.clk(clk),
 		.rst(rst),
-		.mem_r_en(mem_r_en),
-		.mem_w_en(mem_w_en),
+		`ifdef USE_AXI_IFU
+			.mem_r_en(mem_r_en && inst_valid && inst_ready),
+			.mem_w_en(mem_w_en && inst_valid && inst_ready),
+		`else
+			.mem_r_en(mem_r_en),
+			.mem_w_en(mem_w_en),
+		`endif
 		.funct3(funct3),
 		`ifdef CLINT_ENABLE
 			.msip(msip),

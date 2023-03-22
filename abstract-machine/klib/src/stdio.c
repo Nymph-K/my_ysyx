@@ -111,7 +111,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
                 ltoa(d, d2s, 10);
               }
               else if (fmt[1] == 'x' || fmt[1] == 'X'){
-                d = va_arg(ap, unsigned long long);
+                d = va_arg(ap, unsigned long);
                 fmt++;
                 ltoa(d, d2s, 16);
               }
