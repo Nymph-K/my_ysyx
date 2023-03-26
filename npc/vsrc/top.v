@@ -30,6 +30,7 @@ module top(
 
 	`ifdef USE_AXI_IFU
 		wire pc_valid, pc_ready, inst_ready, inst_valid;
+		wire inst_ready_valid = inst_ready & inst_valid;
 	`endif
 
 	wire [4:0] rs1, rs2, rd;
@@ -65,8 +66,9 @@ module top(
 		`ifdef USE_AXI_IFU
 			.pc_ready(pc_ready),
 			.pc_valid(pc_valid),
-			.inst_valid(inst_valid),
-			.inst_ready(inst_ready),
+			.pc_en(inst_ready_valid),
+		`else
+			.pc_en(1'b1),
 		`endif
 		.pc(pc),
 		.dnpc(dnpc)
@@ -152,7 +154,7 @@ module top(
 		.rs2(rs2),
 		.rd(rd),
 		`ifdef USE_AXI_IFU
-			.rd_w_en(inst_valid && inst_ready && rd_w_en),
+			.rd_w_en(inst_ready_valid && rd_w_en),
 		`else
 			.rd_w_en(rd_w_en),
 		`endif
@@ -169,6 +171,9 @@ module top(
 		.inst_sys_ecall(inst_sys_ecall),
 		.inst_sys_ebreak(inst_sys_ebreak),
 		.csr_r_en(csr_r_en),
+		`ifdef USE_AXI_IFU
+			.inst_ready_valid(inst_ready_valid),
+		`endif
 		.csr_w_en(csr_w_en),
 		.csr_addr(csr_addr),
 		.csr_w_data(alu_result),
@@ -218,8 +223,8 @@ module top(
 		.clk(clk),
 		.rst(rst),
 		`ifdef USE_AXI_IFU
-			.mem_r_en(mem_r_en && inst_valid && inst_ready),
-			.mem_w_en(mem_w_en && inst_valid && inst_ready),
+			.mem_r_en(mem_r_en && inst_ready_valid),
+			.mem_w_en(mem_w_en && inst_ready_valid),
 		`else
 			.mem_r_en(mem_r_en),
 			.mem_w_en(mem_w_en),

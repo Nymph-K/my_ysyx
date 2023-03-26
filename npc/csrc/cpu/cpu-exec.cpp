@@ -44,6 +44,9 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 
 static void exec_once(Decode *s) {
   isa_exec_once(s);
+  #if USE_AXI_IFU //2 clock per inst
+    isa_exec_once(s);
+  #endif
 #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE || CONFIG_BREAKPOINT
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
@@ -80,7 +83,9 @@ static void exec_once(Decode *s) {
           //   printf("call :%s ->> %s\n", get_func_name_by_idx(cb.pc_sym_idx, cb.pc_elf_idx), get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx));
           #if CONFIG_FRINGBUF_DEPTH
           if(enable_ringbuf){
-            ringBufWrite(&fringbuf, &cb);
+            char *dnpc_func = get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx);
+            if((dnpc_func == NULL) || (dnpc_func != NULL && strcmp(dnpc_func, "putch") != 0))
+              ringBufWrite(&fringbuf, &cb);
           }
           #endif
           #ifdef CONFIG_BREAKPOINT
@@ -95,7 +100,9 @@ static void exec_once(Decode *s) {
         // if(trace_print)
         //   printf("ret  :%s <<- %s\n", get_func_name_by_idx(cb.pc_sym_idx, cb.pc_elf_idx), get_func_name_by_idx(cb.dnpc_sym_idx, cb.dnpc_elf_idx));
         #if CONFIG_FRINGBUF_DEPTH
+          char *pc_func = get_func_name_by_idx(cb.pc_sym_idx, cb.pc_elf_idx);
           if(enable_ringbuf){
+              if((pc_func == NULL) || (pc_func != NULL && strcmp(pc_func, "putch") != 0))
               ringBufWrite(&fringbuf, &cb);
           }
         #endif
@@ -133,21 +140,23 @@ static void execute(uint64_t n) {
     exec_once(&s);
     g_nr_guest_inst ++;
     //IFDEF(CONFIG_DIFFTEST, if(is_interrupt) difftest_skip_ref());
-    #if USE_AXI_IFU
-      if(is_inst_valid) trace_and_difftest(&s, mycpu->dnpc);
-    #else
-      trace_and_difftest(&s, mycpu->dnpc);
-    #endif
+    trace_and_difftest(&s, mycpu->dnpc);
     if (npc_state.state != NPC_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
   }
 }
+
+extern uint64_t g_nr_diff_inst;
+extern uint64_t g_nr_diff_skip_inst;
 
 static void statistic() {
   IFNDEF(CONFIG_TARGET_AM, setlocale(LC_NUMERIC, ""));
 #define NUMBERIC_FMT MUXDEF(CONFIG_TARGET_AM, "%ld", "%'ld")
   Log("host time spent = " NUMBERIC_FMT " us", g_timer);
   Log("total guest instructions = " NUMBERIC_FMT, g_nr_guest_inst);
+  #ifdef CONFIG_DIFFTEST
+  Log("Pass Diff instructions = " NUMBERIC_FMT "  Skip Diff instructions = " NUMBERIC_FMT , g_nr_diff_inst, g_nr_diff_skip_inst);
+  #endif
   if (g_timer > 0) Log("simulation frequency = " NUMBERIC_FMT " inst/s", g_nr_guest_inst * 1000000 / g_timer);
   else Log("Finish running in less than 1 us and can not calculate the simulation frequency");
 }

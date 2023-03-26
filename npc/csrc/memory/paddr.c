@@ -57,8 +57,15 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 }
 
 static void out_of_bound(paddr_t addr) {
+  #if OUT_BOUND_CONTINUE
+    printf(ANSI_FMT("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD "\n", ANSI_FG_RED),
+      addr, (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1, mycpu->pc);
+    void set_npc_state(int state, vaddr_t pc, int halt_ret);
+    set_npc_state(NPC_ABORT, mycpu->pc, -1);
+  #else
   panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
       addr, (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1, mycpu->pc);
+  #endif
 }
 
 void init_mem() {
@@ -163,6 +170,7 @@ extern "C" void paddr_read(long long addr, long long *rdata) {
   //   #endif
   // }
   out_of_bound(addr);
+  *rdata = 0;
 }
 
 extern "C" void paddr_write(long long addr, long long wdata, char wmask) {

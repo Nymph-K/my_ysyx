@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <utils.h>
 
+uint64_t g_nr_diff_inst = 0;
+
 bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
   for (size_t i = 0; i < 32; i++)
   {
@@ -34,6 +36,7 @@ bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
     printf("ref->pc = 0x%016lX, \tmycpu->pc = " ANSI_FG_RED "0x%016lX\n" ANSI_NONE, ref_r->pc, pc);
     return false;
   }
+  g_nr_diff_inst++;
   return true;
 }
 

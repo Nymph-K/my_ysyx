@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
+#include <NDL.h>
 
 int main() {
   uint32_t systick;

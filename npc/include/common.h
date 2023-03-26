@@ -51,17 +51,8 @@ typedef uint16_t ioaddr_t;
 
 #include <debug.h>
 
-// ----------- Nvboard use -----------
-#define NVBOARD_USE 0
-#if NVBOARD_USE
-#include <nvboard.h>
-#endif
-
-// ----------- AXI ifu use -----------
+// ----------- use AXI IFU -----------
 #define USE_AXI_IFU 1
-
-// ----------- ram 128MB -----------
-#define STACK_DP 0x8000000
 
 // ----------- wave trace -----------
 #define WAVE_TRACE 0
@@ -69,7 +60,19 @@ typedef uint16_t ioaddr_t;
 #define IFWAVE(...) do{__VA_ARGS__;}while(0)
 #else
 #define IFWAVE(...)
-#endif // WAVE_TRACE
+#endif
+
+// ----------- out of bound -----------
+#define OUT_BOUND_CONTINUE 1
+
+// ----------- Nvboard use -----------
+#define NVBOARD_USE 0
+#if NVBOARD_USE
+#include <nvboard.h>
+#endif
+
+// ----------- ram 128MB -----------
+#define STACK_DP 0x8000000
 
 // ----------- use nvboard -----------
 #define USE_NVBOARD 0
@@ -77,7 +80,7 @@ typedef uint16_t ioaddr_t;
 #define IFNVBOARD(...) do{__VA_ARGS__;}while(0)
 #else
 #define IFNVBOARD(...)
-#endif // USE_NVBOARD
+#endif
 
 // ----------- debug print -----------
 #define DEUBG_PRINT 0
@@ -85,7 +88,7 @@ typedef uint16_t ioaddr_t;
 #define debug_printf(format, ...) printf(format, ##__VA_ARGS__)
 #else
 #define debug_printf(format, ...)
-#endif // DEUBG_PRINTF
+#endif
 
 #ifndef __GUEST_ISA__
 #define __GUEST_ISA__ riscv64

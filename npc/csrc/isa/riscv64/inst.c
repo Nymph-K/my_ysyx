@@ -98,8 +98,7 @@ void init_cpu(void)
     riscv64_exec_once();
     #if USE_AXI_IFU
       riscv64_exec_once();
-      riscv64_exec_once();
-      riscv64_exec_once();
+      //riscv64_exec_once();
     #endif
   #endif
 }

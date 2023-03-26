@@ -20,6 +20,7 @@ module pcu (
 	input  [`XLEN-1:0] x_rs1,
 	input  [`XLEN-1:0] imm,
 	input  [`XLEN-1:0] csr_r_data,
+	input  pc_en,
 	`ifdef CLINT_ENABLE
 		input  interrupt,
 		input  [`XLEN-1:0] csr_mtvec,
@@ -27,8 +28,6 @@ module pcu (
 	`ifdef USE_AXI_IFU
 		input   pc_ready,
 		output  reg pc_valid,
-		input   inst_valid,
-		input   inst_ready,
 	`endif
 	output [`XLEN-1:0] pc,
 	output [`XLEN-1:0] dnpc
@@ -39,11 +38,7 @@ module pcu (
 		.rst(rst), 
 		.din(dnpc), 
 		.dout(pc), 
-	`ifdef USE_AXI_IFU
-		.wen(inst_valid && inst_ready)
-	`else
-		.wen(1'b1)
-	`endif
+		.wen(pc_en)
 	);
 
 	wire [`XLEN-1:0] npc_base, npc_offs, npc_sum, npc;

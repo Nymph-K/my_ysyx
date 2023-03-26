@@ -44,14 +44,49 @@ size_t invalid_write(const void *buf, size_t offset, size_t len) {
   return 0;
 }
 
+size_t stdin_invalid_read(void *buf, size_t offset, size_t len) {
+  panic("stdin should not reach here");
+  return 0;
+}
+
+size_t stdin_invalid_write(const void *buf, size_t offset, size_t len) {
+  panic("stdin should not reach here \nbuf=%s \t offset=%d \t len = %d\n", buf, offset, len);
+  return 0;
+}
+
+size_t stdout_invalid_read(void *buf, size_t offset, size_t len) {
+  panic("stdout should not reach here");
+  return 0;
+}
+
+size_t stderr_invalid_read(void *buf, size_t offset, size_t len) {
+  panic("stderr should not reach here");
+  return 0;
+}
+
+size_t events_invalid_write(const void *buf, size_t offset, size_t len) {
+  panic("events should not reach here");
+  return 0;
+}
+
+size_t dispinfo_invalid_write(const void *buf, size_t offset, size_t len) {
+  panic("dispinfo should not reach here");
+  return 0;
+}
+
+size_t fb_invalid_read(void *buf, size_t offset, size_t len) {
+  panic("fb should not reach here");
+  return 0;
+}
+
 /* This is the information about all files in disk. */
 static Finfo file_table[] __attribute__((used)) = {
-  [FD_STDIN]  = {"stdin", 0, 0, invalid_read, invalid_write, 0},
-  [FD_STDOUT] = {"stdout", 0, 0, invalid_read, serial_write, 0},
-  [FD_STDERR] = {"stderr", 0, 0, invalid_read, serial_write, 0},
-  [FD_EVENTS] = {"/dev/events", 0, 0, events_read, invalid_write, 0},
-  [FD_DISPINFO] = {"/proc/dispinfo", 0, 0, dispinfo_read, invalid_write, 0},
-  [FD_FB] = {"/dev/fb", 0, 0, invalid_read, fb_write, 0},
+  [FD_STDIN]  = {"stdin", 0, 0, stdin_invalid_read, stdin_invalid_write, 0},
+  [FD_STDOUT] = {"stdout", 0, 0, stdout_invalid_read, serial_write, 0},
+  [FD_STDERR] = {"stderr", 0, 0, stderr_invalid_read, serial_write, 0},
+  [FD_EVENTS] = {"/dev/events", 0, 0, events_read, events_invalid_write, 0},
+  [FD_DISPINFO] = {"/proc/dispinfo", 0, 0, dispinfo_read, dispinfo_invalid_write, 0},
+  [FD_FB] = {"/dev/fb", 0, 0, fb_invalid_read, fb_write, 0},
   // [FD_SBCTL] = {"/dev/sbctl", 0, 0, sbctl_read, sbctl_write, 0},
   // [FD_SB] = {"/dev/sb", 0, 0, invalid_read, sb_write, 0},
   #include "files.h"

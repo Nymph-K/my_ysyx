@@ -20,6 +20,9 @@ module csr (
 	input  csr_w_en,
 	input  [11:0] csr_addr,
 	input  [`XLEN-1:0] csr_w_data,
+`ifdef USE_AXI_IFU
+	input  inst_ready_valid,
+`endif
 `ifdef CLINT_ENABLE
     input  msip,
     input  mtip,
@@ -74,54 +77,102 @@ module csr (
 	localparam mask_mcause_mei = `XLEN'h8000_0000_0000_000B;
 
 	wire [`XLEN-1:0] mcsr[15:0];
+
 `ifdef CLINT_ENABLE
 	wire [`XLEN-1:0] mip_dout;
 	assign mcsr[idx_mip] = mip_dout | (msip ? mask_mip_msip : `XLEN'b0) | (mtip ? mask_mip_mtip : `XLEN'b0);
 `endif
-	generate
-		for (genvar n = 0; n < 15; n = n + 1) begin: csr_gen
-			if (n == idx_mstatus) //mstatus
-				Reg #(`XLEN, `XLEN'ha00001800) u_csr (
-					.clk(clk), 
-					.rst(rst), 
-					.din(mstatus_source), 
-					.dout(mcsr[n]), 
-					.wen(((csr_idx == n && csr_w_en == 1'b1) || exception) ? 1'b1 : 1'b0));
-			else if (n == idx_mepc) //mepc
-				Reg #(`XLEN, `XLEN'b0) u_csr (
-					.clk(clk), 
-					.rst(rst), 
-					.din(mepc_source), 
-					.dout(mcsr[n]), 
-					.wen(((csr_idx == n && csr_w_en == 1'b1) || exception == 1'b1) ? 1'b1 : 1'b0));
-			else if (n == idx_mcause) //mcause
-				Reg #(`XLEN, `XLEN'b0) u_csr (
-					.clk(clk), 
-					.rst(rst), 
-					.din(mcause_source), 
-					.dout(mcsr[n]), 
-					.wen(((csr_idx == n && csr_w_en == 1'b1) || exception == 1'b1) ? 1'b1 : 1'b0));
-					
-`ifdef CLINT_ENABLE
-			else if (n == idx_mip) //mip
-				Reg #(`XLEN, `XLEN'b0) u_csr (
-					.clk(clk), 
-					.rst(rst), 
-					.din(csr_w_data), 
-					.dout(mip_dout), 
-					.wen((csr_idx == n && csr_w_en == 1'b1) ? 1'b1 : 1'b0));
-`endif
-			else
-				Reg #(`XLEN, `XLEN'b0) u_csr (
-					.clk(clk), 
-					.rst(rst), 
-					.din(csr_w_data), 
-					.dout(mcsr[n]), 
-					.wen((csr_idx == n && csr_w_en == 1'b1) ? 1'b1 : 1'b0));
-		end
-	endgenerate
 
-	assign csr_r_data = (csr_r_en == 1'b1) ? mcsr[csr_idx] : `XLEN'b0;
+	`ifdef USE_AXI_IFU
+		generate
+			for (genvar n = 0; n < 15; n = n + 1) begin: csr_gen
+				if (n == idx_mstatus) //mstatus
+					Reg #(`XLEN, `XLEN'ha00001800) u_csr (
+						.clk(clk), 
+						.rst(rst), 
+						.din(mstatus_source), 
+						.dout(mcsr[n]), 
+						.wen((inst_ready_valid && ((csr_idx == n && csr_w_en) || exception)) ? 1'b1 : 1'b0));
+				else if (n == idx_mepc) //mepc
+					Reg #(`XLEN, `XLEN'b0) u_csr (
+						.clk(clk), 
+						.rst(rst), 
+						.din(mepc_source), 
+						.dout(mcsr[n]), 
+						.wen((inst_ready_valid && ((csr_idx == n && csr_w_en) || exception)) ? 1'b1 : 1'b0));
+				else if (n == idx_mcause) //mcause
+					Reg #(`XLEN, `XLEN'b0) u_csr (
+						.clk(clk), 
+						.rst(rst), 
+						.din(mcause_source), 
+						.dout(mcsr[n]), 
+						.wen((inst_ready_valid && ((csr_idx == n && csr_w_en) || exception)) ? 1'b1 : 1'b0));
+						
+				`ifdef CLINT_ENABLE
+					else if (n == idx_mip) //mip
+						Reg #(`XLEN, `XLEN'b0) u_csr (
+							.clk(clk), 
+							.rst(rst), 
+							.din(csr_w_data), 
+							.dout(mip_dout), 
+							.wen((inst_ready_valid && (csr_idx == n && csr_w_en)) ? 1'b1 : 1'b0));
+				`endif
+				else
+					Reg #(`XLEN, `XLEN'b0) u_csr (
+						.clk(clk), 
+						.rst(rst), 
+						.din(csr_w_data), 
+						.dout(mcsr[n]), 
+						.wen((inst_ready_valid && (csr_idx == n && csr_w_en)) ? 1'b1 : 1'b0));
+			end
+		endgenerate
+	`else
+		generate
+			for (genvar n = 0; n < 15; n = n + 1) begin: csr_gen
+				if (n == idx_mstatus) //mstatus
+					Reg #(`XLEN, `XLEN'ha00001800) u_csr (
+						.clk(clk), 
+						.rst(rst), 
+						.din(mstatus_source), 
+						.dout(mcsr[n]), 
+						.wen(((csr_idx == n && csr_w_en) || exception) ? 1'b1 : 1'b0));
+				else if (n == idx_mepc) //mepc
+					Reg #(`XLEN, `XLEN'b0) u_csr (
+						.clk(clk), 
+						.rst(rst), 
+						.din(mepc_source), 
+						.dout(mcsr[n]), 
+						.wen(((csr_idx == n && csr_w_en) || exception) ? 1'b1 : 1'b0));
+				else if (n == idx_mcause) //mcause
+					Reg #(`XLEN, `XLEN'b0) u_csr (
+						.clk(clk), 
+						.rst(rst), 
+						.din(mcause_source), 
+						.dout(mcsr[n]), 
+						.wen(((csr_idx == n && csr_w_en) || exception) ? 1'b1 : 1'b0));
+						
+				`ifdef CLINT_ENABLE
+					else if (n == idx_mip) //mip
+						Reg #(`XLEN, `XLEN'b0) u_csr (
+							.clk(clk), 
+							.rst(rst), 
+							.din(csr_w_data), 
+							.dout(mip_dout), 
+							.wen((csr_idx == n && csr_w_en) ? 1'b1 : 1'b0));
+				`endif
+				else
+					Reg #(`XLEN, `XLEN'b0) u_csr (
+						.clk(clk), 
+						.rst(rst), 
+						.din(csr_w_data), 
+						.dout(mcsr[n]), 
+						.wen((csr_idx == n && csr_w_en) ? 1'b1 : 1'b0));
+			end
+		endgenerate
+	
+	`endif
+
+	assign csr_r_data = (csr_r_en) ? mcsr[csr_idx] : `XLEN'b0;
 
 	wire [3:0] csr_idx;
 	MuxKeyWithDefault #(15, 12, 4) u_mcsr_idx (
