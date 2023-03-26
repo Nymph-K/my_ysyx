@@ -1,27 +1,31 @@
 /*************************************************************
- * @ name           : mau.v
- * @ description    : Memory Access Unit
- * @ use module     : alu, mdu
+ * @ name           : lsu.v
+ * @ description    : Load and Sotre Unit
+ * @ use module     : 
  * @ author         : K
  * @ chnge date     : 2023-3-13
 *************************************************************/
-`ifndef MAU_V
-`define MAU_V
+`ifndef LSU_V
+`define LSU_V
 
 `include "common.v"
 
-module mau (
-    input clk,
-	input rst,
-	input mem_r_en,
-	input mem_w_en,
-	input  [2:0] funct3,
+module lsu (
+    input 						clk,
+	input 						rst,
+	`ifdef USE_AXI_IFU
+		input   				inst_valid,
+		output  reg 			inst_ready,
+	`endif
+	input 						mem_r_en,
+	input 						mem_w_en,
+	input [2:0] 				funct3,
+    input [`XLEN-1:0] 			mem_addr,
+	input [`XLEN-1:0] 			mem_w_data,
 	`ifdef CLINT_ENABLE
 		output msip,
 		output mtip,
 	`endif
-    input  [`XLEN-1:0] mem_addr,
-	input  [`XLEN-1:0] mem_w_data,
 	`ifdef USE_IF_CASE
 		output reg [`XLEN-1:0] mem_r_data
 	`else
@@ -237,6 +241,20 @@ module mau (
 			);
 	`endif //CLINT_ENABLE
 
+	`ifdef USE_AXI_IFU
+		always @(posedge clk ) begin
+			if (rst) begin
+				inst_ready <= 1'b0;
+			end else begin
+				if (inst_valid && inst_ready) begin
+					inst_ready <= 1'b0;
+				end else begin
+					inst_ready <= 1'b1;
+				end
+			end
+		end
+	`endif
+
 import "DPI-C" function void paddr_read(input longint raddr, output longint mem_r_data);
 import "DPI-C" function void paddr_write(input longint waddr, input longint mem_w_data, input byte wmask);
 	always_latch @(negedge clk) begin
@@ -257,6 +275,6 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
 		end
 	end
 
-endmodule //mau
+endmodule //lsu
 
 `endif

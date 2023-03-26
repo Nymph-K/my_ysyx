@@ -12,12 +12,6 @@
 
 module idu (
 	input  [31:0] 				inst,
-	`ifdef USE_AXI_IFU
-		input 					clk,
-		input					rst,
-		input   				inst_valid,
-		output  reg 			inst_ready,
-	`endif
 	output [6:0] 				opcode,
 	output [2:0] 				funct3,
 	output [6:0] 				funct7,
@@ -148,22 +142,6 @@ module idu (
 				TYPE_J, {{(`XLEN-21){inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0}
 			})
 		);
-	`endif
-	
-	`ifdef USE_AXI_IFU
-
-		always @(posedge clk ) begin
-			if (rst) begin
-				inst_ready <= 1'b0;
-			end else begin
-				if (inst_valid && inst_ready) begin
-					inst_ready <= 1'b0;
-				end else begin
-					inst_ready <= 1'b1;
-				end
-			end
-		end
-
 	`endif
 
 endmodule //idu

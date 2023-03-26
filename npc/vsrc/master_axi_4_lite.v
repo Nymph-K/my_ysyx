@@ -62,7 +62,7 @@ module master_axi_4_lite #(
     assign r_valid = AXI_RVALID;
 
     assign AXI_AWADDR       = w_addr;
-    assign AXI_AWPROT       = 2'b00;
+    assign AXI_AWPROT       = 3'b000;
     assign AXI_AWVALID      = axi_awvalid;
 
     assign AXI_WDATA        = w_data;
@@ -73,7 +73,7 @@ module master_axi_4_lite #(
 
     assign AXI_ARADDR       = r_addr;
     assign AXI_ARVALID      = axi_arvalid;
-    assign AXI_ARPROT	    = 2'b00;
+    assign AXI_ARPROT	    = 3'b000;
 
     assign AXI_RREADY       = axi_rready;
     

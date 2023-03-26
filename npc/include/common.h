@@ -54,8 +54,11 @@ typedef uint16_t ioaddr_t;
 // ----------- use AXI IFU -----------
 #define USE_AXI_IFU 1
 
+// ----------- use AXI LSU -----------
+#define USE_AXI_LSU 1
+
 // ----------- wave trace -----------
-#define WAVE_TRACE 0
+#define WAVE_TRACE 1
 #if WAVE_TRACE
 #define IFWAVE(...) do{__VA_ARGS__;}while(0)
 #else

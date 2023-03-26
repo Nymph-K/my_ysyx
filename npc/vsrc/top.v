@@ -101,12 +101,6 @@ module top(
 	/********************* idu *********************/
 	idu u_idu(
 		.inst(inst),
-		`ifdef USE_AXI_IFU
-			.clk(clk),
-			.rst(rst),
-			.inst_valid(inst_valid),
-			.inst_ready(inst_ready),
-		`endif
 		.opcode(opcode),
 		.funct3(funct3),
 		.funct7(funct7),
@@ -218,26 +212,44 @@ module top(
 			.mdu_result(mdu_result)
 		);
 
-	/********************* mau *********************/
-	mau u_mau(
-		.clk(clk),
-		.rst(rst),
-		`ifdef USE_AXI_IFU
-			.mem_r_en(mem_r_en && inst_ready_valid),
-			.mem_w_en(mem_w_en && inst_ready_valid),
-		`else
+	/********************* lsu *********************/
+	`ifdef USE_AXI_LSU
+		lsu_axi_4_lite u_lsu_axi_4_lite(
+			.clk(clk),
+			.rst(rst),
+			.inst_valid(inst_valid),
+			.inst_ready(inst_ready),
 			.mem_r_en(mem_r_en),
 			.mem_w_en(mem_w_en),
-		`endif
-		.funct3(funct3),
-		`ifdef CLINT_ENABLE
-			.msip(msip),
-			.mtip(mtip),
-		`endif
-		.mem_addr(alu_result),
-		.mem_w_data(x_rs2),
-		.mem_r_data(mem_r_data)
-	);
+			.funct3(funct3),
+			.mem_addr(alu_result),
+			.mem_w_data(x_rs2),
+			`ifdef CLINT_ENABLE
+				.msip(msip),
+				.mtip(mtip),
+			`endif
+			.mem_r_data(mem_r_data)
+		);
+	`else
+		lsu u_lsu(
+			.clk(clk),
+			.rst(rst),
+			`ifdef USE_AXI_IFU
+				.inst_valid(inst_valid),
+				.inst_ready(inst_ready),
+			`endif
+			.mem_r_en(mem_r_en & inst_ready_valid),
+			.mem_w_en(mem_w_en & inst_ready_valid),
+			.funct3(funct3),
+			.mem_addr(alu_result),
+			.mem_w_data(x_rs2),
+			`ifdef CLINT_ENABLE
+				.msip(msip),
+				.mtip(mtip),
+			`endif
+			.mem_r_data(mem_r_data)
+		);
+	`endif
 	
 	/********************* bcu *********************/
 	bcu u_bcu(

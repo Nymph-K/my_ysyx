@@ -51,6 +51,8 @@
 
 `define USE_AXI_IFU         1
 
+`define USE_AXI_LSU         1
+
 /*  rd src  */
 `define RD_SRC_ALU 		      2'd0		//alu_result
 `define RD_SRC_MEM 		      2'd1		//mem_data_out
