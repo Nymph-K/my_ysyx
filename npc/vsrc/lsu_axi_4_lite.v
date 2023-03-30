@@ -33,7 +33,7 @@ module lsu_axi_4_lite (
 	`endif
 );
 
-	reg [`XLEN-1:0]             mem_rdata;
+	wire [`XLEN-1:0]             mem_rdata;
 
 	`ifdef USE_IF_CASE
 	
@@ -279,13 +279,12 @@ module lsu_axi_4_lite (
         .AXI_RREADY(AXI_RREADY)
     );
 
-
-    wire w_ready, r_valid;
     wire [31:0] AXI_AWADDR, AXI_ARADDR;
     wire [2:0] AXI_AWPROT, AXI_ARPROT;
     wire [63:0] AXI_WDATA, AXI_RDATA;
     wire [7:0] AXI_WSTRB;
-    wire AXI_AWVALID, AXI_WVALID, AXI_BREADY, AXI_ARVALID, AXI_RREADY;
+    reg AXI_AWVALID, AXI_WVALID, AXI_ARVALID;
+	wire AXI_BREADY, AXI_RREADY;
     wire AXI_AWREADY, AXI_WREADY, AXI_BVALID, AXI_ARREADY, AXI_RVALID;
     wire [1:0] AXI_BRESP, AXI_RRESP;
 	
@@ -296,40 +295,47 @@ module lsu_axi_4_lite (
     reg                                           axi_arvalid;
     reg                                           axi_rready;
 
-    assign w_ready = AXI_BVALID;
-    assign r_valid = AXI_RVALID;
-
-    assign AXI_AWADDR       = w_addr;
+    assign AXI_AWADDR       = mem_addr[31:0];
     assign AXI_AWPROT       = 3'b000;
-    assign AXI_AWVALID      = axi_awvalid;
 
-    assign AXI_WDATA        = w_data;
-    assign AXI_WSTRB        = w_strb;
-    assign AXI_WVALID       = axi_wvalid;
+    assign AXI_WDATA        = mem_w_data;
+    assign AXI_WSTRB        = wmask;
 
     assign AXI_BREADY       = axi_bready;
 
-    assign AXI_ARADDR       = r_addr;
-    assign AXI_ARVALID      = axi_arvalid;
+    assign AXI_ARADDR       = mem_addr[31:0];
     assign AXI_ARPROT	    = 3'b000;
+	assign mem_rdata		= AXI_RDATA;
 
     assign AXI_RREADY       = axi_rready;
+
+	always @(*) begin
+		if(state == FSM_IDLE)begin
+    		AXI_AWVALID      = mem_w_en;
+    		AXI_WVALID       = mem_w_en;
+    		AXI_ARVALID      = mem_r_en;
+		end else begin
+    		AXI_AWVALID      = axi_awvalid;
+    		AXI_WVALID       = axi_wvalid ;
+    		AXI_ARVALID      = axi_arvalid;
+		end
+	end
     
     //--------------------------------------------FSM-Moore------------------------------------------------
     reg [2: 0] state;
     parameter [2:0]
-        FSM_IDLE    = 3'b000 ,
-        FSM_WVALID     = 3'b001 ,
-        FSM_AWREADY = 3'b010 ,
-        FSM_WREADY  = 3'b011 ,
-        FSM_BVALID  = 3'b100 ,
-        FSM_RREADY     = 3'b101 ,
-        FSM_ARREADY  = 3'b110 ,
-        FSM_ERROR   = 3'b111 ;
+        FSM_IDLE    	= 3'b000 ,
+        FSM_WVALID     	= 3'b001 ,
+        FSM_AWREADY 	= 3'b010 ,
+        FSM_WREADY  	= 3'b011 ,
+        FSM_BVALID  	= 3'b100 ,
+        FSM_RREADY     	= 3'b101 ,
+        FSM_ARREADY  	= 3'b110 ,
+        FSM_WAIT	   	= 3'b111 ;
 
-    always @(posedge AXI_ACLK)
+    always @(posedge clk)
     begin
-        if (~AXI_ARESETN)
+        if (rst)
         begin
             state           <= FSM_IDLE;
             axi_awvalid     <= 1'b0;
@@ -340,17 +346,27 @@ module lsu_axi_4_lite (
         end else begin
             case(state)
                 FSM_IDLE    : begin
-                    if(w_valid)   begin 
-                        state           <= FSM_WVALID;
-                        axi_awvalid     <= 1'b1;
-                        axi_wvalid      <= 1'b1;
+                    if(mem_w_en)   begin 
+						if(AXI_AWREADY && AXI_WREADY)   begin 
+							state           <= FSM_BVALID;
+							axi_awvalid     <= 1'b0;
+							axi_wvalid      <= 1'b0;
+						end
+						else if(AXI_AWREADY)   begin 
+							state           <= FSM_AWREADY;
+							axi_awvalid     <= 1'b0;
+						end
+						else if(AXI_WREADY)   begin 
+							state           <= FSM_WREADY;
+							axi_wvalid      <= 1'b0;
+						end
                     end
-                    else if(r_ready)   begin 
-                        state           <= FSM_RREADY;
-                        axi_arvalid     <= 1'b1;
+                    else if(mem_r_en)   begin 
+						if(AXI_ARREADY)   begin 
+							state           <= FSM_ARREADY;
+							axi_arvalid     <= 1'b0;
+						end
                     end
-                    axi_bready      <= 1'b1;
-                    axi_rready      <= 1'b1;
                 end
 
                 FSM_WVALID :
@@ -382,7 +398,7 @@ module lsu_axi_4_lite (
 
                 FSM_BVALID  : 
                     if(AXI_BVALID)   begin 
-                        state           <= FSM_IDLE;
+                        state           <= FSM_WAIT;
                         axi_bready      <= 1'b0;
                     end
 
@@ -394,8 +410,15 @@ module lsu_axi_4_lite (
 
                 FSM_ARREADY : 
                     if(AXI_RVALID)   begin 
-                        state           <= FSM_IDLE;
+                        state           <= FSM_WAIT;
                         axi_rready      <= 1'b0;
+                    end
+
+                FSM_WAIT : // wait for next inst
+                    begin 
+                        state           <= FSM_IDLE;
+						axi_bready      <= 1'b1;
+						axi_rready      <= 1'b1;
                     end
 
                 default     : begin 
