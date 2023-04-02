@@ -29,7 +29,8 @@ module top(
 	`endif
 
 	`ifdef USE_AXI_IFU
-		wire pc_valid, pc_ready, inst_ready, inst_valid;
+		wire pc_valid, pc_ready, inst_valid;
+		reg inst_ready;
 		wire inst_ready_valid = inst_ready & inst_valid;
 	`endif
 
@@ -42,7 +43,7 @@ module top(
 	wire [4:0] alu_ctrl;//[4] = inst_32, [3] = alu_sub_sra, [2:0] = funct3
 	wire csr_r_en, csr_w_en;
 	wire [11:0] csr_addr;
-	wire mem_r_en, mem_w_en;
+	wire inst_load, inst_store;
 	wire inst_sys, inst_sys_jump, inst_jalr, inst_32, inst_sys_ecall, inst_sys_mret, inst_sys_ebreak;
 	wire [`XLEN-1:0] alu_result, mdu_result;
 	wire smaller, equal;
@@ -77,6 +78,30 @@ module top(
 	/********************* ifu *********************/
 	`ifdef USE_AXI_IFU
 
+		wire [31 : 0]  	        IFU_AXI_AWADDR;
+		wire [2 : 0]   	        IFU_AXI_AWPROT;
+		wire           	        IFU_AXI_AWVALID;
+		wire           	        IFU_AXI_AWREADY;
+
+		wire [63 : 0]  	        IFU_AXI_WDATA;
+		wire [7 : 0]   	        IFU_AXI_WSTRB;
+		wire           	        IFU_AXI_WVALID;
+		wire           	        IFU_AXI_WREADY;
+			
+		wire [1 : 0]   	        IFU_AXI_BRESP;
+		wire           	        IFU_AXI_BVALID;
+		wire           	        IFU_AXI_BREADY;
+			
+		wire [31 : 0]  	        IFU_AXI_ARADDR;
+		wire           	        IFU_AXI_ARVALID;
+		wire [2 : 0]   	        IFU_AXI_ARPROT;
+		wire           	        IFU_AXI_ARREADY;
+
+		wire [63 : 0]  	        IFU_AXI_RDATA;
+		wire [1 : 0]   	        IFU_AXI_RRESP;
+		wire           	        IFU_AXI_RVALID;
+		wire           	        IFU_AXI_RREADY;
+
 		ifu_axi_4_lite u_ifu_axi_4_lite(
 			.clk(clk),
 			.rst(rst),
@@ -85,7 +110,56 @@ module top(
 			.pc(pc),
 			.inst_ready(inst_ready),
 			.inst_valid(inst_valid),
-			.inst(inst)
+			.inst(inst),
+			.IFU_AXI_AWADDR(IFU_AXI_AWADDR),
+			.IFU_AXI_AWPROT(IFU_AXI_AWPROT),
+			.IFU_AXI_AWVALID(IFU_AXI_AWVALID),
+			.IFU_AXI_AWREADY(IFU_AXI_AWREADY),
+			.IFU_AXI_WDATA(IFU_AXI_WDATA),
+			.IFU_AXI_WSTRB(IFU_AXI_WSTRB),
+			.IFU_AXI_WVALID(IFU_AXI_WVALID),
+			.IFU_AXI_WREADY(IFU_AXI_WREADY),
+			.IFU_AXI_BRESP(IFU_AXI_BRESP),
+			.IFU_AXI_BVALID(IFU_AXI_BVALID),
+			.IFU_AXI_BREADY(IFU_AXI_BREADY),
+			.IFU_AXI_ARADDR(IFU_AXI_ARADDR),
+			.IFU_AXI_ARVALID(IFU_AXI_ARVALID),
+			.IFU_AXI_ARPROT(IFU_AXI_ARPROT),
+			.IFU_AXI_ARREADY(IFU_AXI_ARREADY),
+			.IFU_AXI_RDATA(IFU_AXI_RDATA),
+			.IFU_AXI_RRESP(IFU_AXI_RRESP),
+			.IFU_AXI_RVALID(IFU_AXI_RVALID),
+			.IFU_AXI_RREADY(IFU_AXI_RREADY)
+		);
+
+		mem_axi_4_lite #(64, 32) u_mem_axi_4_lite_ifu(
+		//Global
+			.AXI_ACLK(clk),
+			.AXI_ARESETN(~rst),
+		//AW
+			.AXI_AWADDR(IFU_AXI_AWADDR),
+			.AXI_AWPROT(IFU_AXI_AWPROT),
+			.AXI_AWVALID(IFU_AXI_AWVALID),
+			.AXI_AWREADY(IFU_AXI_AWREADY),
+		//W
+			.AXI_WDATA(IFU_AXI_WDATA),
+			.AXI_WSTRB(IFU_AXI_WSTRB),
+			.AXI_WVALID(IFU_AXI_WVALID),
+			.AXI_WREADY(IFU_AXI_WREADY),
+		//BR
+			.AXI_BRESP(IFU_AXI_BRESP),
+			.AXI_BVALID(IFU_AXI_BVALID),
+			.AXI_BREADY(IFU_AXI_BREADY),
+		//AR
+			.AXI_ARADDR(IFU_AXI_ARADDR),
+			.AXI_ARVALID(IFU_AXI_ARVALID),
+			.AXI_ARPROT(IFU_AXI_ARPROT),
+			.AXI_ARREADY(IFU_AXI_ARREADY),
+		//R
+			.AXI_RDATA(IFU_AXI_RDATA),
+			.AXI_RRESP(IFU_AXI_RRESP),
+			.AXI_RVALID(IFU_AXI_RVALID),
+			.AXI_RREADY(IFU_AXI_RREADY)
 		);
 
 	`else
@@ -126,8 +200,8 @@ module top(
 		.csr_r_en(csr_r_en),
 		.csr_w_en(csr_w_en),
 		.csr_addr(csr_addr),
-		.mem_r_en(mem_r_en),
-		.mem_w_en(mem_w_en),
+		.inst_load(inst_load),
+		.inst_store(inst_store),
 		`ifdef EXTENSION_M
 			.mdu_en(mdu_en),
 		`endif
@@ -214,13 +288,32 @@ module top(
 
 	/********************* lsu *********************/
 	`ifdef USE_AXI_LSU
+
+		wire [31 : 0]  	LSU_AXI_AWADDR;
+		wire [2 : 0]   	LSU_AXI_AWPROT;
+		wire           	LSU_AXI_AWVALID;
+		wire           	LSU_AXI_AWREADY;
+		wire [63 : 0]  	LSU_AXI_WDATA;
+		wire [7 : 0]   	LSU_AXI_WSTRB;
+		wire           	LSU_AXI_WVALID;
+		wire           	LSU_AXI_WREADY;
+		wire [1 : 0]   	LSU_AXI_BRESP;
+		wire           	LSU_AXI_BVALID;
+		wire           	LSU_AXI_BREADY;
+		wire [31 : 0]  	LSU_AXI_ARADDR;
+		wire           	LSU_AXI_ARVALID;
+		wire [2 : 0]   	LSU_AXI_ARPROT;
+		wire           	LSU_AXI_ARREADY;
+		wire [63 : 0]  	LSU_AXI_RDATA;
+		wire [1 : 0]   	LSU_AXI_RRESP;
+		wire           	LSU_AXI_RVALID;
+		wire           	LSU_AXI_RREADY;
+
 		lsu_axi_4_lite u_lsu_axi_4_lite(
 			.clk(clk),
 			.rst(rst),
-			.inst_valid(inst_valid),
-			.inst_ready(inst_ready),
-			.mem_r_en(mem_r_en),
-			.mem_w_en(mem_w_en),
+			.inst_load(inst_load),
+			.inst_store(inst_store),
 			.funct3(funct3),
 			.mem_addr(alu_result),
 			.mem_w_data(x_rs2),
@@ -228,8 +321,66 @@ module top(
 				.msip(msip),
 				.mtip(mtip),
 			`endif
-			.mem_r_data(mem_r_data)
+			.mem_r_data(mem_r_data),
+			.LSU_AXI_AWADDR(LSU_AXI_AWADDR),
+			.LSU_AXI_AWPROT(LSU_AXI_AWPROT),
+			.LSU_AXI_AWVALID(LSU_AXI_AWVALID),
+			.LSU_AXI_AWREADY(LSU_AXI_AWREADY),
+			.LSU_AXI_WDATA(LSU_AXI_WDATA),
+			.LSU_AXI_WSTRB(LSU_AXI_WSTRB),
+			.LSU_AXI_WVALID(LSU_AXI_WVALID),
+			.LSU_AXI_WREADY(LSU_AXI_WREADY),
+			.LSU_AXI_BRESP(LSU_AXI_BRESP),
+			.LSU_AXI_BVALID(LSU_AXI_BVALID),
+			.LSU_AXI_BREADY(LSU_AXI_BREADY),
+			.LSU_AXI_ARADDR(LSU_AXI_ARADDR),
+			.LSU_AXI_ARVALID(LSU_AXI_ARVALID),
+			.LSU_AXI_ARPROT(LSU_AXI_ARPROT),
+			.LSU_AXI_ARREADY(LSU_AXI_ARREADY),
+			.LSU_AXI_RDATA(LSU_AXI_RDATA),
+			.LSU_AXI_RRESP(LSU_AXI_RRESP),
+			.LSU_AXI_RVALID(LSU_AXI_RVALID),
+			.LSU_AXI_RREADY(LSU_AXI_RREADY)
 		);
+
+		mem_axi_4_lite #(64, 32) u_mem_axi_4_lite_lsu(
+		//Global
+			.AXI_ACLK(clk),
+			.AXI_ARESETN(~rst),
+		//AW    
+			.AXI_AWADDR(LSU_AXI_AWADDR),
+			.AXI_AWPROT(LSU_AXI_AWPROT),
+			.AXI_AWVALID(LSU_AXI_AWVALID),
+			.AXI_AWREADY(LSU_AXI_AWREADY),
+		//W 
+			.AXI_WDATA(LSU_AXI_WDATA),
+			.AXI_WSTRB(LSU_AXI_WSTRB),
+			.AXI_WVALID(LSU_AXI_WVALID),
+			.AXI_WREADY(LSU_AXI_WREADY),
+		//BR    
+			.AXI_BRESP(LSU_AXI_BRESP),
+			.AXI_BVALID(LSU_AXI_BVALID),
+			.AXI_BREADY(LSU_AXI_BREADY),
+		//AR    
+			.AXI_ARADDR(LSU_AXI_ARADDR),
+			.AXI_ARVALID(LSU_AXI_ARVALID),
+			.AXI_ARPROT(LSU_AXI_ARPROT),
+			.AXI_ARREADY(LSU_AXI_ARREADY),
+		//R 
+			.AXI_RDATA(LSU_AXI_RDATA),
+			.AXI_RRESP(LSU_AXI_RRESP),
+			.AXI_RVALID(LSU_AXI_RVALID),
+			.AXI_RREADY(LSU_AXI_RREADY)
+		);
+
+		always @(*) begin
+			if (rst) begin
+				inst_ready = 1'b0;
+			end else begin
+				inst_ready = inst_load ? LSU_AXI_RVALID : (inst_store ? LSU_AXI_BVALID : inst_valid);
+			end
+		end
+
 	`else
 		lsu u_lsu(
 			.clk(clk),
@@ -238,8 +389,8 @@ module top(
 				.inst_valid(inst_valid),
 				.inst_ready(inst_ready),
 			`endif
-			.mem_r_en(mem_r_en & inst_ready_valid),
-			.mem_w_en(mem_w_en & inst_ready_valid),
+			.inst_load(inst_load & inst_ready_valid),
+			.inst_store(inst_store & inst_ready_valid),
 			.funct3(funct3),
 			.mem_addr(alu_result),
 			.mem_w_data(x_rs2),

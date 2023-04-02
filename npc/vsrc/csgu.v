@@ -33,8 +33,8 @@ module csgu (
 	output 				csr_r_en,
 	output 				csr_w_en,
 	output [11:0] 		csr_addr, 
-	output 				mem_r_en,
-	output 				mem_w_en,
+	output 				inst_load,
+	output 				inst_store,
 	`ifdef EXTENSION_M
 		output 			mdu_en,
 	`endif
@@ -57,8 +57,8 @@ module csgu (
 	assign inst_sys_ecall = inst_sys_jump && (inst == `INST_ECALL);
 	assign inst_sys_mret = inst_sys_jump && (inst == `INST_MRET);
 	assign inst_sys_ebreak = inst_sys_jump && (inst == `INST_EBREAK);
-	assign mem_r_en = (opcode == `LOAD);
-	assign mem_w_en = (opcode == `STORE);
+	assign inst_load = (opcode == `LOAD);
+	assign inst_store = (opcode == `STORE);
 	assign csr_r_en = inst_sys & csr_rd_en;
 	assign csr_w_en = inst_sys & csr_wt_en;
 	

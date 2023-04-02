@@ -137,6 +137,10 @@ void init_monitor(int argc, char *argv[]) {
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img();
 
+  #if CONFIG_IRINGBUF_DEPTH | CONFIG_MRINGBUF_DEPTH | CONFIG_FRINGBUF_DEPTH | CONFIG_ERINGBUF_DEPTH
+  ringBufInit();
+  #endif
+  
   /* reset cpu. */
   init_cpu();
 
@@ -157,9 +161,6 @@ void init_monitor(int argc, char *argv[]) {
   );
   #endif
 
-  #if CONFIG_IRINGBUF_DEPTH | CONFIG_MRINGBUF_DEPTH | CONFIG_FRINGBUF_DEPTH | CONFIG_ERINGBUF_DEPTH
-  ringBufInit();
-  #endif
   #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE
   if(init_elf(elf_file_num > 64 ? 64 : elf_file_num, elf_file) == -1){
     Log("elf error!");

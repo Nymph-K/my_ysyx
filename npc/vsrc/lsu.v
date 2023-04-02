@@ -17,8 +17,8 @@ module lsu (
 		input   				inst_valid,
 		output  reg 			inst_ready,
 	`endif
-	input 						mem_r_en,
-	input 						mem_w_en,
+	input 						inst_load,
+	input 						inst_store,
 	input [2:0] 				funct3,
     input [`XLEN-1:0] 			mem_addr,
 	input [`XLEN-1:0] 			mem_w_data,
@@ -231,7 +231,7 @@ module lsu (
 			CLINT u_clint(
 				.clk(clk),
 				.rst(rst),
-				.mem_w_en(mem_w_en),
+				.inst_store(inst_store),
 				.mem_w_data(mem_w_data),
 				.mem_addr(mem_addr),
 				.msip(msip),
@@ -258,7 +258,7 @@ module lsu (
 import "DPI-C" function void paddr_read(input longint raddr, output longint mem_r_data);
 import "DPI-C" function void paddr_write(input longint waddr, input longint mem_w_data, input byte wmask);
 	always_latch @(negedge clk) begin
-		if (mem_r_en) begin
+		if (inst_load) begin
 				`ifdef CLINT_ENABLE
 				if (mem_addr == `CLINT_MTIME_ADDR) begin
 					mem_rdata = mtime;
@@ -270,7 +270,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
 				`endif
 			paddr_read(mem_addr, mem_rdata);
 		end
-		if (mem_w_en) begin
+		if (inst_store) begin
 			paddr_write(mem_addr, mem_w_data, wmask);
 		end
 	end
