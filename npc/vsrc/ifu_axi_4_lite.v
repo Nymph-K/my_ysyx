@@ -14,11 +14,7 @@ module ifu_axi_4_lite (
     input                               pc_valid,
     output                              pc_ready,
 	input   [`XLEN-1:0]                 pc,
-	`ifdef USE_AXI_LSU
-        input                           inst_ready,
-    `else
-        output   reg                    inst_ready,
-    `endif
+    output   reg                        inst_ready,
     output                              inst_valid,
 	output  [31:0]                      inst,
     //AW    
@@ -76,19 +72,17 @@ module ifu_axi_4_lite (
     assign  inst_valid = IFU_AXI_RVALID;
     assign  IFU_AXI_RREADY = inst_ready;
     
-	`ifndef USE_AXI_LSU // if not def USE_AXI_LSU
-        always @(posedge clk ) begin
-            if (rst) begin
+    always @(posedge clk ) begin
+        if (rst) begin
+            inst_ready <= 1'b0;
+        end else begin
+            if (inst_valid && inst_ready) begin
                 inst_ready <= 1'b0;
             end else begin
-                if (inst_valid && inst_ready) begin
-                    inst_ready <= 1'b0;
-                end else begin
-                    inst_ready <= 1'b1;
-                end
+                inst_ready <= 1'b1;
             end
         end
-    `endif
+    end
     
     
 endmodule //ifu_axi_4_lite

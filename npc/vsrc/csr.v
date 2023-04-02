@@ -21,7 +21,7 @@ module csr (
 	input  [11:0] csr_addr,
 	input  [`XLEN-1:0] csr_w_data,
 `ifdef USE_AXI_IFU
-	input  inst_ready_valid,
+	input  execute_over,
 `endif
 `ifdef CLINT_ENABLE
     input  msip,
@@ -92,21 +92,21 @@ module csr (
 						.rst(rst), 
 						.din(mstatus_source), 
 						.dout(mcsr[n]), 
-						.wen((inst_ready_valid && ((csr_idx == n && csr_w_en) || exception)) ? 1'b1 : 1'b0));
+						.wen((execute_over && ((csr_idx == n && csr_w_en) || exception)) ? 1'b1 : 1'b0));
 				else if (n == idx_mepc) //mepc
 					Reg #(`XLEN, `XLEN'b0) u_csr (
 						.clk(clk), 
 						.rst(rst), 
 						.din(mepc_source), 
 						.dout(mcsr[n]), 
-						.wen((inst_ready_valid && ((csr_idx == n && csr_w_en) || exception)) ? 1'b1 : 1'b0));
+						.wen((execute_over && ((csr_idx == n && csr_w_en) || exception)) ? 1'b1 : 1'b0));
 				else if (n == idx_mcause) //mcause
 					Reg #(`XLEN, `XLEN'b0) u_csr (
 						.clk(clk), 
 						.rst(rst), 
 						.din(mcause_source), 
 						.dout(mcsr[n]), 
-						.wen((inst_ready_valid && ((csr_idx == n && csr_w_en) || exception)) ? 1'b1 : 1'b0));
+						.wen((execute_over && ((csr_idx == n && csr_w_en) || exception)) ? 1'b1 : 1'b0));
 						
 				`ifdef CLINT_ENABLE
 					else if (n == idx_mip) //mip
@@ -115,7 +115,7 @@ module csr (
 							.rst(rst), 
 							.din(csr_w_data), 
 							.dout(mip_dout), 
-							.wen((inst_ready_valid && (csr_idx == n && csr_w_en)) ? 1'b1 : 1'b0));
+							.wen((execute_over && (csr_idx == n && csr_w_en)) ? 1'b1 : 1'b0));
 				`endif
 				else
 					Reg #(`XLEN, `XLEN'b0) u_csr (
@@ -123,7 +123,7 @@ module csr (
 						.rst(rst), 
 						.din(csr_w_data), 
 						.dout(mcsr[n]), 
-						.wen((inst_ready_valid && (csr_idx == n && csr_w_en)) ? 1'b1 : 1'b0));
+						.wen((execute_over && (csr_idx == n && csr_w_en)) ? 1'b1 : 1'b0));
 			end
 		endgenerate
 	`else

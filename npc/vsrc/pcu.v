@@ -60,12 +60,12 @@ module pcu (
 
 		always @(posedge clk ) begin
 			if (rst) begin
-				pc_valid <= 1'b0;
+				pc_valid <= 1'b1;
 			end else begin
 				if (pc_valid && pc_ready) begin
 					pc_valid <= 1'b0;
 				end else begin
-					pc_valid <= 1'b1;
+					pc_valid <= pc_en;
 				end
 			end
 		end

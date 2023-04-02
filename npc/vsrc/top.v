@@ -29,9 +29,8 @@ module top(
 	`endif
 
 	`ifdef USE_AXI_IFU
-		wire pc_valid, pc_ready, inst_valid;
-		reg inst_ready;
-		wire inst_ready_valid = inst_ready & inst_valid;
+		wire pc_valid, pc_ready, inst_ready, inst_valid;
+		reg execute_over;
 	`endif
 
 	wire [4:0] rs1, rs2, rd;
@@ -67,7 +66,7 @@ module top(
 		`ifdef USE_AXI_IFU
 			.pc_ready(pc_ready),
 			.pc_valid(pc_valid),
-			.pc_en(inst_ready_valid),
+			.pc_en(execute_over),
 		`else
 			.pc_en(1'b1),
 		`endif
@@ -222,7 +221,7 @@ module top(
 		.rs2(rs2),
 		.rd(rd),
 		`ifdef USE_AXI_IFU
-			.rd_w_en(inst_ready_valid && rd_w_en),
+			.rd_w_en(execute_over && rd_w_en),
 		`else
 			.rd_w_en(rd_w_en),
 		`endif
@@ -240,7 +239,7 @@ module top(
 		.inst_sys_ebreak(inst_sys_ebreak),
 		.csr_r_en(csr_r_en),
 		`ifdef USE_AXI_IFU
-			.inst_ready_valid(inst_ready_valid),
+			.execute_over(execute_over),
 		`endif
 		.csr_w_en(csr_w_en),
 		.csr_addr(csr_addr),
@@ -270,6 +269,13 @@ module top(
 		.smaller(smaller),
 		.equal(equal)
 	);
+	always @(*) begin
+		if (rst) begin
+			execute_over = 1'b0;
+		end else begin
+			execute_over = inst_load ? LSU_AXI_RVALID : (inst_store ? LSU_AXI_BVALID : inst_valid);
+		end
+	end
 	
 	/********************* mdu *********************/
 	`ifdef FAST_SIMULATION
@@ -373,14 +379,6 @@ module top(
 			.AXI_RREADY(LSU_AXI_RREADY)
 		);
 
-		always @(*) begin
-			if (rst) begin
-				inst_ready = 1'b0;
-			end else begin
-				inst_ready = inst_load ? LSU_AXI_RVALID : (inst_store ? LSU_AXI_BVALID : inst_valid);
-			end
-		end
-
 	`else
 		lsu u_lsu(
 			.clk(clk),
@@ -389,8 +387,8 @@ module top(
 				.inst_valid(inst_valid),
 				.inst_ready(inst_ready),
 			`endif
-			.inst_load(inst_load & inst_ready_valid),
-			.inst_store(inst_store & inst_ready_valid),
+			.inst_load(inst_load & execute_over),
+			.inst_store(inst_store & execute_over),
 			.funct3(funct3),
 			.mem_addr(alu_result),
 			.mem_w_data(x_rs2),

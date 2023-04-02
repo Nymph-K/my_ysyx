@@ -42,14 +42,14 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #endif
 }
 
-#define is_inst_ready_valid mycpu->rootp->top__DOT__inst_ready_valid
+#define is_execute_over mycpu->rootp->top__DOT__execute_over
 
 static void exec_once(Decode *s) {
   isa_exec_once(s);
   #if USE_AXI_IFU //2 clock per inst
     isa_exec_once(s);
     #if USE_AXI_LSU //3 clock per inst
-      while(!is_inst_ready_valid) isa_exec_once(s);
+      while(!is_execute_over) isa_exec_once(s);
     #endif
   #endif
 #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE || CONFIG_BREAKPOINT
