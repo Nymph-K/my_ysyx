@@ -144,17 +144,17 @@ module attributer_axi_4_lite #(
                     O_AXI_AWPROT    = B_AXI_AWPROT;
                     O_AXI_AWVALID   = B_AXI_AWVALID;
                     B_AXI_AWREADY   = O_AXI_AWREADY;
-                    A_AXI_AWREADY   = 0;
+                    // A_AXI_AWREADY   = 0;
 
                     O_AXI_WDATA     = B_AXI_WDATA;
                     O_AXI_WSTRB     = B_AXI_WSTRB;
                     O_AXI_WVALID    = B_AXI_WVALID;
                     B_AXI_WREADY    = O_AXI_WREADY;
-                    A_AXI_WREADY    = 0;
+                    // A_AXI_WREADY    = 0;
 
                     B_AXI_BRESP     = O_AXI_BRESP;
                     B_AXI_BVALID    = O_AXI_BVALID;
-                    A_AXI_BRESP     = 0;
+                    // A_AXI_BRESP     = 0;
                     A_AXI_BVALID    = 0;
                     O_AXI_BREADY    = B_AXI_BREADY;
                 end else begin
@@ -162,58 +162,58 @@ module attributer_axi_4_lite #(
                     O_AXI_AWPROT    = A_AXI_AWPROT;
                     O_AXI_AWVALID   = A_AXI_AWVALID;
                     A_AXI_AWREADY   = O_AXI_AWREADY;
-                    B_AXI_AWREADY   = 0;
+                    // B_AXI_AWREADY   = 0;
 
                     O_AXI_WDATA     = A_AXI_WDATA;
                     O_AXI_WSTRB     = A_AXI_WSTRB;
                     O_AXI_WVALID    = A_AXI_WVALID;
                     A_AXI_WREADY    = O_AXI_WREADY;
-                    B_AXI_WREADY    = 0;
+                    // B_AXI_WREADY    = 0;
 
                     A_AXI_BRESP     = O_AXI_BRESP;
                     A_AXI_BVALID    = O_AXI_BVALID;
-                    B_AXI_BRESP     = 0;
+                    // B_AXI_BRESP     = 0;
                     B_AXI_BVALID    = 0;
                     O_AXI_BREADY    = A_AXI_BREADY;
                 end
             end
             FSM_AW: begin
-                O_AXI_AWADDR    = A_AXI_AWADDR;
-                O_AXI_AWPROT    = A_AXI_AWPROT;
-                O_AXI_AWVALID   = A_AXI_AWVALID;
-                A_AXI_AWREADY   = O_AXI_AWREADY;
-                B_AXI_AWREADY   = 0;
+                    O_AXI_AWADDR    = A_AXI_AWADDR;
+                    O_AXI_AWPROT    = A_AXI_AWPROT;
+                    O_AXI_AWVALID   = A_AXI_AWVALID;
+                    A_AXI_AWREADY   = O_AXI_AWREADY;
+                    // B_AXI_AWREADY   = 0;
 
-                O_AXI_WDATA     = A_AXI_WDATA;
-                O_AXI_WSTRB     = A_AXI_WSTRB;
-                O_AXI_WVALID    = A_AXI_WVALID;
-                A_AXI_WREADY    = O_AXI_WREADY;
-                B_AXI_WREADY    = 0;
+                    O_AXI_WDATA     = A_AXI_WDATA;
+                    O_AXI_WSTRB     = A_AXI_WSTRB;
+                    O_AXI_WVALID    = A_AXI_WVALID;
+                    A_AXI_WREADY    = O_AXI_WREADY;
+                    // B_AXI_WREADY    = 0;
 
-                A_AXI_BRESP     = O_AXI_BRESP;
-                A_AXI_BVALID    = O_AXI_BVALID;
-                B_AXI_BRESP     = 0;
-                B_AXI_BVALID    = 0;
-                O_AXI_BREADY    = A_AXI_BREADY;
+                    A_AXI_BRESP     = O_AXI_BRESP;
+                    A_AXI_BVALID    = O_AXI_BVALID;
+                    // B_AXI_BRESP     = 0;
+                    B_AXI_BVALID    = 0;
+                    O_AXI_BREADY    = A_AXI_BREADY;
             end
             FSM_BW: begin
-                O_AXI_AWADDR    = B_AXI_AWADDR;
-                O_AXI_AWPROT    = B_AXI_AWPROT;
-                O_AXI_AWVALID   = B_AXI_AWVALID;
-                B_AXI_AWREADY   = O_AXI_AWREADY;
-                A_AXI_AWREADY   = 0;
+                    O_AXI_AWADDR    = B_AXI_AWADDR;
+                    O_AXI_AWPROT    = B_AXI_AWPROT;
+                    O_AXI_AWVALID   = B_AXI_AWVALID;
+                    B_AXI_AWREADY   = O_AXI_AWREADY;
+                    // A_AXI_AWREADY   = 0;
 
-                O_AXI_WDATA     = B_AXI_WDATA;
-                O_AXI_WSTRB     = B_AXI_WSTRB;
-                O_AXI_WVALID    = B_AXI_WVALID;
-                B_AXI_WREADY    = O_AXI_WREADY;
-                A_AXI_WREADY    = 0;
+                    O_AXI_WDATA     = B_AXI_WDATA;
+                    O_AXI_WSTRB     = B_AXI_WSTRB;
+                    O_AXI_WVALID    = B_AXI_WVALID;
+                    B_AXI_WREADY    = O_AXI_WREADY;
+                    // A_AXI_WREADY    = 0;
 
-                B_AXI_BRESP     = O_AXI_BRESP;
-                B_AXI_BVALID    = O_AXI_BVALID;
-                A_AXI_BRESP     = 0;
-                A_AXI_BVALID    = 0;
-                O_AXI_BREADY    = B_AXI_BREADY;
+                    B_AXI_BRESP     = O_AXI_BRESP;
+                    B_AXI_BVALID    = O_AXI_BVALID;
+                    // A_AXI_BRESP     = 0;
+                    A_AXI_BVALID    = 0;
+                    O_AXI_BREADY    = B_AXI_BREADY;
             end
 
             default: begin
@@ -222,17 +222,17 @@ module attributer_axi_4_lite #(
                     O_AXI_AWPROT    = B_AXI_AWPROT;
                     O_AXI_AWVALID   = B_AXI_AWVALID;
                     B_AXI_AWREADY   = O_AXI_AWREADY;
-                    A_AXI_AWREADY   = 0;
+                    // A_AXI_AWREADY   = 0;
 
                     O_AXI_WDATA     = B_AXI_WDATA;
                     O_AXI_WSTRB     = B_AXI_WSTRB;
                     O_AXI_WVALID    = B_AXI_WVALID;
                     B_AXI_WREADY    = O_AXI_WREADY;
-                    A_AXI_WREADY    = 0;
+                    // A_AXI_WREADY    = 0;
 
                     B_AXI_BRESP     = O_AXI_BRESP;
                     B_AXI_BVALID    = O_AXI_BVALID;
-                    A_AXI_BRESP     = 0;
+                    // A_AXI_BRESP     = 0;
                     A_AXI_BVALID    = 0;
                     O_AXI_BREADY    = B_AXI_BREADY;
                 end else begin
@@ -240,17 +240,17 @@ module attributer_axi_4_lite #(
                     O_AXI_AWPROT    = A_AXI_AWPROT;
                     O_AXI_AWVALID   = A_AXI_AWVALID;
                     A_AXI_AWREADY   = O_AXI_AWREADY;
-                    B_AXI_AWREADY   = 0;
+                    // B_AXI_AWREADY   = 0;
 
                     O_AXI_WDATA     = A_AXI_WDATA;
                     O_AXI_WSTRB     = A_AXI_WSTRB;
                     O_AXI_WVALID    = A_AXI_WVALID;
                     A_AXI_WREADY    = O_AXI_WREADY;
-                    B_AXI_WREADY    = 0;
+                    // B_AXI_WREADY    = 0;
 
                     A_AXI_BRESP     = O_AXI_BRESP;
                     A_AXI_BVALID    = O_AXI_BVALID;
-                    B_AXI_BRESP     = 0;
+                    // B_AXI_BRESP     = 0;
                     B_AXI_BVALID    = 0;
                     O_AXI_BREADY    = A_AXI_BREADY;
                 end
@@ -288,20 +288,20 @@ module attributer_axi_4_lite #(
     
     //--------------------------------attributer read output-------------------------------------------
     always @(*) begin
-        case (atb_wstate)
+        case (atb_rstate)
             FSM_IDLE: begin
                 if (b_axi_r && !a_axi_r) begin
                     O_AXI_ARADDR    = B_AXI_ARADDR;
                     O_AXI_ARVALID   = B_AXI_ARVALID;
                     O_AXI_ARPROT    = B_AXI_ARPROT;
                     B_AXI_ARREADY   = O_AXI_ARREADY;
-                    A_AXI_ARREADY   = 0;
+                    // A_AXI_ARREADY   = 0;
                     
-                    B_AXI_RDATA     = O_AXI_RDATA;
+                    //B_AXI_RDATA     = O_AXI_RDATA;
                     B_AXI_RRESP     = O_AXI_RRESP;
                     B_AXI_RVALID    = O_AXI_RVALID;
-                    A_AXI_RDATA     = 0;
-                    A_AXI_RRESP     = 0;
+                    // A_AXI_RDATA     = 0;
+                    // A_AXI_RRESP     = 0;
                     A_AXI_RVALID    = 0;
                     O_AXI_RREADY    = B_AXI_RREADY;
                 end else begin
@@ -309,13 +309,13 @@ module attributer_axi_4_lite #(
                     O_AXI_ARVALID   = A_AXI_ARVALID;
                     O_AXI_ARPROT    = A_AXI_ARPROT;
                     A_AXI_ARREADY   = O_AXI_ARREADY;
-                    B_AXI_ARREADY   = 0;
+                    // B_AXI_ARREADY   = 0;
                     
-                    A_AXI_RDATA     = O_AXI_RDATA;
+                    //A_AXI_RDATA     = O_AXI_RDATA;
                     A_AXI_RRESP     = O_AXI_RRESP;
                     A_AXI_RVALID    = O_AXI_RVALID;
-                    B_AXI_RDATA     = 0;
-                    B_AXI_RRESP     = 0;
+                    // B_AXI_RDATA     = 0;
+                    // B_AXI_RRESP     = 0;
                     B_AXI_RVALID    = 0;
                     O_AXI_RREADY    = A_AXI_RREADY;
                 end
@@ -325,13 +325,13 @@ module attributer_axi_4_lite #(
                     O_AXI_ARVALID   = A_AXI_ARVALID;
                     O_AXI_ARPROT    = A_AXI_ARPROT;
                     A_AXI_ARREADY   = O_AXI_ARREADY;
-                    B_AXI_ARREADY   = 0;
+                    // B_AXI_ARREADY   = 0;
                     
                     A_AXI_RDATA     = O_AXI_RDATA;
                     A_AXI_RRESP     = O_AXI_RRESP;
                     A_AXI_RVALID    = O_AXI_RVALID;
-                    B_AXI_RDATA     = 0;
-                    B_AXI_RRESP     = 0;
+                    // B_AXI_RDATA     = 0;
+                    // B_AXI_RRESP     = 0;
                     B_AXI_RVALID    = 0;
                     O_AXI_RREADY    = A_AXI_RREADY;
             end
@@ -340,13 +340,13 @@ module attributer_axi_4_lite #(
                     O_AXI_ARVALID   = B_AXI_ARVALID;
                     O_AXI_ARPROT    = B_AXI_ARPROT;
                     B_AXI_ARREADY   = O_AXI_ARREADY;
-                    A_AXI_ARREADY   = 0;
+                    // A_AXI_ARREADY   = 0;
                     
                     B_AXI_RDATA     = O_AXI_RDATA;
                     B_AXI_RRESP     = O_AXI_RRESP;
                     B_AXI_RVALID    = O_AXI_RVALID;
-                    A_AXI_RDATA     = 0;
-                    A_AXI_RRESP     = 0;
+                    // A_AXI_RDATA     = 0;
+                    // A_AXI_RRESP     = 0;
                     A_AXI_RVALID    = 0;
                     O_AXI_RREADY    = B_AXI_RREADY;
             end
@@ -357,13 +357,13 @@ module attributer_axi_4_lite #(
                     O_AXI_ARVALID   = B_AXI_ARVALID;
                     O_AXI_ARPROT    = B_AXI_ARPROT;
                     B_AXI_ARREADY   = O_AXI_ARREADY;
-                    A_AXI_ARREADY   = 0;
+                    // A_AXI_ARREADY   = 0;
                     
-                    B_AXI_RDATA     = O_AXI_RDATA;
+                    //B_AXI_RDATA     = O_AXI_RDATA;
                     B_AXI_RRESP     = O_AXI_RRESP;
                     B_AXI_RVALID    = O_AXI_RVALID;
-                    A_AXI_RDATA     = 0;
-                    A_AXI_RRESP     = 0;
+                    // A_AXI_RDATA     = 0;
+                    // A_AXI_RRESP     = 0;
                     A_AXI_RVALID    = 0;
                     O_AXI_RREADY    = B_AXI_RREADY;
                 end else begin
@@ -371,13 +371,13 @@ module attributer_axi_4_lite #(
                     O_AXI_ARVALID   = A_AXI_ARVALID;
                     O_AXI_ARPROT    = A_AXI_ARPROT;
                     A_AXI_ARREADY   = O_AXI_ARREADY;
-                    B_AXI_ARREADY   = 0;
+                    // B_AXI_ARREADY   = 0;
                     
-                    A_AXI_RDATA     = O_AXI_RDATA;
+                    //A_AXI_RDATA     = O_AXI_RDATA;
                     A_AXI_RRESP     = O_AXI_RRESP;
                     A_AXI_RVALID    = O_AXI_RVALID;
-                    B_AXI_RDATA     = 0;
-                    B_AXI_RRESP     = 0;
+                    // B_AXI_RDATA     = 0;
+                    // B_AXI_RRESP     = 0;
                     B_AXI_RVALID    = 0;
                     O_AXI_RREADY    = A_AXI_RREADY;
                 end

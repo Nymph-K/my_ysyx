@@ -283,18 +283,9 @@ module lsu_axi_4_lite (
 	assign mem_rdata			= LSU_AXI_RDATA;
 
     assign LSU_AXI_RREADY       = axi_rready;
-
-	always @(*) begin
-		if(state == FSM_IDLE)begin
-    		LSU_AXI_AWVALID      = inst_store;
-    		LSU_AXI_WVALID       = inst_store;
-    		LSU_AXI_ARVALID      = inst_load;
-		end else begin
-    		LSU_AXI_AWVALID      = axi_awvalid;
-    		LSU_AXI_WVALID       = axi_wvalid ;
-    		LSU_AXI_ARVALID      = axi_arvalid;
-		end
-	end
+    assign LSU_AXI_AWVALID      = axi_awvalid;
+    assign LSU_AXI_WVALID       = axi_wvalid ;
+    assign LSU_AXI_ARVALID      = axi_arvalid;
     
     //--------------------------------------------FSM-Moore------------------------------------------------
     reg [2: 0] state;
@@ -322,79 +313,44 @@ module lsu_axi_4_lite (
             case(state)
                 FSM_IDLE    : begin
                     if(inst_store)   begin 
-						if(LSU_AXI_AWREADY && LSU_AXI_WREADY)   begin 
-							state           <= FSM_BVALID;
-							axi_awvalid     <= 1'b0;
-							axi_wvalid      <= 1'b0;
-						end
-						else if(LSU_AXI_AWREADY)   begin 
-							state           <= FSM_AWREADY;
-							axi_awvalid     <= 1'b0;
-						end
-						else if(LSU_AXI_WREADY)   begin 
-							state           <= FSM_WREADY;
-							axi_wvalid      <= 1'b0;
-						end
+						state           <= FSM_BVALID;
+						axi_awvalid     <= 1'b1;
+						axi_wvalid      <= 1'b1;
+						axi_bready      <= 1'b1;
                     end
                     else if(inst_load)   begin 
-						if(LSU_AXI_ARREADY)   begin 
-							state           <= FSM_ARREADY;
-							axi_arvalid     <= 1'b0;
-						end
+						state           <= FSM_ARREADY;
+						axi_arvalid     <= 1'b1;
+						axi_rready      <= 1'b1;
                     end
                 end
 
-                FSM_WVALID :
-                    if(LSU_AXI_AWREADY && LSU_AXI_WREADY)   begin 
-                        state           <= FSM_BVALID;
-                        axi_awvalid     <= 1'b0;
-                        axi_wvalid      <= 1'b0;
-                    end
-                    else if(LSU_AXI_AWREADY)   begin 
-                        state           <= FSM_AWREADY;
-                        axi_awvalid     <= 1'b0;
-                    end
-                    else if(LSU_AXI_WREADY)   begin 
-                        state           <= FSM_WREADY;
-                        axi_wvalid      <= 1'b0;
-                    end
-    
-                FSM_AWREADY  :
-                    if(LSU_AXI_WREADY)   begin 
-                        state           <= FSM_BVALID;
-                        axi_wvalid      <= 1'b0;
-                    end
-    
-                FSM_WREADY  :
-                    if(LSU_AXI_AWREADY)   begin 
-                        state           <= FSM_BVALID;
-                        axi_awvalid     <= 1'b0;
-                    end
-
-                FSM_BVALID  : 
+                FSM_BVALID  : begin
+					if(LSU_AXI_AWREADY)   begin 
+						axi_awvalid     <= 1'b0;
+					end
+					if(LSU_AXI_WREADY)   begin 
+						axi_wvalid      <= 1'b0;
+					end
                     if(LSU_AXI_BVALID)   begin 
                         state           <= FSM_WAIT;
                         axi_bready      <= 1'b0;
                     end
+                end
 
-                FSM_RREADY : 
-                    if(LSU_AXI_ARREADY)   begin 
-                        state           <= FSM_ARREADY;
-                        axi_arvalid     <= 1'b0;
-                    end
-
-                FSM_ARREADY : 
+                FSM_ARREADY : begin
+					if(LSU_AXI_ARREADY)   begin 
+						axi_arvalid     <= 1'b0;
+					end
                     if(LSU_AXI_RVALID)   begin 
                         state           <= FSM_WAIT;
                         axi_rready      <= 1'b0;
                     end
+                end
 
-                FSM_WAIT : // wait for next inst
-                    begin 
-                        state           <= FSM_IDLE;
-						axi_bready      <= 1'b1;
-						axi_rready      <= 1'b1;
-                    end
+                FSM_WAIT   : begin 
+                    state           <= FSM_IDLE;
+				end
 
                 default     : begin 
                     state           <= FSM_IDLE;
