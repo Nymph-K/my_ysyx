@@ -3,7 +3,7 @@
  * @ description    : CSGo(×) Control Signal Generating Unit(√)
  * @ use module     : MuxKeyWithDefault
  * @ author         : K
- * @ chnge date     : 2023-3-10
+ * @ date modified  : 2023-3-10
 *************************************************************/
 `ifndef CSGU_V
 `define CSGU_V

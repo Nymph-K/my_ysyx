@@ -3,7 +3,7 @@
  * @ description    : Top
  * @ use module     : ifu, pcu, gpr, csr, idu, 
  * @ author         : K
- * @ chnge date     : 2023-3-10
+ * @ date modified  : 2023-3-10
 *************************************************************/
 `ifndef TOP_V
 `define TOP_V
@@ -28,10 +28,8 @@ module top(
 		wire [`XLEN-1:0] csr_mtvec;
 	`endif
 
-	`ifdef USE_AXI_IFU
-		wire pc_valid, pc_ready, inst_ready, inst_valid;
-		reg execute_over;
-	`endif
+	wire pc_valid, pc_ready, inst_ready, inst_valid;
+	reg execute_over;
 
 	wire [4:0] rs1, rs2, rd;
 	wire rd_w_en, mdu_en;
@@ -63,83 +61,67 @@ module top(
 			.interrupt(interrupt),
 			.csr_mtvec(csr_mtvec),
 		`endif
-		`ifdef USE_AXI_IFU
-			.pc_ready(pc_ready),
-			.pc_valid(pc_valid),
-			.pc_en(execute_over),
-		`else
-			.pc_en(1'b1),
-		`endif
+		.pc_ready(pc_ready),
+		.pc_valid(pc_valid),
+		.pc_en(execute_over),
 		.pc(pc),
 		.dnpc(dnpc)
 	);
 
 	/********************* ifu *********************/
-	`ifdef USE_AXI_IFU
+	wire [31 : 0]  	        IFU_AXI_AWADDR;
+	wire [2 : 0]   	        IFU_AXI_AWPROT;
+	wire           	        IFU_AXI_AWVALID;
+	wire           	        IFU_AXI_AWREADY;
 
-		wire [31 : 0]  	        IFU_AXI_AWADDR;
-		wire [2 : 0]   	        IFU_AXI_AWPROT;
-		wire           	        IFU_AXI_AWVALID;
-		wire           	        IFU_AXI_AWREADY;
+	wire [63 : 0]  	        IFU_AXI_WDATA;
+	wire [7 : 0]   	        IFU_AXI_WSTRB;
+	wire           	        IFU_AXI_WVALID;
+	wire           	        IFU_AXI_WREADY;
+		
+	wire [1 : 0]   	        IFU_AXI_BRESP;
+	wire           	        IFU_AXI_BVALID;
+	wire           	        IFU_AXI_BREADY;
+		
+	wire [31 : 0]  	        IFU_AXI_ARADDR;
+	wire           	        IFU_AXI_ARVALID;
+	wire [2 : 0]   	        IFU_AXI_ARPROT;
+	wire           	        IFU_AXI_ARREADY;
 
-		wire [63 : 0]  	        IFU_AXI_WDATA;
-		wire [7 : 0]   	        IFU_AXI_WSTRB;
-		wire           	        IFU_AXI_WVALID;
-		wire           	        IFU_AXI_WREADY;
-			
-		wire [1 : 0]   	        IFU_AXI_BRESP;
-		wire           	        IFU_AXI_BVALID;
-		wire           	        IFU_AXI_BREADY;
-			
-		wire [31 : 0]  	        IFU_AXI_ARADDR;
-		wire           	        IFU_AXI_ARVALID;
-		wire [2 : 0]   	        IFU_AXI_ARPROT;
-		wire           	        IFU_AXI_ARREADY;
+	wire [63 : 0]  	        IFU_AXI_RDATA;
+	wire [1 : 0]   	        IFU_AXI_RRESP;
+	wire           	        IFU_AXI_RVALID;
+	wire           	        IFU_AXI_RREADY;
 
-		wire [63 : 0]  	        IFU_AXI_RDATA;
-		wire [1 : 0]   	        IFU_AXI_RRESP;
-		wire           	        IFU_AXI_RVALID;
-		wire           	        IFU_AXI_RREADY;
-
-		ifu_axi_4_lite u_ifu_axi_4_lite(
-			.clk(clk),
-			.rst(rst),
-			.pc_valid(pc_valid),
-			.pc_ready(pc_ready),
-			.pc(pc),
-			.inst_ready(inst_ready),
-			.inst_valid(inst_valid),
-			.inst(inst),
-			.IFU_AXI_AWADDR(IFU_AXI_AWADDR),
-			.IFU_AXI_AWPROT(IFU_AXI_AWPROT),
-			.IFU_AXI_AWVALID(IFU_AXI_AWVALID),
-			.IFU_AXI_AWREADY(IFU_AXI_AWREADY),
-			.IFU_AXI_WDATA(IFU_AXI_WDATA),
-			.IFU_AXI_WSTRB(IFU_AXI_WSTRB),
-			.IFU_AXI_WVALID(IFU_AXI_WVALID),
-			.IFU_AXI_WREADY(IFU_AXI_WREADY),
-			.IFU_AXI_BRESP(IFU_AXI_BRESP),
-			.IFU_AXI_BVALID(IFU_AXI_BVALID),
-			.IFU_AXI_BREADY(IFU_AXI_BREADY),
-			.IFU_AXI_ARADDR(IFU_AXI_ARADDR),
-			.IFU_AXI_ARVALID(IFU_AXI_ARVALID),
-			.IFU_AXI_ARPROT(IFU_AXI_ARPROT),
-			.IFU_AXI_ARREADY(IFU_AXI_ARREADY),
-			.IFU_AXI_RDATA(IFU_AXI_RDATA),
-			.IFU_AXI_RRESP(IFU_AXI_RRESP),
-			.IFU_AXI_RVALID(IFU_AXI_RVALID),
-			.IFU_AXI_RREADY(IFU_AXI_RREADY)
-		);
-
-	`else
-
-		ifu u_ifu (
-			.clk(clk),
-			.rst(rst),
-			.pc(pc),
-			.inst(inst)
-		);
-	`endif
+	ifu_axi_4_lite u_ifu_axi_4_lite(
+		.clk(clk),
+		.rst(rst),
+		.pc_valid(pc_valid),
+		.pc_ready(pc_ready),
+		.pc(pc),
+		.inst_ready(inst_ready),
+		.inst_valid(inst_valid),
+		.inst(inst),
+		.IFU_AXI_AWADDR(IFU_AXI_AWADDR),
+		.IFU_AXI_AWPROT(IFU_AXI_AWPROT),
+		.IFU_AXI_AWVALID(IFU_AXI_AWVALID),
+		.IFU_AXI_AWREADY(IFU_AXI_AWREADY),
+		.IFU_AXI_WDATA(IFU_AXI_WDATA),
+		.IFU_AXI_WSTRB(IFU_AXI_WSTRB),
+		.IFU_AXI_WVALID(IFU_AXI_WVALID),
+		.IFU_AXI_WREADY(IFU_AXI_WREADY),
+		.IFU_AXI_BRESP(IFU_AXI_BRESP),
+		.IFU_AXI_BVALID(IFU_AXI_BVALID),
+		.IFU_AXI_BREADY(IFU_AXI_BREADY),
+		.IFU_AXI_ARADDR(IFU_AXI_ARADDR),
+		.IFU_AXI_ARVALID(IFU_AXI_ARVALID),
+		.IFU_AXI_ARPROT(IFU_AXI_ARPROT),
+		.IFU_AXI_ARREADY(IFU_AXI_ARREADY),
+		.IFU_AXI_RDATA(IFU_AXI_RDATA),
+		.IFU_AXI_RRESP(IFU_AXI_RRESP),
+		.IFU_AXI_RVALID(IFU_AXI_RVALID),
+		.IFU_AXI_RREADY(IFU_AXI_RREADY)
+	);
 
 	/********************* idu *********************/
 	idu u_idu(
@@ -190,11 +172,7 @@ module top(
 		.rs1(rs1),
 		.rs2(rs2),
 		.rd(rd),
-		`ifdef USE_AXI_IFU
-			.rd_w_en(execute_over && rd_w_en),
-		`else
-			.rd_w_en(rd_w_en),
-		`endif
+		.rd_w_en(execute_over && rd_w_en),
 		.x_rd(x_rd),
 		.x_rs1(x_rs1),
 		.x_rs2(x_rs2)
@@ -208,9 +186,7 @@ module top(
 		.inst_sys_ecall(inst_sys_ecall),
 		.inst_sys_ebreak(inst_sys_ebreak),
 		.csr_r_en(csr_r_en),
-		`ifdef USE_AXI_IFU
-			.execute_over(execute_over),
-		`endif
+		.execute_over(execute_over),
 		.csr_w_en(csr_w_en),
 		.csr_addr(csr_addr),
 		.csr_w_data(alu_result),
@@ -263,132 +239,109 @@ module top(
 		);
 
 	/********************* lsu *********************/
-	`ifdef USE_AXI_LSU
+	wire [31 : 0]  	LSU_AXI_AWADDR;
+	wire [2 : 0]   	LSU_AXI_AWPROT;
+	wire           	LSU_AXI_AWVALID;
+	wire           	LSU_AXI_AWREADY;
+	wire [63 : 0]  	LSU_AXI_WDATA;
+	wire [7 : 0]   	LSU_AXI_WSTRB;
+	wire           	LSU_AXI_WVALID;
+	wire           	LSU_AXI_WREADY;
+	wire [1 : 0]   	LSU_AXI_BRESP;
+	wire           	LSU_AXI_BVALID;
+	wire           	LSU_AXI_BREADY;
+	wire [31 : 0]  	LSU_AXI_ARADDR;
+	wire           	LSU_AXI_ARVALID;
+	wire [2 : 0]   	LSU_AXI_ARPROT;
+	wire           	LSU_AXI_ARREADY;
+	wire [63 : 0]  	LSU_AXI_RDATA;
+	wire [1 : 0]   	LSU_AXI_RRESP;
+	wire           	LSU_AXI_RVALID;
+	wire           	LSU_AXI_RREADY;
 
-		wire [31 : 0]  	LSU_AXI_AWADDR;
-		wire [2 : 0]   	LSU_AXI_AWPROT;
-		wire           	LSU_AXI_AWVALID;
-		wire           	LSU_AXI_AWREADY;
-		wire [63 : 0]  	LSU_AXI_WDATA;
-		wire [7 : 0]   	LSU_AXI_WSTRB;
-		wire           	LSU_AXI_WVALID;
-		wire           	LSU_AXI_WREADY;
-		wire [1 : 0]   	LSU_AXI_BRESP;
-		wire           	LSU_AXI_BVALID;
-		wire           	LSU_AXI_BREADY;
-		wire [31 : 0]  	LSU_AXI_ARADDR;
-		wire           	LSU_AXI_ARVALID;
-		wire [2 : 0]   	LSU_AXI_ARPROT;
-		wire           	LSU_AXI_ARREADY;
-		wire [63 : 0]  	LSU_AXI_RDATA;
-		wire [1 : 0]   	LSU_AXI_RRESP;
-		wire           	LSU_AXI_RVALID;
-		wire           	LSU_AXI_RREADY;
+	lsu_axi_4_lite u_lsu_axi_4_lite(
+		.clk(clk),
+		.rst(rst),
+		.inst_load(inst_load),
+		.inst_store(inst_store),
+		.funct3(funct3),
+		.mem_addr(alu_result),
+		.mem_w_data(x_rs2),
+		`ifdef CLINT_ENABLE
+			.msip(msip),
+			.mtip(mtip),
+		`endif
+		.mem_r_data(mem_r_data),
+		.LSU_AXI_AWADDR(LSU_AXI_AWADDR),
+		.LSU_AXI_AWPROT(LSU_AXI_AWPROT),
+		.LSU_AXI_AWVALID(LSU_AXI_AWVALID),
+		.LSU_AXI_AWREADY(LSU_AXI_AWREADY),
+		.LSU_AXI_WDATA(LSU_AXI_WDATA),
+		.LSU_AXI_WSTRB(LSU_AXI_WSTRB),
+		.LSU_AXI_WVALID(LSU_AXI_WVALID),
+		.LSU_AXI_WREADY(LSU_AXI_WREADY),
+		.LSU_AXI_BRESP(LSU_AXI_BRESP),
+		.LSU_AXI_BVALID(LSU_AXI_BVALID),
+		.LSU_AXI_BREADY(LSU_AXI_BREADY),
+		.LSU_AXI_ARADDR(LSU_AXI_ARADDR),
+		.LSU_AXI_ARVALID(LSU_AXI_ARVALID),
+		.LSU_AXI_ARPROT(LSU_AXI_ARPROT),
+		.LSU_AXI_ARREADY(LSU_AXI_ARREADY),
+		.LSU_AXI_RDATA(LSU_AXI_RDATA),
+		.LSU_AXI_RRESP(LSU_AXI_RRESP),
+		.LSU_AXI_RVALID(LSU_AXI_RVALID),
+		.LSU_AXI_RREADY(LSU_AXI_RREADY)
+	);
 
-		lsu_axi_4_lite u_lsu_axi_4_lite(
-			.clk(clk),
-			.rst(rst),
-			.inst_load(inst_load),
-			.inst_store(inst_store),
-			.funct3(funct3),
-			.mem_addr(alu_result),
-			.mem_w_data(x_rs2),
-			`ifdef CLINT_ENABLE
-				.msip(msip),
-				.mtip(mtip),
-			`endif
-			.mem_r_data(mem_r_data),
-			.LSU_AXI_AWADDR(LSU_AXI_AWADDR),
-			.LSU_AXI_AWPROT(LSU_AXI_AWPROT),
-			.LSU_AXI_AWVALID(LSU_AXI_AWVALID),
-			.LSU_AXI_AWREADY(LSU_AXI_AWREADY),
-			.LSU_AXI_WDATA(LSU_AXI_WDATA),
-			.LSU_AXI_WSTRB(LSU_AXI_WSTRB),
-			.LSU_AXI_WVALID(LSU_AXI_WVALID),
-			.LSU_AXI_WREADY(LSU_AXI_WREADY),
-			.LSU_AXI_BRESP(LSU_AXI_BRESP),
-			.LSU_AXI_BVALID(LSU_AXI_BVALID),
-			.LSU_AXI_BREADY(LSU_AXI_BREADY),
-			.LSU_AXI_ARADDR(LSU_AXI_ARADDR),
-			.LSU_AXI_ARVALID(LSU_AXI_ARVALID),
-			.LSU_AXI_ARPROT(LSU_AXI_ARPROT),
-			.LSU_AXI_ARREADY(LSU_AXI_ARREADY),
-			.LSU_AXI_RDATA(LSU_AXI_RDATA),
-			.LSU_AXI_RRESP(LSU_AXI_RRESP),
-			.LSU_AXI_RVALID(LSU_AXI_RVALID),
-			.LSU_AXI_RREADY(LSU_AXI_RREADY)
-		);
-
-		/********************* mem *********************/
-		wire [31 : 0]      	MEM_AXI_AWADDR;
-		wire [2 : 0]        MEM_AXI_AWPROT;
-		wire                MEM_AXI_AWVALID;
-		wire                MEM_AXI_AWREADY;
-		wire [63 : 0]      	MEM_AXI_WDATA;
-		wire [7 : 0]   		MEM_AXI_WSTRB;
-		wire                MEM_AXI_WVALID;
-		wire                MEM_AXI_WREADY;
-		wire [1 : 0]        MEM_AXI_BRESP;
-		wire                MEM_AXI_BVALID;
-		wire                MEM_AXI_BREADY;
-		wire [31 : 0]      	MEM_AXI_ARADDR;
-		wire                MEM_AXI_ARVALID;
-		wire [2 : 0]        MEM_AXI_ARPROT;
-		wire                MEM_AXI_ARREADY;
-		wire [63 : 0]      	MEM_AXI_RDATA;
-		wire [1 : 0]        MEM_AXI_RRESP;
-		wire                MEM_AXI_RVALID;
-		wire                MEM_AXI_RREADY;
-		mem_axi_4_lite #(64, 32) u_mem_axi_4_lite(
-		//Global
-			.AXI_ACLK(clk),
-			.AXI_ARESETN(~rst),
-		//AW    
-			.AXI_AWADDR(MEM_AXI_AWADDR),
-			.AXI_AWPROT(MEM_AXI_AWPROT),
-			.AXI_AWVALID(MEM_AXI_AWVALID),
-			.AXI_AWREADY(MEM_AXI_AWREADY),
-		//W 
-			.AXI_WDATA(MEM_AXI_WDATA),
-			.AXI_WSTRB(MEM_AXI_WSTRB),
-			.AXI_WVALID(MEM_AXI_WVALID),
-			.AXI_WREADY(MEM_AXI_WREADY),
-		//BR    
-			.AXI_BRESP(MEM_AXI_BRESP),
-			.AXI_BVALID(MEM_AXI_BVALID),
-			.AXI_BREADY(MEM_AXI_BREADY),
-		//AR    
-			.AXI_ARADDR(MEM_AXI_ARADDR),
-			.AXI_ARVALID(MEM_AXI_ARVALID),
-			.AXI_ARPROT(MEM_AXI_ARPROT),
-			.AXI_ARREADY(MEM_AXI_ARREADY),
-		//R 
-			.AXI_RDATA(MEM_AXI_RDATA),
-			.AXI_RRESP(MEM_AXI_RRESP),
-			.AXI_RVALID(MEM_AXI_RVALID),
-			.AXI_RREADY(MEM_AXI_RREADY)
-		);
-
-	`else
-		lsu u_lsu(
-			.clk(clk),
-			.rst(rst),
-			`ifdef USE_AXI_IFU
-				.inst_valid(inst_valid),
-				.inst_ready(inst_ready),
-			`endif
-			.inst_load(inst_load & execute_over),
-			.inst_store(inst_store & execute_over),
-			.funct3(funct3),
-			.mem_addr(alu_result),
-			.mem_w_data(x_rs2),
-			`ifdef CLINT_ENABLE
-				.msip(msip),
-				.mtip(mtip),
-			`endif
-			.mem_r_data(mem_r_data)
-		);
-	`endif
+	/********************* mem *********************/
+	wire [31 : 0]      	MEM_AXI_AWADDR;
+	wire [2 : 0]        MEM_AXI_AWPROT;
+	wire                MEM_AXI_AWVALID;
+	wire                MEM_AXI_AWREADY;
+	wire [63 : 0]      	MEM_AXI_WDATA;
+	wire [7 : 0]   		MEM_AXI_WSTRB;
+	wire                MEM_AXI_WVALID;
+	wire                MEM_AXI_WREADY;
+	wire [1 : 0]        MEM_AXI_BRESP;
+	wire                MEM_AXI_BVALID;
+	wire                MEM_AXI_BREADY;
+	wire [31 : 0]      	MEM_AXI_ARADDR;
+	wire                MEM_AXI_ARVALID;
+	wire [2 : 0]        MEM_AXI_ARPROT;
+	wire                MEM_AXI_ARREADY;
+	wire [63 : 0]      	MEM_AXI_RDATA;
+	wire [1 : 0]        MEM_AXI_RRESP;
+	wire                MEM_AXI_RVALID;
+	wire                MEM_AXI_RREADY;
+	mem_axi_4_lite #(64, 32) u_mem_axi_4_lite(
+	//Global
+		.AXI_ACLK(clk),
+		.AXI_ARESETN(~rst),
+	//AW    
+		.AXI_AWADDR(MEM_AXI_AWADDR),
+		.AXI_AWPROT(MEM_AXI_AWPROT),
+		.AXI_AWVALID(MEM_AXI_AWVALID),
+		.AXI_AWREADY(MEM_AXI_AWREADY),
+	//W 
+		.AXI_WDATA(MEM_AXI_WDATA),
+		.AXI_WSTRB(MEM_AXI_WSTRB),
+		.AXI_WVALID(MEM_AXI_WVALID),
+		.AXI_WREADY(MEM_AXI_WREADY),
+	//BR    
+		.AXI_BRESP(MEM_AXI_BRESP),
+		.AXI_BVALID(MEM_AXI_BVALID),
+		.AXI_BREADY(MEM_AXI_BREADY),
+	//AR    
+		.AXI_ARADDR(MEM_AXI_ARADDR),
+		.AXI_ARVALID(MEM_AXI_ARVALID),
+		.AXI_ARPROT(MEM_AXI_ARPROT),
+		.AXI_ARREADY(MEM_AXI_ARREADY),
+	//R 
+		.AXI_RDATA(MEM_AXI_RDATA),
+		.AXI_RRESP(MEM_AXI_RRESP),
+		.AXI_RVALID(MEM_AXI_RVALID),
+		.AXI_RREADY(MEM_AXI_RREADY)
+	);
 	
 	/********************* bcu *********************/
 	bcu u_bcu(

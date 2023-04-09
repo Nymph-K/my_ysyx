@@ -3,7 +3,7 @@
  * @ description    : Load and Sotre Unit
  * @ use module     : 
  * @ author         : K
- * @ chnge date     : 2023-3-13
+ * @ date modified  : 2023-3-13
 *************************************************************/
 `ifndef LSU_V
 `define LSU_V
@@ -13,10 +13,8 @@
 module lsu (
     input 						clk,
 	input 						rst,
-	`ifdef USE_AXI_IFU
-		input   				inst_valid,
-		output  reg 			inst_ready,
-	`endif
+	input   					inst_valid,
+	output  reg 				inst_ready,
 	input 						inst_load,
 	input 						inst_store,
 	input [2:0] 				funct3,
@@ -241,19 +239,17 @@ module lsu (
 			);
 	`endif //CLINT_ENABLE
 
-	`ifdef USE_AXI_IFU
-		always @(posedge clk ) begin
-			if (rst) begin
+	always @(posedge clk ) begin
+		if (rst) begin
+			inst_ready <= 1'b0;
+		end else begin
+			if (inst_valid && inst_ready) begin
 				inst_ready <= 1'b0;
 			end else begin
-				if (inst_valid && inst_ready) begin
-					inst_ready <= 1'b0;
-				end else begin
-					inst_ready <= 1'b1;
-				end
+				inst_ready <= 1'b1;
 			end
 		end
-	`endif
+	end
 
 import "DPI-C" function void paddr_read(input longint raddr, output longint mem_r_data);
 import "DPI-C" function void paddr_write(input longint waddr, input longint mem_w_data, input byte wmask);

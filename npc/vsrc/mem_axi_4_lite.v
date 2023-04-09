@@ -3,7 +3,7 @@
  * @ description    : Mem using AXI4-lite bus interface
  * @ use module     : None
  * @ author         : K
- * @ chnge date     : 2023-3-18
+ * @ date modified  : 2023-3-18
  *************************************************************/
 `ifndef MEM_AXI_4_LITE_V
 `define MEM_AXI_4_LITE_V

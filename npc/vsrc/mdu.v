@@ -3,7 +3,7 @@
  * @ description    : Multiply Divide Unit
  * @ use module     : 
  * @ author         : K
- * @ chnge date     : 2023-3-13
+ * @ date modified  : 2023-3-13
 *************************************************************/
 `ifndef MDU_V
 `define MDU_V

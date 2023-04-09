@@ -3,7 +3,7 @@
  * @ description    : General Purpose Register
  * @ use module     : Reg
  * @ author         : K
- * @ chnge date     : 2023-3-10
+ * @ date modified  : 2023-3-10
 *************************************************************/
 `ifndef GPR_V
 `define GPR_V

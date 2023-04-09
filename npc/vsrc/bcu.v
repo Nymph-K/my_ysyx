@@ -3,7 +3,7 @@
  * @ description    : Branch Condition Unit
  * @ use module     : MuxKeyWithDefault
  * @ author         : K
- * @ chnge date     : 2023-3-12
+ * @ date modified  : 2023-3-12
 *************************************************************/
 `ifndef BCU_V
 `define BCU_V

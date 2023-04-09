@@ -3,7 +3,7 @@
  * @ description    : option defines
  * @ use module     : none
  * @ author         : K
- * @ chnge date     : 2023-3-10
+ * @ date modified  : 2023-3-10
 *************************************************************/
 `ifndef COMMON_V
 `define COMMON_V

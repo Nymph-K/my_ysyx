@@ -3,7 +3,7 @@
  * @ description    : Arithmetic Logic Unit
  * @ use module     : MuxKeyWithDefault
  * @ author         : K
- * @ chnge date     : 2023-3-12
+ * @ date modified  : 2023-3-12
 *************************************************************/
 `ifndef ALU_SIM_V
 `define ALU_SIM_V

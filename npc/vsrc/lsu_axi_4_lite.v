@@ -3,7 +3,7 @@
  * @ description    : Load and Sotre Unit
  * @ use module     : 
  * @ author         : K
- * @ chnge date     : 2023-3-13
+ * @ date modified  : 2023-3-13
 *************************************************************/
 `ifndef LSU_AXI_4_LITE_V
 `define LSU_AXI_4_LITE_V

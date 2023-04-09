@@ -3,7 +3,7 @@
  * @ description    : EXecution Unit
  * @ use module     : alu, mdu
  * @ author         : K
- * @ chnge date     : 2023-3-13
+ * @ date modified  : 2023-3-13
 *************************************************************/
 `ifndef EXU_V
 `define EXU_V

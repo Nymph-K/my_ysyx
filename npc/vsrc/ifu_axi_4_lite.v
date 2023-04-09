@@ -3,7 +3,7 @@
  * @ description    : IFU using AXI4-lite bus interface
  * @ use module     : None
  * @ author         : K
- * @ chnge date     : 2023-3-18
+ * @ date modified  : 2023-3-18
  *************************************************************/
 `ifndef IFU_AXI_4_LITE_V
 `define IFU_AXI_4_LITE_V

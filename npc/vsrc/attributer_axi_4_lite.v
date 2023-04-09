@@ -3,7 +3,7 @@
  * @ description    : Attributer AXI4-lite bus
  * @ use module     : None
  * @ author         : K
- * @ chnge date     : 2023-3-31
+ * @ date modified  : 2023-3-31
  *************************************************************/
 `ifndef ATTRIBUTER_AXI_4_LITE_V
 `define ATTRIBUTER_AXI_4_LITE_V

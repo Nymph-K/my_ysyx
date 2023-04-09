@@ -3,7 +3,7 @@
  * @ description    : AXI4-lite bus interface Master
  * @ use module     : None
  * @ author         : K
- * @ chnge date     : 2023-3-18
+ * @ date modified  : 2023-3-18
  *************************************************************/
 `ifndef MASTER_AXI_4_LITE_V
 `define MASTER_AXI_4_LITE_V

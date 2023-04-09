@@ -3,7 +3,7 @@
  * @ description    : Program Counter Unit
  * @ use module     : Reg, MuxKeyWithDefault
  * @ author         : K
- * @ chnge date     : 2023-3-10
+ * @ date modified  : 2023-3-10
 *************************************************************/
 `ifndef PCU_V
 `define PCU_V
@@ -25,10 +25,8 @@ module pcu (
 		input  interrupt,
 		input  [`XLEN-1:0] csr_mtvec,
 	`endif
-	`ifdef USE_AXI_IFU
-		input   pc_ready,
-		output  reg pc_valid,
-	`endif
+	input   pc_ready,
+	output  reg pc_valid,
 	output [`XLEN-1:0] pc,
 	output [`XLEN-1:0] dnpc
 );
@@ -56,21 +54,17 @@ module pcu (
 		assign dnpc = npc;
 	`endif
 	
-	`ifdef USE_AXI_IFU
-
-		always @(posedge clk ) begin
-			if (rst) begin
-				pc_valid <= 1'b1;
+	always @(posedge clk ) begin
+		if (rst) begin
+			pc_valid <= 1'b1;
+		end else begin
+			if (pc_valid && pc_ready) begin
+				pc_valid <= 1'b0;
 			end else begin
-				if (pc_valid && pc_ready) begin
-					pc_valid <= 1'b0;
-				end else begin
-					pc_valid <= pc_en;
-				end
+				pc_valid <= pc_en;
 			end
 		end
-
-	`endif
+	end
 
 endmodule //pcu
 

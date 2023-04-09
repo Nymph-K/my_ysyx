@@ -3,7 +3,7 @@
  * @ description    : Instruction Fetch Unit
  * @ use module     : none
  * @ author         : K
- * @ chnge date     : 2023-3-10
+ * @ date modified  : 2023-3-10
 *************************************************************/
 module ifu (
 	input  clk,
