@@ -16,7 +16,7 @@ module ifu_axi_4_lite (
 	input   [`XLEN-1:0]                 pc,
     output   reg                        inst_ready,
     output                              inst_valid,
-	output  [31:0]                      inst,
+	output   reg [31:0]                 inst,
     //AW    
     output      wire [31 : 0]  	        IFU_AXI_AWADDR,
     output      wire [2 : 0]   	        IFU_AXI_AWPROT,
@@ -67,7 +67,25 @@ module ifu_axi_4_lite (
     assign  pc_ready = IFU_AXI_ARREADY;
 
     //R
-    assign  inst = IFU_AXI_RDATA[31:0];
+    `ifdef ADDR_ALIGN
+        always_latch @(*) begin // LATCH
+            if (rst) begin
+                inst = 0;
+            end else begin
+                if (inst_valid) begin
+                    inst = pc[2] ? IFU_AXI_RDATA[63:32] : IFU_AXI_RDATA[31:0];
+                end
+            end
+        end
+    `else
+        always @(*) begin
+            if (rst) begin
+                inst = 0;
+            end else begin
+                inst = IFU_AXI_RDATA[31:0];
+            end
+        end
+    `endif
     //      IFU_AXI_RRESP
     assign  inst_valid = IFU_AXI_RVALID;
     assign  IFU_AXI_RREADY = inst_ready;

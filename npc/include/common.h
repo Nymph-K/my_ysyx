@@ -52,24 +52,27 @@ typedef uint16_t ioaddr_t;
 #include <debug.h>
 
 // ----------- use AXI IFU -----------
-#define USE_AXI_IFU 1
+#define USE_AXI_IFU         1
 
 // ----------- use AXI LSU -----------
-#define USE_AXI_LSU 1
+#define USE_AXI_LSU         1
 
 // ----------- wave trace -----------
-#define WAVE_TRACE 0
+#define WAVE_TRACE          0
 #if WAVE_TRACE
 #define IFWAVE(...) do{__VA_ARGS__;}while(0)
 #else
 #define IFWAVE(...)
 #endif
 
+// ----------- addr 8 bit align -----------
+#define ADDR_ALIGN          1
+
 // ----------- out of bound -----------
-#define OUT_BOUND_CONTINUE 1
+#define OUT_BOUND_CONTINUE  1
 
 // ----------- Nvboard use -----------
-#define NVBOARD_USE 0
+#define NVBOARD_USE         0
 #if NVBOARD_USE
 #include <nvboard.h>
 #endif
@@ -78,7 +81,7 @@ typedef uint16_t ioaddr_t;
 #define STACK_DP 0x8000000
 
 // ----------- use nvboard -----------
-#define USE_NVBOARD 0
+#define USE_NVBOARD         0
 #if USE_NVBOARD
 #define IFNVBOARD(...) do{__VA_ARGS__;}while(0)
 #else
@@ -86,7 +89,7 @@ typedef uint16_t ioaddr_t;
 #endif
 
 // ----------- debug print -----------
-#define DEUBG_PRINT 0
+#define DEUBG_PRINT         0
 #if DEUBG_PRINT
 #define debug_printf(format, ...) printf(format, ##__VA_ARGS__)
 #else

@@ -47,7 +47,7 @@
 `define USE_LUT_MUX         1           // use LUT Mux
 `endif
 
-//`define ADDR_ALIGN        1           // 8 Byte align
+`define ADDR_ALIGN          1           // 8 Byte align
 
 `define USE_AXI_IFU         1
 

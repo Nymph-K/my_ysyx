@@ -22,8 +22,6 @@
 #include "svdpi.h"//DPI-C
 #include "Vtop__Dpi.h"//DPI-C
 
-#define ADDR_ALIGN 0
-
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
 #else // CONFIG_PMEM_GARRAY
