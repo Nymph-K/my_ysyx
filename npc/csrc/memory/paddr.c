@@ -124,6 +124,7 @@ extern "C" void paddr_write(long long waddr, long long wdata, char wmask) {
     if ((wmask & 1) == 0)
     {
       wmask = (unsigned char)wmask >> 1;
+      wdata = (uint64_t)wdata >> 8;
     }
     else break;
   }

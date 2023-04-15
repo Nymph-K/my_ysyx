@@ -56,91 +56,72 @@ module lsu_axi_4_lite (
     output      wire           	LSU_AXI_RREADY
 );
 
-	wire [`XLEN-1:0]             mem_rdata;
+	wire [`XLEN-1:0]             mem_rdata, mem_wdata;
 
 	`ifdef USE_IF_CASE
 	
 		`ifdef ADDR_ALIGN
 
-			reg [7:0] mem_r8bit;
+			wire [2:0] shift_n_byte = mem_addr[2:0];
+			wire [5:0] shift_n_bit  = {shift_n_byte, 3'b000}; // *8
+
+			wire [`XLEN-1:0] mem_rdata_shift = mem_rdata >> shift_n_bit;
+
 			always @(*) begin
-				case (mem_addr[2:0])
-					3'b000	: mem_r8bit = mem_rdata[7:0];
-					3'b001	: mem_r8bit = mem_rdata[15:8];
-					3'b010	: mem_r8bit = mem_rdata[23:16];
-					3'b011	: mem_r8bit = mem_rdata[31:24];
-					3'b100	: mem_r8bit = mem_rdata[39:32];
-					3'b101	: mem_r8bit = mem_rdata[47:40];
-					3'b110	: mem_r8bit = mem_rdata[55:48];
-					3'b111	: mem_r8bit = mem_rdata[63:56];
-				endcase
-			end
-			
-			reg [15:0] mem_r16bit;
-			always @(*) begin
-				case (mem_addr[2:0])
-					3'b000	: mem_r16bit = mem_rdata[15:0];
-					3'b001	: mem_r16bit = mem_rdata[23:8];
-					3'b010	: mem_r16bit = mem_rdata[31:16];
-					3'b011	: mem_r16bit = mem_rdata[39:24];
-					3'b100	: mem_r16bit = mem_rdata[47:32];
-					3'b101	: mem_r16bit = mem_rdata[55:40];
-					3'b110	: mem_r16bit = mem_rdata[63:48];
-					default : mem_r16bit = 16'b0;
-				endcase
-			end
-			
-			reg [31:0] mem_r32bit;
-			always @(*) begin
-				case (mem_addr[2:0])
-					3'b000	: mem_r32bit = mem_rdata[31:0];
-					3'b001	: mem_r32bit = mem_rdata[39:8];
-					3'b010	: mem_r32bit = mem_rdata[47:16];
-					3'b011	: mem_r32bit = mem_rdata[55:24];
-					3'b100	: mem_r32bit = mem_rdata[63:32];
-					default : mem_r32bit = 32'b0;
-				endcase
-			end
-			
-			always @(*) begin
-				case (funct3)
-					`LB		: mem_r_data = {{(`XLEN-8){mem_r8bit[7]}}, mem_r8bit[7:0]};
-					`LH		: mem_r_data = {{(`XLEN-16){mem_r16bit[15]}}, mem_r16bit[15:0]};
-					`LW		: mem_r_data = {{(`XLEN-32){mem_r32bit[31]}}, mem_r32bit[31:0]};
-					`LBU	: mem_r_data = {{(`XLEN-8){1'b0}}, mem_r8bit[7:0]};
-					`LHU	: mem_r_data = {{(`XLEN-16){1'b0}}, mem_r16bit[15:0]};
-					`LWU	: mem_r_data = {{(`XLEN-32){1'b0}}, mem_r32bit[31:0]};
-					`LD		: mem_r_data = mem_rdata;
-					default : mem_r_data = `XLEN'b0;
-				endcase
+				if(inst_load) begin
+					case (funct3)
+						`LB		: mem_r_data = {{(`XLEN-8){mem_rdata_shift[7]}}, mem_rdata_shift[7:0]};
+						`LH		: mem_r_data = {{(`XLEN-16){mem_rdata_shift[15]}}, mem_rdata_shift[15:0]};
+						`LW		: mem_r_data = {{(`XLEN-32){mem_rdata_shift[31]}}, mem_rdata_shift[31:0]};
+						`LBU	: mem_r_data = {{(`XLEN-8){1'b0}}, mem_rdata_shift[7:0]};
+						`LHU	: mem_r_data = {{(`XLEN-16){1'b0}}, mem_rdata_shift[15:0]};
+						`LWU	: mem_r_data = {{(`XLEN-32){1'b0}}, mem_rdata_shift[31:0]};
+						`LD		: mem_r_data = mem_rdata_shift;
+						default : mem_r_data = `XLEN'b0;
+					endcase
+				end else begin
+					mem_r_data = `XLEN'b0;
+				end
 			end
 			
 			reg [7:0] wmask;
 			always @(*) begin
-				case (funct3)
-					`SB		: wmask = 8'b0000_0001 << mem_addr[2:0];
-					`SH		: wmask = 8'b0000_0011 << mem_addr[2:0];
-					`SW		: wmask = 8'b0000_1111 << mem_addr[2:0];
-					`SD		: wmask = 8'b1111_1111;
-					default : wmask = 8'b0;
-				endcase
+				if(inst_store) begin
+					case (funct3)
+						`SB		: wmask = 8'b0000_0001 << shift_n_byte;
+						`SH		: wmask = 8'b0000_0011 << shift_n_byte;
+						`SW		: wmask = 8'b0000_1111 << shift_n_byte;
+						`SD		: wmask = 8'b1111_1111;
+						default : wmask = 8'b0;
+					endcase
+				end else begin
+					wmask = 8'b0;
+				end
 			end
+
+			assign mem_wdata = mem_w_data << shift_n_bit;
 
 		`else//ADDR_ALIGN
 			
 			wire [7:0] wmask = 8'b1 << funct3[1:0];
 
+			assign mem_wdata = mem_w_data;
+
 			always @(*) begin
-				case (funct3)
-					`LB		: mem_r_data = {{(`XLEN-8){mem_rdata[7]}}, mem_rdata[7:0]};
-					`LH		: mem_r_data = {{(`XLEN-16){mem_rdata[15]}}, mem_rdata[15:0]};
-					`LW		: mem_r_data = {{(`XLEN-32){mem_rdata[31]}}, mem_rdata[31:0]};
-					`LBU	: mem_r_data = {{(`XLEN-8){1'b0}}, mem_rdata[7:0]};
-					`LHU	: mem_r_data = {{(`XLEN-16){1'b0}}, mem_rdata[15:0]};
-					`LWU	: mem_r_data = {{(`XLEN-32){1'b0}}, mem_rdata[31:0]};
-					`LD		: mem_r_data = mem_rdata;
-					default : mem_r_data = `XLEN'b0;
-				endcase
+				if(inst_load) begin
+					case (funct3)
+						`LB		: mem_r_data = {{(`XLEN-8){mem_rdata[7]}}, mem_rdata[7:0]};
+						`LH		: mem_r_data = {{(`XLEN-16){mem_rdata[15]}}, mem_rdata[15:0]};
+						`LW		: mem_r_data = {{(`XLEN-32){mem_rdata[31]}}, mem_rdata[31:0]};
+						`LBU	: mem_r_data = {{(`XLEN-8){1'b0}}, mem_rdata[7:0]};
+						`LHU	: mem_r_data = {{(`XLEN-16){1'b0}}, mem_rdata[15:0]};
+						`LWU	: mem_r_data = {{(`XLEN-32){1'b0}}, mem_rdata[31:0]};
+						`LD		: mem_r_data = mem_rdata;
+						default : mem_r_data = `XLEN'b0;
+					endcase
+				end else begin
+					mem_r_data = `XLEN'b0;
+				end
 			end
 			
 		`endif//ADDR_ALIGN
@@ -228,7 +209,7 @@ module lsu_axi_4_lite (
 
 		`else//ADDR_ALIGN
 
-			wire [7:0] wmask = 8'b1 << funct3[1:0];
+			wire [7:0] wmask = 8'b1 << funct3[1:0]; // len
 
 			MuxKeyWithDefault #(7, 3, `XLEN) u_read_data (
 				.out(mem_r_data),
@@ -273,7 +254,7 @@ module lsu_axi_4_lite (
     assign LSU_AXI_AWADDR       = mem_addr[31:0];
     assign LSU_AXI_AWPROT       = 3'b000;
 
-    assign LSU_AXI_WDATA        = mem_w_data;
+    assign LSU_AXI_WDATA        = mem_wdata;
     assign LSU_AXI_WSTRB        = wmask;
 
     assign LSU_AXI_BREADY       = axi_bready;
