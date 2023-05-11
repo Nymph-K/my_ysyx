@@ -135,6 +135,9 @@ module slave_axi_4 #(
     reg  [  AXI_ADDR_WIDTH-1:0] W_Lower_Wrap_Boundary ;
     reg  [  AXI_ADDR_WIDTH-1:0] W_Upper_Wrap_Boundary ;
 
+import "DPI-C" function void paddr_read(input longint raddr, output longint mem_r_data);
+import "DPI-C" function void paddr_write(input longint waddr, input longint mem_w_data, input byte wmask);
+
     always @(posedge clk) begin
         if (rst) begin
             w_state         <= FSM_IDLE;
@@ -169,8 +172,8 @@ module slave_axi_4 #(
                         axi_wlast       <= S_AXI_WLAST;
                         axi_wready      <= 1'b0;
                         
-                        //pmem_write(W_Address_N, axi_awsize, axi_wdata, axi_wstrb);
-                        $display("Write: addr = %X, size = %d, strb = %X, data = %X\n", (W_Start_Address & ~(W_Number_Bytes - 1)), S_AXI_AWSIZE, S_AXI_WSTRB, S_AXI_WDATA);
+                        paddr_write({32'b0, W_Start_Address & ~(W_Number_Bytes - 1)}, S_AXI_WDATA, S_AXI_WSTRB);
+                        //$display("Write: addr = %X, size = %d, strb = %X, data = %X\n", (W_Start_Address & ~(W_Number_Bytes - 1)), S_AXI_AWSIZE, S_AXI_WSTRB, S_AXI_WDATA);
 
                     end else if (S_AXI_AWVALID) begin
                         w_state         <= FSM_W;
@@ -207,8 +210,8 @@ module slave_axi_4 #(
                         axi_wlast       <= S_AXI_WLAST;
                         axi_wready      <= 1'b0;
 
-                        //pmem_write(W_Address_N, axi_awsize, axi_wdata, axi_wstrb);
-                        $display("Write: addr = %X, size = %d, strb = %X, data = %X\n", W_Address_N, axi_awsize, S_AXI_WSTRB, S_AXI_WDATA);
+                        paddr_write({32'b0, W_Address_N}, S_AXI_WDATA, S_AXI_WSTRB);
+                        //$display("Write: addr = %X, size = %d, strb = %X, data = %X\n", W_Address_N, axi_awsize, S_AXI_WSTRB, S_AXI_WDATA);
                     end
                 end
 
@@ -232,8 +235,8 @@ module slave_axi_4 #(
                         W_Upper_Wrap_Boundary <= W_Start_Address & ~(W_Total_Bytes - 1) + W_Total_Bytes;
                         W_Number_Bytes_R      <= W_Number_Bytes;
 
-                        //pmem_write(W_Address_N, axi_awsize, axi_wdata, axi_wstrb);
-                        $display("Write: addr = %X, size = %d, strb = %X, data = %X\n", (W_Start_Address & ~(W_Number_Bytes - 1)), S_AXI_AWSIZE, axi_wstrb, axi_wdata);
+                        paddr_write({32'b0, W_Start_Address & ~(W_Number_Bytes - 1)}, axi_wdata, axi_wstrb);
+                        //$display("Write: addr = %X, size = %d, strb = %X, data = %X\n", (W_Start_Address & ~(W_Number_Bytes - 1)), S_AXI_AWSIZE, axi_wstrb, axi_wdata);
                     end
                 end
 
@@ -327,9 +330,8 @@ module slave_axi_4 #(
                         R_Upper_Wrap_Boundary <= (R_Start_Address & ~(R_Total_Bytes - 1)) + R_Total_Bytes;
                         R_Number_Bytes_R      <= R_Number_Bytes;
                         
-                        //pmem_read(S_AXI_ARADDR,S_AXI_ARSIZE,data);
-                        $display("Read : addr = %X, size = %d, cnt = %d\n", (R_Start_Address & ~(R_Number_Bytes - 1)), S_AXI_ARSIZE, r_cnt);
-                        axi_rdata       <= {$random(), $random()};
+                        paddr_read({32'b0, (R_Start_Address & ~(R_Number_Bytes - 1))}, axi_rdata);
+                        //$display("Read : addr = %X, size = %d, cnt = %d\n", (R_Start_Address & ~(R_Number_Bytes - 1)), S_AXI_ARSIZE, r_cnt);
                         axi_rvalid      <= 1'b1;
                         if (S_AXI_ARLEN == 8'b0) begin
                             axi_rlast       <= 1'b1;
@@ -369,9 +371,8 @@ module slave_axi_4 #(
 
                 FSM_MR    : begin
                     r_state         <= FSM_R;
-                    //pmem_read(R_Address_N,S_AXI_ARSIZE,data);
-                    $display("Read : addr = %X, size = %d, cnt = %d\n", R_Address_N, S_AXI_ARSIZE, r_cnt);
-                    axi_rdata       <= {$random(), $random()};
+                    paddr_read({32'b0, R_Address_N}, axi_rdata);
+                    //$display("Read : addr = %X, size = %d, cnt = %d\n", R_Address_N, S_AXI_ARSIZE, r_cnt);
                     axi_rvalid      <= 1'b1;
                     if(axi_arlen == r_cnt)   begin 
                         axi_rlast       <= 1'b1;

@@ -196,7 +196,7 @@ module master_axi_4 #(
                     if (M_AXI_AWREADY & M_AXI_WREADY) begin
                         if (axi_wlast) begin
                             w_state         <= FSM_BR;
-                            w_cnt           <= 1'b0;
+                            w_cnt           <= 8'b0;
                         end else begin
                             w_state         <= FSM_MW;
                             w_cnt           <= w_cnt + 1;
@@ -216,7 +216,7 @@ module master_axi_4 #(
                     if (M_AXI_WREADY) begin
                         if (axi_wlast) begin
                             w_state         <= FSM_BR;
-                            w_cnt           <= 1'b0;
+                            w_cnt           <= 8'b0;
                         end else begin
                             w_state         <= FSM_MW;
                             w_cnt           <= w_cnt + 1;
@@ -229,7 +229,7 @@ module master_axi_4 #(
                     if (M_AXI_AWREADY) begin
                         if (axi_wlast) begin
                             w_state         <= FSM_BR;
-                            w_cnt           <= 1'b0;
+                            w_cnt           <= 8'b0;
                         end else begin
                             w_state         <= FSM_MW;
                             w_cnt           <= w_cnt + 1;

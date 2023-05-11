@@ -39,8 +39,6 @@ module mdu_sim (
 
 	assign mdu_result = en_mdu ? (inst_32 ? {{(`HXLEN){mul_div_result[`HXLEN-1]}}, mul_div_result[`HXLEN-1:0]} : mul_div_result) : `XLEN'b0;
 
-`ifdef USE_IF_CASE
-
 	reg [`XLEN-1:0] mul_div_result;
 
 	always @(*) begin
@@ -77,43 +75,7 @@ module mdu_sim (
 			mul_div_result = `XLEN'b0;
 		end
 	end
-`else
 
-	wire [`XLEN-1:0] mul_div_result;
-
-	MuxKeyWithDefault #(13, 4, `XLEN) u_mul_div_result (
-		.out(mul_div_result),
-		.key(op_sel),
-		.default_out(`XLEN'b0),
-		.lut({
-			OP_MUL			, {($signed($signed(x_rs1) * $signed(x_rs2)))}[`XLEN-1:0],
-			OP_MULH		, {($signed($signed({{(`XLEN){x_rs1[`XLEN-1]}}, x_rs1}) * $signed({{(`XLEN){x_rs2[`XLEN-1]}}, x_rs2})))}[`DXLEN-1:`XLEN],
-			OP_MULHSU		, {($signed($signed({{(`XLEN){x_rs1[`XLEN-1]}}, x_rs1}) * $unsigned({`XLEN'h0, x_rs2})))}[`DXLEN-1:`XLEN],
-			OP_MULHU		, {($unsigned($unsigned({`XLEN'h0, x_rs1}) * $unsigned({`XLEN'h0, x_rs2})))}[`DXLEN-1:`XLEN],
-			OP_DIV 		, (x_rs2 == `XLEN'b0) ? (-`XLEN'd1) : 
-											((x_rs1 == `XLEN'h8000000000000000 && x_rs2 == (-`XLEN'd1)) ? `XLEN'h8000000000000000 : 
-											{($signed($signed(x_rs1) / $signed(x_rs2)))}[`XLEN-1:0]),
-			OP_DIVU		, (x_rs2 == `XLEN'b0) ? (-`XLEN'd1) : 
-											{($unsigned($unsigned(x_rs1) / $unsigned(x_rs2)))}[`XLEN-1:0],
-			OP_REM 		, (x_rs2 == `XLEN'b0) ? (x_rs1) : 
-											((x_rs1 == `XLEN'h8000000000000000 && x_rs2 == (-`XLEN'd1)) ? `XLEN'h0 : 
-											{($signed($signed(x_rs1) % $signed(x_rs2)))}[`XLEN-1:0]),
-			OP_REMU		, (x_rs2 == `XLEN'b0) ? (x_rs1) : 
-											({($unsigned($unsigned(x_rs1) % $unsigned(x_rs2)))}[`XLEN-1:0]),
-			OP_MULW		, {($signed($signed(x_rs1) * $signed(x_rs2)))}[`XLEN-1:0],
-			OP_DIVW		, (x_rs2 == `XLEN'b0) ? (-`XLEN'd1) : 
-											((x_rs1[`HXLEN-1:0] == `HXLEN'h80000000 && x_rs2[`HXLEN-1:0] == (-`HXLEN'd1)) ? `XLEN'h0000000080000000 : 
-											{($signed($signed({{(`HXLEN){x_rs1[`HXLEN-1]}}, x_rs1[`HXLEN-1:0]}) / $signed({{(`HXLEN){x_rs2[`HXLEN-1]}}, x_rs2[`HXLEN-1:0]})))}[`XLEN-1:0]),
-			OP_DIVUW		, (x_rs2 == `XLEN'b0) ? (-`XLEN'd1) : 
-											({($unsigned($unsigned({`HXLEN'h0, x_rs1[`HXLEN-1:0]}) / $unsigned({`HXLEN'h0, x_rs2[`HXLEN-1:0]})))}[`XLEN-1:0]),
-			OP_REMW		, (x_rs2 == `XLEN'b0) ? (x_rs1) : 
-											((x_rs1[`HXLEN-1:0] == `HXLEN'h80000000 && x_rs2[`HXLEN-1:0] == (-`HXLEN'd1)) ? `XLEN'h0 : 
-											{($signed($signed({{(`HXLEN){x_rs1[`HXLEN-1]}}, x_rs1[`HXLEN-1:0]}) % $signed({{(`HXLEN){x_rs2[`HXLEN-1]}}, x_rs2[`HXLEN-1:0]})))}[`XLEN-1:0]),
-			OP_REMUW		, (x_rs2 == `XLEN'b0) ? (x_rs1) : 
-											({($unsigned($unsigned({`HXLEN'h0, x_rs1[`HXLEN-1:0]}) % $unsigned({`HXLEN'h0, x_rs2[`HXLEN-1:0]})))}[`XLEN-1:0])
-		})
-	);
-`endif
 endmodule //mdu_sim
 
 `endif

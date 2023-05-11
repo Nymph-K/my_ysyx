@@ -20,13 +20,11 @@ module pcu (
 	input  [`XLEN-1:0] x_rs1,
 	input  [`XLEN-1:0] imm,
 	input  [`XLEN-1:0] csr_r_data,
-	input  pc_en,
+	input  execute_over,
 	`ifdef CLINT_ENABLE
 		input  interrupt,
 		input  [`XLEN-1:0] csr_mtvec,
 	`endif
-	input   pc_ready,
-	output  reg pc_valid,
 	output [`XLEN-1:0] pc,
 	output [`XLEN-1:0] dnpc
 );
@@ -36,7 +34,7 @@ module pcu (
 		.rst(rst), 
 		.din(dnpc), 
 		.dout(pc), 
-		.wen(pc_en)
+		.wen(execute_over)
 	);
 
 	wire [`XLEN-1:0] npc_base, npc_offs, npc_sum, npc;
@@ -53,18 +51,6 @@ module pcu (
 	`else
 		assign dnpc = npc;
 	`endif
-	
-	always @(posedge clk ) begin
-		if (rst) begin
-			pc_valid <= 1'b1;
-		end else begin
-			if (pc_valid && pc_ready) begin
-				pc_valid <= 1'b0;
-			end else begin
-				pc_valid <= pc_en;
-			end
-		end
-	end
 
 endmodule //pcu
 

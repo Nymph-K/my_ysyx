@@ -33,14 +33,14 @@ module cache_ctrl (
     input                       clk,
     input                       rst,
 
-    input         [31:0]        lsu_addr,       // [2:0] not use
-	input                       lsu_r_ready,
-	output        [63:0]        lsu_r_data,
-	output  reg                 lsu_r_valid,
-	input                       lsu_w_valid,
-	input         [ 7:0]        lsu_w_strb,     // 8 Byte strobe, 8 Byte align
-	input         [63:0]        lsu_w_data,     // already 8 Byte align
-	output  reg                 lsu_w_ready,
+    input         [31:0]        cpu_addr,       // [2:0] not use
+	input                       cpu_r_ready,
+	output        [63:0]        cpu_r_data,     // 8 Byte align
+	output  reg                 cpu_r_valid,
+	input                       cpu_w_valid,
+	input         [ 7:0]        cpu_w_strb,     // 8 Byte align, 8 Byte strobe
+	input         [63:0]        cpu_w_data,     // 8 Byte align
+	output  reg                 cpu_w_ready,
 
     output  reg                 tag_w_en,
     output  reg   [23:0]        tag_w_data,
@@ -78,7 +78,7 @@ module cache_ctrl (
 );
     wire [21:0] tag;
     wire [5:0] offset_addr;
-    reg [31:0] lsu_addr_r;
+    reg [31:0] cpu_addr_r;
     reg [5:0] offset_inc;
     reg [1:0] tag_valid_dirty;
     reg [7:0] lfsr;
@@ -92,7 +92,7 @@ module cache_ctrl (
                 C_R_MISS = 3'b101,  // Cache read miss
                 C_R_MEM  = 3'b110;  // Cache read memory
 
-    assign {tag, index, offset_addr} = (cache_state == C_IDLE) ? lsu_addr : lsu_addr_r;
+    assign {tag, index, offset_addr} = (cache_state == C_IDLE) ? cpu_addr : cpu_addr_r;
 
     // generate random number LFSR 8 bit: x^8 + x^6 + x^5 + x^4 + 1
     wire xor_in = lfsr[7] ^ lfsr[5] ^ lfsr[4] ^ lfsr[3];
@@ -152,7 +152,7 @@ module cache_ctrl (
         end else begin
             case (cache_state)
                 C_IDLE: begin
-                    if (lsu_w_valid | lsu_r_ready) begin // write | read
+                    if (cpu_w_valid | cpu_r_ready) begin // write | read
                         if(way_hit[2]) begin // miss
                             if (way_empty[2]) begin // full
                                 if (`dirty(tag_[way_random])) begin // dirty
@@ -164,9 +164,9 @@ module cache_ctrl (
                                 cache_state     <= C_R_MEM;
                             end
                         end else begin // hit
-                            if (lsu_w_valid) begin
+                            if (cpu_w_valid) begin
                                 cache_state     <= C_W_HIT;
-                            end else if (lsu_r_ready) begin // read
+                            end else if (cpu_r_ready) begin // read
                                 cache_state     <= C_R_HIT;
                             end
                         end
@@ -174,13 +174,13 @@ module cache_ctrl (
                 end
 
                 C_R_HIT: begin
-                    if (lsu_r_valid) begin
+                    if (cpu_r_valid) begin
                         cache_state     <= C_IDLE;
                     end
                 end
 
                 C_W_HIT: begin
-                    if (lsu_w_ready) begin
+                    if (cpu_w_ready) begin
                         cache_state     <= C_IDLE;
                     end
                 end
@@ -194,7 +194,7 @@ module cache_ctrl (
                 C_R_MEM: begin
                     if (mem_r_valid) begin
                         if (r_cnt == 8'd0) begin // first Byte
-                            if (lsu_w_valid) begin
+                            if (cpu_w_valid) begin
                                 cache_state     <= C_W_MISS;
                             end else begin
                                 cache_state     <= C_R_MISS;
@@ -206,13 +206,13 @@ module cache_ctrl (
                 end
 
                 C_W_MISS: begin
-                    if (lsu_w_ready) begin
+                    if (cpu_w_ready) begin
                         cache_state     <= C_R_MEM;
                     end
                 end
 
                 C_R_MISS: begin
-                    if (lsu_r_valid) begin
+                    if (cpu_r_valid) begin
                         cache_state     <= C_R_MEM;
                     end
                 end
@@ -224,21 +224,21 @@ module cache_ctrl (
         end
     end
 
-    assign lsu_r_data      = sram_r_data;
+    assign cpu_r_data      = sram_r_data;
     assign mem_w_addr      = {tag_[way][21:0], index, offset_addr} & ~32'h07; // 8 Byte align
     assign mem_w_size      = 3'b011;   // 8 Byte
     assign mem_w_burst     = 2'b10;    // WRAP
     assign mem_w_len       = 8'd7;     // 8 times
     assign mem_w_strb      = 8'hFF;    // all bytes
     assign mem_w_data      = sram_r_data;
-    assign mem_r_addr      = lsu_addr & ~32'h07; // 8 Byte align
+    assign mem_r_addr      = cpu_addr & ~32'h07; // 8 Byte align
     assign mem_r_size      = 3'b011;   // 8 Byte
     assign mem_r_burst     = 2'b10;    // WRAP
     assign mem_r_len       = 8'd7;     // 8 times
 
     always @(*) begin
         if (rst) begin
-            lsu_w_ready     = 1'b0;
+            cpu_w_ready     = 1'b0;
             tag_w_en        = 1'b0;
             tag_w_data      = 24'b0;
             way             = 2'b00;
@@ -252,7 +252,7 @@ module cache_ctrl (
         end else begin
             case (cache_state)
                 C_IDLE: begin
-                    lsu_w_ready     = 1'b0;
+                    cpu_w_ready     = 1'b0;
                     tag_w_en        = 1'b0;
                     tag_w_data      = 24'b0;
                     way             = way_hit[1:0];
@@ -265,20 +265,20 @@ module cache_ctrl (
                 end
 
                 C_W_HIT: begin
-                    lsu_w_ready     = 1'b1;
+                    cpu_w_ready     = 1'b1;
                     tag_w_en        = 1'b1;
                     tag_w_data      = {2'b11, tag};
                     way             = way_hit[1:0];
                     offset          = offset_addr;
                     sram_r_en       = 1'b0;
                     sram_w_en       = 1'b1;
-                    sram_w_data     = lsu_w_data;
-                    sram_w_strb     = lsu_w_strb;
+                    sram_w_data     = cpu_w_data;
+                    sram_w_strb     = cpu_w_strb;
                     mem_r_ready     = 1'b0;
                 end
 
                 C_R_HIT: begin
-                    lsu_w_ready     = 1'b0;
+                    cpu_w_ready     = 1'b0;
                     tag_w_en        = 1'b0;
                     tag_w_data      = 24'b0;
                     way             = way_hit[1:0];
@@ -291,7 +291,7 @@ module cache_ctrl (
                 end
 
                 C_W_MEM: begin
-                    lsu_w_ready     = 1'b0;
+                    cpu_w_ready     = 1'b0;
                     if (w_cnt == 8'd7 && mem_w_ready) begin
                         tag_w_en        = 1'b1;
                     end else begin
@@ -308,7 +308,7 @@ module cache_ctrl (
                 end
 
                 C_R_MEM: begin
-                    lsu_w_ready     = 1'b0;
+                    cpu_w_ready     = 1'b0;
                     if (r_cnt == 8'd7 && mem_r_valid) begin
                         tag_w_en        = 1'b1;
                     end else begin
@@ -325,20 +325,20 @@ module cache_ctrl (
                 end
 
                 C_W_MISS: begin
-                    lsu_w_ready     = 1'b1;
+                    cpu_w_ready     = 1'b1;
                     tag_w_en        = 1'b0;
                     tag_w_data      = 24'b0;
                     way             = way_empty[1:0];
                     offset          = offset_addr;
                     sram_r_en       = 1'b0;
                     sram_w_en       = 1'b1;
-                    sram_w_data     = lsu_w_data;
-                    sram_w_strb     = lsu_w_strb;
+                    sram_w_data     = cpu_w_data;
+                    sram_w_strb     = cpu_w_strb;
                     mem_r_ready     = 1'b0;
                 end
 
                 C_R_MISS: begin
-                    lsu_w_ready     = 1'b0;
+                    cpu_w_ready     = 1'b0;
                     tag_w_en        = 1'b0;
                     tag_w_data      = 24'b0;
                     way             = way_empty[1:0];
@@ -351,7 +351,7 @@ module cache_ctrl (
                 end
 
                 default: begin
-                    lsu_w_ready     = 1'b0;
+                    cpu_w_ready     = 1'b0;
                     tag_w_en        = 1'b0;
                     tag_w_data      = 24'b0;
                     way             = 2'b00;
@@ -368,10 +368,10 @@ module cache_ctrl (
 
     always @(posedge clk) begin
         if (rst) begin
-            lsu_addr_r      <= 32'b0;
-            lsu_r_valid     <= 1'b0;
-            r_cnt           <= 1'b0;
-            w_cnt           <= 1'b0;
+            cpu_addr_r      <= 32'b0;
+            cpu_r_valid     <= 1'b0;
+            r_cnt           <= 8'b0;
+            w_cnt           <= 8'b0;
             offset_inc      <= 6'b0;
             mem_w_valid     <= 1'b0;
             lfsr            <= 8'd1;
@@ -379,27 +379,27 @@ module cache_ctrl (
         end else begin
             case (cache_state)
                 C_IDLE: begin
-                    if (lsu_r_ready | lsu_w_valid) begin
-                        lsu_addr_r      <= lsu_addr;
+                    if (cpu_r_ready | cpu_w_valid) begin
+                        cpu_addr_r      <= cpu_addr;
                     end
-                    lsu_r_valid     <= 1'b0;
-                    r_cnt           <= 1'b0;
-                    w_cnt           <= 1'b0;
+                    cpu_r_valid     <= 1'b0;
+                    r_cnt           <= 8'b0;
+                    w_cnt           <= 8'b0;
                     offset_inc      <= offset_addr;
                     mem_w_valid     <= 1'b0;
                 end
 
                 C_R_HIT: begin
-                    lsu_r_valid     <= ~lsu_r_valid;
-                    r_cnt           <= 1'b0;
-                    w_cnt           <= 1'b0;
+                    cpu_r_valid     <= ~cpu_r_valid;
+                    r_cnt           <= 8'b0;
+                    w_cnt           <= 8'b0;
                     offset_inc      <= offset_addr;
                     mem_w_valid     <= 1'b0;
                 end
 
                 C_W_MEM: begin
-                    lsu_r_valid     <= 1'b0;
-                    r_cnt           <= 1'b0;
+                    cpu_r_valid     <= 1'b0;
+                    r_cnt           <= 8'b0;
                     if(mem_w_ready) begin
                         w_cnt <= w_cnt + 1;
                         offset_inc <= offset_inc + 6'd8;
@@ -413,37 +413,37 @@ module cache_ctrl (
                 end
 
                 C_R_MEM: begin
-                    lsu_r_valid     <= 1'b0;
+                    cpu_r_valid     <= 1'b0;
                     if(mem_r_valid) begin
                         r_cnt <= r_cnt + 1;
                         offset_inc <= offset_inc + 6'd8;
                     end
-                    w_cnt           <= 1'b0;
+                    w_cnt           <= 8'b0;
                     mem_w_valid     <= 1'b0;
                 end
 
                 C_W_MISS: begin
-                    lsu_r_valid     <= 1'b0;
+                    cpu_r_valid     <= 1'b0;
                     //r_cnt           <= r_cnt;
-                    w_cnt           <= 1'b0;
+                    w_cnt           <= 8'b0;
                     //offset_inc      <= offset_inc;
                     mem_w_valid     <= 1'b0;
                     tag_valid_dirty <= 2'b11;
                 end
 
                 C_R_MISS: begin
-                    lsu_r_valid     <= ~lsu_r_valid;
+                    cpu_r_valid     <= ~cpu_r_valid;
                     //r_cnt           <= r_cnt;
-                    w_cnt           <= 1'b0;
+                    w_cnt           <= 8'b0;
                     //offset_inc      <= offset_inc;
                     mem_w_valid     <= 1'b0;
                     tag_valid_dirty <= 2'b10;
                 end
 
                 default: begin
-                    lsu_r_valid     <= 1'b0;
-                    r_cnt           <= 1'b0;
-                    w_cnt           <= 1'b0;
+                    cpu_r_valid     <= 1'b0;
+                    r_cnt           <= 8'b0;
+                    w_cnt           <= 8'b0;
                     offset_inc      <= 6'b0;
                     mem_w_valid     <= 1'b0;
                 end
