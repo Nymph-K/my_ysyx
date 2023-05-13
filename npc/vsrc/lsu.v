@@ -79,28 +79,74 @@ module lsu (
 );
 
     reg           [ 7:0]        lsu_w_strb;     // 8 Byte align, 8 Byte strobe
-    wire          [63:0]        lsu_r_data_a;     // 8 Byte align
-    wire          [63:0]        lsu_w_data_a;     // 8 Byte align
+    wire          [31:0]        lsu_addr_a = lsu_addr & 32'hFFFFFFF8;     // 8 Byte align
+    wire          [63:0]        cache_r_data;   // 8 Byte align
+    wire                        cache_r_valid, cache_w_ready;
+    reg                         device_r_valid, device_w_ready;
     
-    wire [2:0] shift_n_byte = lsu_addr[2:0];
-    wire [5:0] shift_n_bit  = {shift_n_byte, 3'b000}; // *8
+    wire [2:0]                  shift_n_byte = lsu_addr[2:0];
+    wire [5:0]                  shift_n_bit  = {shift_n_byte, 3'b000}; // *8
 
-    wire [`XLEN-1:0] lsu_rdata_shift = lsu_r_data_a >> shift_n_bit;
+    wire [`XLEN-1:0]            lsu_rdata_shift = cache_r_data >> shift_n_bit;
 
-    wire [`XLEN-1:0] lsu_w_data_a = lsu_w_data << shift_n_bit;
+    wire [`XLEN-1:0]            lsu_w_data_a = lsu_w_data << shift_n_bit;
+
+    wire                        access_device = lsu_addr[31:28] == 4'hA;
+
+    wire                        cache_r_ready = lsu_r_ready & ~access_device;
+    wire                        cache_w_valid = lsu_w_valid & ~access_device;
+    assign                      lsu_r_valid = cache_r_ready ? cache_r_valid : device_r_valid;
+    assign                      lsu_w_ready = cache_w_valid ? cache_w_ready : device_w_ready;
+
+import "DPI-C" function void paddr_read(input longint raddr, output longint mem_r_data);
+import "DPI-C" function void paddr_write(input longint waddr, input longint mem_w_data, input byte wmask);
+
+    always @(posedge clk ) begin
+        if (rst) begin
+            device_r_valid <= 1'b0;
+        end else begin
+            if (lsu_r_ready & access_device) begin
+                if (device_r_valid) begin
+                    device_r_valid <= 1'b0;
+                end else begin
+                    device_r_valid <= 1'b1;
+                end
+            end
+        end
+    end
+
+    always @(posedge clk ) begin
+        if (rst) begin
+            device_w_ready <= 1'b0;
+        end else begin
+            if (lsu_w_valid & access_device) begin
+                if (device_w_ready) begin
+                    device_w_ready <= 1'b0;
+                    paddr_write({32'b0, lsu_addr_a}, lsu_w_data_a, lsu_w_strb);
+                end else begin
+                    device_w_ready <= 1'b1;
+                end
+            end
+        end
+    end
 
     always @(*) begin
         if(lsu_r_ready) begin
-            case (funct3)
-                `LB		: lsu_r_data = {{(`XLEN-8){lsu_rdata_shift[7]}}, lsu_rdata_shift[7:0]};
-                `LH		: lsu_r_data = {{(`XLEN-16){lsu_rdata_shift[15]}}, lsu_rdata_shift[15:0]};
-                `LW		: lsu_r_data = {{(`XLEN-32){lsu_rdata_shift[31]}}, lsu_rdata_shift[31:0]};
-                `LBU	: lsu_r_data = {{(`XLEN-8){1'b0}}, lsu_rdata_shift[7:0]};
-                `LHU	: lsu_r_data = {{(`XLEN-16){1'b0}}, lsu_rdata_shift[15:0]};
-                `LWU	: lsu_r_data = {{(`XLEN-32){1'b0}}, lsu_rdata_shift[31:0]};
-                `LD		: lsu_r_data = lsu_rdata_shift;
-                default : lsu_r_data = `XLEN'b0;
-            endcase
+            if (access_device) begin
+                if(device_r_valid) paddr_read({32'b0, lsu_addr_a}, lsu_r_data);
+                else lsu_r_data = `XLEN'b0;
+            end else begin
+                case (funct3)
+                    `LB		: lsu_r_data = {{(`XLEN-8){lsu_rdata_shift[7]}}, lsu_rdata_shift[7:0]};
+                    `LH		: lsu_r_data = {{(`XLEN-16){lsu_rdata_shift[15]}}, lsu_rdata_shift[15:0]};
+                    `LW		: lsu_r_data = {{(`XLEN-32){lsu_rdata_shift[31]}}, lsu_rdata_shift[31:0]};
+                    `LBU	: lsu_r_data = {{(`XLEN-8){1'b0}}, lsu_rdata_shift[7:0]};
+                    `LHU	: lsu_r_data = {{(`XLEN-16){1'b0}}, lsu_rdata_shift[15:0]};
+                    `LWU	: lsu_r_data = {{(`XLEN-32){1'b0}}, lsu_rdata_shift[31:0]};
+                    `LD		: lsu_r_data = lsu_rdata_shift;
+                    default : lsu_r_data = `XLEN'b0;
+                endcase
+            end
         end else begin
             lsu_r_data = `XLEN'b0;
         end
@@ -174,14 +220,14 @@ module lsu (
     cache_ctrl  u_dcache_ctrl (
         .clk                     ( clk          ),
         .rst                     ( rst          ),
-        .cpu_addr                ( lsu_addr     ),
-        .cpu_r_ready             ( lsu_r_ready  ),
-        .cpu_r_data              ( lsu_r_data_a ),
-        .cpu_r_valid             ( lsu_r_valid  ),
-        .cpu_w_valid             ( lsu_w_valid  ),
+        .cpu_addr                ( lsu_addr_a   ),
+        .cpu_r_ready             ( cache_r_ready),
+        .cpu_r_data              ( cache_r_data ),
+        .cpu_r_valid             ( cache_r_valid),
+        .cpu_w_valid             ( cache_w_valid),
         .cpu_w_strb              ( lsu_w_strb   ),
         .cpu_w_data              ( lsu_w_data_a ),
-        .cpu_w_ready             ( lsu_w_ready  ),
+        .cpu_w_ready             ( cache_w_ready),
         .tag_w_en                ( tag_w_en     ),
         .tag_w_data              ( tag_w_data   ),
         .tag0                    ( tag0         ),

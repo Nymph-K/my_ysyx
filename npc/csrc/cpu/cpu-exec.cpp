@@ -46,12 +46,12 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 
 static void exec_once(Decode *s) {
   isa_exec_once(s);
-  #if USE_AXI_IFU //2 clock per inst
-    isa_exec_once(s);
-    #if USE_AXI_LSU //3 clock per inst
+  // #if USE_AXI_IFU //2 clock per inst
+  //   isa_exec_once(s);
+  //   #if USE_AXI_LSU //3 clock per inst
       while(!is_execute_over) isa_exec_once(s);
-    #endif
-  #endif
+  //   #endif
+  // #endif
 #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE || CONFIG_BREAKPOINT
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);

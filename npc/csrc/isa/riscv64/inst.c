@@ -84,6 +84,8 @@ int isa_exec_once(Decode *s) {
   return 0;
 }
 
+#define is_execute_over mycpu->rootp->top__DOT__execute_over
+
 void init_cpu(void)
 {
   // IFNVBOARD(nvboard_bind_all_pins(mycpu));
@@ -96,10 +98,7 @@ void init_cpu(void)
   reset(10);
   #if CONFIG_DIFFTEST
     riscv64_exec_once();
-    #if USE_AXI_IFU
-      riscv64_exec_once();
-      //riscv64_exec_once();
-    #endif
+    while(!is_execute_over) riscv64_exec_once();
   #endif
 }
 
