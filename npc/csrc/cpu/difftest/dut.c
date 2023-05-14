@@ -128,18 +128,45 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
     return;
   }
 
-  if (is_skip_ref_old)
-  {// npc is one cycle ahead of nemu
-    reg_copy_to(&ref_r);
-    ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
-    is_skip_ref_old = is_skip_ref;
-    return;
-  }
+  // extern uint64_t g_nr_guest_inst;
+  // if (g_nr_guest_inst >= 725)
+  // {
+  //   printf(ANSI_FMT("<------       CPU: 0x%lX      ------>\n", ANSI_FG_BLUE), mycpu->pc);
+  //   isa_reg_display();
+  //   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
+  //   printf(ANSI_FMT("<------       REF: 0x%lX      ------>\n", ANSI_FG_YELLOW), ref_r.pc);
+  //   extern const char *regs[32];
+  //   for (int i = 0; i < 32; i++)
+  //   {
+  //     printf("%-3s = 0x%-20lx", regs[i], ref_r.gpr[i]);
+  //     if((i + 1)%4 == 0) printf("\n");
+  //   }
+  //   if (is_skip_ref_old)
+  //   {
+  //     reg_copy_to(&ref_r);
+  //     printf(ANSI_FMT("<------       REF: 0x%lX      ------>\n", ANSI_FG_RED), ref_r.pc);
+  //     for (int i = 0; i < 32; i++)
+  //     {
+  //       printf("%-3s = 0x%-20lx", regs[i], ref_r.gpr[i]);
+  //       if((i + 1)%4 == 0) printf("\n");
+  //     }
+  //   }
+  // }
+
+  // if (is_skip_ref_old)
+  // {// npc is one cycle ahead of nemu
+  //   reg_copy_to(&ref_r);
+  //   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
+  //   is_skip_ref_old = is_skip_ref;
+  //   return;
+  // }
   if (is_skip_ref) {
     // to skip the checking of an instruction, just copy the reg state to reference design
-    is_skip_ref_old = true;
+    // is_skip_ref_old = true;
     is_skip_ref = false;
     g_nr_diff_skip_inst++;
+    reg_copy_to(&ref_r);
+    ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
     return;
   }
   ref_difftest_exec(1);

@@ -315,7 +315,7 @@ module cache_ctrl (
                         tag_w_en        = 1'b0;
                     end
                     tag_w_data      = {tag_valid_dirty, tag};
-                    way             = way_empty[1:0];
+                    way             = way_empty[2] ? way_random : way_empty[1:0];
                     offset          = offset_inc;
                     sram_r_en       = 1'b0;
                     sram_w_en       = mem_r_valid;

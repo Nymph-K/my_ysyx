@@ -81,13 +81,14 @@ module lsu (
     reg           [ 7:0]        lsu_w_strb;     // 8 Byte align, 8 Byte strobe
     wire          [31:0]        lsu_addr_a = lsu_addr & 32'hFFFFFFF8;     // 8 Byte align
     wire          [63:0]        cache_r_data;   // 8 Byte align
+    reg           [63:0]        device_r_data;   // 8 Byte align
     wire                        cache_r_valid, cache_w_ready;
     reg                         device_r_valid, device_w_ready;
     
     wire [2:0]                  shift_n_byte = lsu_addr[2:0];
     wire [5:0]                  shift_n_bit  = {shift_n_byte, 3'b000}; // *8
 
-    wire [`XLEN-1:0]            lsu_rdata_shift = cache_r_data >> shift_n_bit;
+    wire [`XLEN-1:0]            lsu_rdata_shift = (access_device ? device_r_data : cache_r_data) >> shift_n_bit;
 
     wire [`XLEN-1:0]            lsu_w_data_a = lsu_w_data << shift_n_bit;
 
@@ -108,9 +109,16 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
             if (lsu_r_ready & access_device) begin
                 if (device_r_valid) begin
                     device_r_valid <= 1'b0;
+                    paddr_read({32'b0, lsu_addr_a}, device_r_data);
                 end else begin
                     device_r_valid <= 1'b1;
                 end
+            end
+            if (lsu_r_ready && lsu_r_valid && (lsu_addr == 32'h8009ef78)) begin
+                $display("Read : addr = %X, data = %X\n", lsu_addr, lsu_r_data);
+            end
+            if (lsu_w_ready && lsu_w_valid && (lsu_addr == 32'h8009ef78)) begin
+                $display("Write: addr = %X, data = %X\n", lsu_addr, lsu_w_data);
             end
         end
     end
@@ -132,21 +140,16 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
 
     always @(*) begin
         if(lsu_r_ready) begin
-            if (access_device) begin
-                if(device_r_valid) paddr_read({32'b0, lsu_addr_a}, lsu_r_data);
-                else lsu_r_data = `XLEN'b0;
-            end else begin
-                case (funct3)
-                    `LB		: lsu_r_data = {{(`XLEN-8){lsu_rdata_shift[7]}}, lsu_rdata_shift[7:0]};
-                    `LH		: lsu_r_data = {{(`XLEN-16){lsu_rdata_shift[15]}}, lsu_rdata_shift[15:0]};
-                    `LW		: lsu_r_data = {{(`XLEN-32){lsu_rdata_shift[31]}}, lsu_rdata_shift[31:0]};
-                    `LBU	: lsu_r_data = {{(`XLEN-8){1'b0}}, lsu_rdata_shift[7:0]};
-                    `LHU	: lsu_r_data = {{(`XLEN-16){1'b0}}, lsu_rdata_shift[15:0]};
-                    `LWU	: lsu_r_data = {{(`XLEN-32){1'b0}}, lsu_rdata_shift[31:0]};
-                    `LD		: lsu_r_data = lsu_rdata_shift;
-                    default : lsu_r_data = `XLEN'b0;
-                endcase
-            end
+            case (funct3)
+                `LB		: lsu_r_data = {{(`XLEN-8){lsu_rdata_shift[7]}}, lsu_rdata_shift[7:0]};
+                `LH		: lsu_r_data = {{(`XLEN-16){lsu_rdata_shift[15]}}, lsu_rdata_shift[15:0]};
+                `LW		: lsu_r_data = {{(`XLEN-32){lsu_rdata_shift[31]}}, lsu_rdata_shift[31:0]};
+                `LBU	: lsu_r_data = {{(`XLEN-8){1'b0}}, lsu_rdata_shift[7:0]};
+                `LHU	: lsu_r_data = {{(`XLEN-16){1'b0}}, lsu_rdata_shift[15:0]};
+                `LWU	: lsu_r_data = {{(`XLEN-32){1'b0}}, lsu_rdata_shift[31:0]};
+                `LD		: lsu_r_data = lsu_rdata_shift;
+                default : lsu_r_data = `XLEN'b0;
+            endcase
         end else begin
             lsu_r_data = `XLEN'b0;
         end
