@@ -328,7 +328,7 @@ module cache_ctrl (
                     cpu_w_ready     = 1'b1;
                     tag_w_en        = 1'b0;
                     tag_w_data      = 24'b0;
-                    way             = way_empty[1:0];
+                    way             = way_empty[2] ? way_random : way_empty[1:0];
                     offset          = offset_addr;
                     sram_r_en       = 1'b0;
                     sram_w_en       = 1'b1;
@@ -341,7 +341,7 @@ module cache_ctrl (
                     cpu_w_ready     = 1'b0;
                     tag_w_en        = 1'b0;
                     tag_w_data      = 24'b0;
-                    way             = way_empty[1:0];
+                    way             = way_empty[2] ? way_random : way_empty[1:0];
                     offset          = offset_addr;
                     sram_r_en       = 1'b1;
                     sram_w_en       = 1'b0;

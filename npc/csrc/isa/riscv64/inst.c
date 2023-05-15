@@ -32,11 +32,21 @@ bool trace_print = true;
 
 static VerilatedVcdC* tfp = new VerilatedVcdC;
 
+extern uint64_t g_nr_guest_inst;
+
 static void posedge_half_cycle() {
-  mycpu->clk = 1; mycpu->eval();tfp->dump(contextp->time());contextp->timeInc(1);
+  mycpu->clk = 1; mycpu->eval();
+  if((g_nr_guest_inst >= CONFIG_TRACE_START) && (g_nr_guest_inst <= CONFIG_TRACE_END))
+  {
+    tfp->dump(contextp->time());contextp->timeInc(1);
+  }
 }
 static void negedge_half_cycle() {
-  mycpu->clk = 0; mycpu->eval();tfp->dump(contextp->time());contextp->timeInc(1);
+  mycpu->clk = 0; mycpu->eval();
+  if((g_nr_guest_inst >= CONFIG_TRACE_START) && (g_nr_guest_inst <= CONFIG_TRACE_END))
+  {
+    tfp->dump(contextp->time());contextp->timeInc(1);
+  }
 }
 
 #else

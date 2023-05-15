@@ -88,14 +88,14 @@ module lsu (
     wire [2:0]                  shift_n_byte = lsu_addr[2:0];
     wire [5:0]                  shift_n_bit  = {shift_n_byte, 3'b000}; // *8
 
-    wire [`XLEN-1:0]            lsu_rdata_shift = (access_device ? device_r_data : cache_r_data) >> shift_n_bit;
+    wire [`XLEN-1:0]            lsu_rdata_shift = (device_access ? device_r_data : cache_r_data) >> shift_n_bit;
 
     wire [`XLEN-1:0]            lsu_w_data_a = lsu_w_data << shift_n_bit;
 
-    wire                        access_device = lsu_addr[31:28] == 4'hA;
+    wire                        device_access = lsu_addr[31:28] == 4'hA;
 
-    wire                        cache_r_ready = lsu_r_ready & ~access_device;
-    wire                        cache_w_valid = lsu_w_valid & ~access_device;
+    wire                        cache_r_ready = lsu_r_ready & ~device_access;
+    wire                        cache_w_valid = lsu_w_valid & ~device_access;
     assign                      lsu_r_valid = cache_r_ready ? cache_r_valid : device_r_valid;
     assign                      lsu_w_ready = cache_w_valid ? cache_w_ready : device_w_ready;
 
@@ -106,20 +106,20 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
         if (rst) begin
             device_r_valid <= 1'b0;
         end else begin
-            if (lsu_r_ready & access_device) begin
+            if (lsu_r_ready & device_access) begin
                 if (device_r_valid) begin
                     device_r_valid <= 1'b0;
-                    paddr_read({32'b0, lsu_addr_a}, device_r_data);
                 end else begin
                     device_r_valid <= 1'b1;
+                    paddr_read({32'b0, lsu_addr_a}, device_r_data);
                 end
             end
-            if (lsu_r_ready && lsu_r_valid && (lsu_addr == 32'h8009ef78)) begin
-                $display("Read : addr = %X, data = %X\n", lsu_addr, lsu_r_data);
-            end
-            if (lsu_w_ready && lsu_w_valid && (lsu_addr == 32'h8009ef78)) begin
-                $display("Write: addr = %X, data = %X\n", lsu_addr, lsu_w_data);
-            end
+            // if (lsu_r_ready && lsu_r_valid && ((lsu_addr & 32'hFFFFFFF0) == 32'ha0000060)) begin
+            //     $display("Read : addr = %X, data = %X\n", lsu_addr, lsu_r_data);
+            // end
+            // if (lsu_w_ready && lsu_w_valid && ((lsu_addr & 32'hFFFFFFF0) == 32'ha0000060)) begin
+            //     $display("Write: addr = %X, data = %X\n", lsu_addr, lsu_w_data);
+            // end
         end
     end
 
@@ -127,12 +127,12 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
         if (rst) begin
             device_w_ready <= 1'b0;
         end else begin
-            if (lsu_w_valid & access_device) begin
+            if (lsu_w_valid & device_access) begin
                 if (device_w_ready) begin
                     device_w_ready <= 1'b0;
-                    paddr_write({32'b0, lsu_addr_a}, lsu_w_data_a, lsu_w_strb);
                 end else begin
                     device_w_ready <= 1'b1;
+                    paddr_write({32'b0, lsu_addr_a}, lsu_w_data_a, lsu_w_strb);
                 end
             end
         end
