@@ -147,6 +147,9 @@ static void execute(uint64_t n) {
 
 extern uint64_t g_nr_diff_inst;
 extern uint64_t g_nr_diff_skip_inst;
+#if CACHE_ENABLED
+void display_statistic(void);
+#endif
 
 static void statistic() {
   IFNDEF(CONFIG_TARGET_AM, setlocale(LC_NUMERIC, ""));
@@ -156,6 +159,9 @@ static void statistic() {
   Log("Pass Diff instructions = " NUMBERIC_FMT "  Skip Diff instructions = " NUMBERIC_FMT , g_nr_diff_inst, g_nr_diff_skip_inst);
   if (g_timer > 0) Log("simulation frequency = " NUMBERIC_FMT " inst/s", g_nr_guest_inst * 1000000 / g_timer);
   else Log("Finish running in less than 1 us and can not calculate the simulation frequency");
+#if CACHE_ENABLED
+  display_statistic();
+#endif
 }
 
 void assert_fail_msg() {
