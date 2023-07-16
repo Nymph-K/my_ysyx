@@ -1,19 +1,24 @@
 /*************************************************************
- * @ name           : mul_booth.v
- * @ description    : Shift-Multiplier
+ * @ name           : mul_booth_32clk.v
+ * @ description    : Shift-Multiplier 32/64 clock
  * @ use module     : 
  * @ author         : K
- * @ date modified  : 2023-5-19
+ * @ date modified  : 2023-5-25
 *************************************************************/
-`ifndef MUL_BOOTH_V
-`define MUL_BOOTH_V
+`ifndef MUL_BOOTH_32CLK_V
+`define MUL_BOOTH_32CLK_V
 
-`define A       multiplicand_r
-`define B       multiplier_r
-`define A_SIGN  mul_signed_r[1]
-`define B_SIGN  mul_signed_r[0]
-`define A_NEGA  (`A_SIGN & multiplicand_s )
-`define B_NEGA  (`B_SIGN & multiplier_s )
+`define A       multiplicand
+`define B       multiplier
+`define A_SIGN  mul_signed[1]
+`define B_SIGN  mul_signed[0]
+
+`define AR       multiplicand_r
+`define BR       multiplier_r
+`define AR_SIGN  mul_signed_r[1]
+`define BR_SIGN  mul_signed_r[0]
+`define AR_NEGA  (`AR_SIGN & multiplicand_s )
+`define BR_NEGA  (`BR_SIGN & multiplier_s )
 
 // `define RADIX_2         2
 `define RADIX_4         4
@@ -46,7 +51,7 @@
 //                                                          1110                -1 S
 //                                                          1111                -0 S
 
-module mul_booth (
+module mul_booth_32clk (
     input                   clk          ,  
     input                   rst          ,  
     input                   mul_valid    ,
@@ -63,55 +68,52 @@ module mul_booth (
 
     reg                             multiplicand_s; // A sign
     reg                             multiplier_s;   // B sign
-    reg [1:0]                       mul_signed_r;
-    reg [127:0]                     p;              // 128 bit p
+    reg  [64:0]                     multiplier_r;   // bn-1, ... , b0, b-1
+    reg  [1:0]                      mul_signed_r;
+    reg  [127 + $clog2(`RADIX):0]   p;              // 128 bit p
     reg                             state;          // FSM state
-    reg [6:0]                       mul_cnt;
+    reg  [6:0]                      mul_cnt;
     reg                             mulw_r;
     reg  [63 + $clog2(`RADIX):0]    alu_a;          // [sign] a << n
-    reg  [63 + $clog2(`RADIX):0]    a_signex;        // [sign] a << n
+    reg  [63 + $clog2(`RADIX):0]    a_signex;       // [sign] a << n
     wire [63 + $clog2(`RADIX):0]    alu_b;          // [sign] b << n
-    reg  [64:0]                     shifter;        // bn-1, ... , b0, b-1
     wire [64:0]                     alu_bw;
     wire [63 + $clog2(`RADIX):0]    alu_out;
     wire                            mul_handshake;
     wire                            cnt_max;
+    reg                             alu_c;
 
-    localparam MUL_CNT_MAX = 7'd64 - $clog2(`RADIX);
+    localparam MUL_CNT_MAX = 7'd64;
     localparam FSM_IDLE = 1'd0,
                FSM_MUL = 1'd1;
                
-    assign alu_bw = {32'b0, `A_SIGN ? p[63] : 1'b0, p[63:32]};
+    assign alu_bw = {32'b0, `AR_SIGN ? p[63] : 1'b0, p[63:32]};
 `ifdef RADIX_4
-    wire [63 + $clog2(`RADIX):0]    a_signex_2 = a_signex << 1;          // a_signex * 2
-    wire [63 + $clog2(`RADIX):0]    a_signex_3 = a_signex + a_signex_2;   // a_signex * 3
-    wire [63 + $clog2(`RADIX):0]    a_signex_4 = a_signex << 2;          // a_signex * 4
-`else //RADIX_2
     wire [63 + $clog2(`RADIX):0]    a_signex_2 = a_signex << 1;          // a_signex * 2
 `endif
 
     always @(*) begin
-        case (shifter[$clog2(`RADIX):0])
+        case (`BR[$clog2(`RADIX):0])
 `ifdef RADIX_4
-            3'b000: begin alu_a = 0; end
-            3'b001: begin alu_a = a_signex; end
-            3'b010: begin alu_a = a_signex; end
-            3'b011: begin alu_a = a_signex_2; end
-            3'b100: begin alu_a = (cnt_max & ~`B_SIGN) ? a_signex_2 : - a_signex_2; end
-            3'b101: begin alu_a = (cnt_max & ~`B_SIGN) ? a_signex_3 : - a_signex; end
-            3'b110: begin alu_a = (cnt_max & ~`B_SIGN) ? a_signex_3 : - a_signex; end
-            3'b111: begin alu_a = (cnt_max & ~`B_SIGN) ? a_signex_4 : 0; end
+            3'b000: begin alu_c = 0; alu_a =   0; end
+            3'b001: begin alu_c = 0; alu_a =   a_signex; end
+            3'b010: begin alu_c = 0; alu_a =   a_signex; end
+            3'b011: begin alu_c = 0; alu_a =   a_signex_2; end
+            3'b100: begin alu_c = 1; alu_a = ~ a_signex_2; end
+            3'b101: begin alu_c = 1; alu_a = ~ a_signex; end
+            3'b110: begin alu_c = 1; alu_a = ~ a_signex; end
+            3'b111: begin alu_c = 0; alu_a =   0; end
 `else //(`RADIX == `RADIX_2)
-            2'b00: begin alu_a = 0; end
-            2'b01: begin alu_a = a_signex; end
-            2'b10: begin alu_a = (cnt_max & ~`B_SIGN) ? a_signex : -a_signex; end //
-            2'b11: begin alu_a = (cnt_max & ~`B_SIGN) ? a_signex_2 : 0; end         //
+            2'b00: begin alu_c = 0; alu_a =   0; end
+            2'b01: begin alu_c = 0; alu_a =   a_signex; end
+            2'b10: begin alu_c = 1; alu_a = ~ a_signex; end
+            2'b11: begin alu_c = 0; alu_a =   0; end
 `endif
         endcase
     end
 
-    assign alu_b  = mulw_r ? {{(32 + $clog2(`RADIX)){p[63]}}, p[63:32]} : {{($clog2(`RADIX)){p[127]}}, p[127:64]};
-    assign alu_out = alu_a + alu_b;
+    assign alu_b  = mulw_r ? {{(32 + $clog2(`RADIX)){p[63 + $clog2(`RADIX)]}}, p[63 + $clog2(`RADIX):32 + $clog2(`RADIX)]} : {{($clog2(`RADIX)){p[127 + $clog2(`RADIX)]}}, p[127 + $clog2(`RADIX):64 + $clog2(`RADIX)]};
+    assign alu_out = alu_a + alu_b + alu_c;
     assign mul_handshake = mul_valid & mul_ready;
     assign {result_hi, result_lo} = p[127:0];
     assign cnt_max = mul_cnt >= MUL_CNT_MAX;
@@ -149,14 +151,14 @@ module mul_booth (
                 FSM_IDLE: begin
                     if (mul_handshake) begin
                         p               <= 128'b0;
-                        a_signex        <= mulw ? {(mul_signed[1] ? {(32 + $clog2(`RADIX)){multiplicand[31]}}: {(32 + $clog2(`RADIX)){1'b0}}), multiplicand[31:0]} :                         {(mul_signed[1] ? {($clog2(`RADIX)){multiplicand[63]}} : {($clog2(`RADIX)){1'b0}}), multiplicand};
-                        multiplicand_s  <= mulw ? multiplicand[31] : multiplicand[63];
-                        multiplier_s    <= mulw ? multiplier[31] : multiplier[63];
+                        a_signex        <= mulw ? {(`A_SIGN ? {(32 + $clog2(`RADIX)){`A[31]}}: {(32 + $clog2(`RADIX)){1'b0}}), `A[31:0]} :                         {(`A_SIGN ? {($clog2(`RADIX)){`A[63]}} : {($clog2(`RADIX)){1'b0}}), `A};
+                        multiplicand_s  <= mulw ? `A[31] : `A[63];
+                        multiplier_s    <= mulw ? `B[31] : `B[63];
                         mul_signed_r    <= mul_signed;
                         mul_cnt         <= mulw ? 7'd32 : 7'd0;
                         mul_ready       <= 1'b0;
                         mulw_r          <= mulw;
-                        shifter         <= {(mulw ? {32'b0, multiplier[31:0]} : multiplier), 1'b0};// bn-1, ... , b0, b-1
+                        multiplier_r    <= {mulw ? {(`B_SIGN ? {(32){`B[31]}} : 32'b0), `B[31:0]} : `B, 1'b0};// bn-1, ... , b0, b-1
                     end else begin
                         mul_ready       <= 1'b1;
                     end
@@ -164,9 +166,9 @@ module mul_booth (
                 end
                 
                 FSM_MUL: begin
-                    p               <= mulw_r ? {{(32){alu_out[63 + $clog2(`RADIX)]}}, alu_out, p[31:$clog2(`RADIX)]} : {alu_out, p[63:$clog2(`RADIX)]};
+                    p               <= mulw_r ? {{(32){alu_out[63 + $clog2(`RADIX)]}}, alu_out, p[31 + $clog2(`RADIX):$clog2(`RADIX)]} : {alu_out, p[63 + $clog2(`RADIX):$clog2(`RADIX)]};
                     mul_cnt         <= mul_cnt + $clog2(`RADIX);
-                    shifter         <= {{($clog2(`RADIX)){1'b0}}, shifter[64:$clog2(`RADIX)]};//`B_SIGN ? shifter[64] : 
+                    multiplier_r    <= {({($clog2(`RADIX)){(`BR_SIGN ? `BR[64] : 1'b0)}}), `BR[64:$clog2(`RADIX)]};
                     if (cnt_max) begin
                         out_valid       <= 1'b1;
                     end
@@ -203,6 +205,6 @@ module mul_booth (
     // endfunction
 
 
-endmodule //mul_booth
+endmodule //mul_booth_32clk
 
 `endif

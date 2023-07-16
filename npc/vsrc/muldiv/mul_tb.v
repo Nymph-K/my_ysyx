@@ -1,6 +1,6 @@
 `timescale  1ns / 1ps
 
-`define TEST_BOOTH
+//`define TEST_BOOTH
 
 module tb_mul_shift;
 
@@ -57,11 +57,11 @@ end
 
 `ifdef TEST_BOOTH
 
-mul_booth  u_mul_booth 
+mul_booth_wallace_64b  u_mul_booth 
 
 `else
 
-mul_shift_0term  u_mul_shift 
+mul_shift_64clk  u_mul_shift 
 
 `endif
 (
