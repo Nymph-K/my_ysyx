@@ -49,7 +49,7 @@ static void exec_once(Decode *s) {
   // #if USE_AXI_IFU //2 clock per inst
   //   isa_exec_once(s);
   //   #if USE_AXI_LSU //3 clock per inst
-      while(!is_execute_over) isa_exec_once(s);
+  //    while(!is_execute_over) isa_exec_once(s);
   //   #endif
   // #endif
 #if CONFIG_ITRACE || CONFIG_FTRACE || CONFIG_ETRACE || CONFIG_BREAKPOINT

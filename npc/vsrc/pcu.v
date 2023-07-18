@@ -20,7 +20,6 @@ module pcu (
 	input  [`XLEN-1:0] x_rs1,
 	input  [`XLEN-1:0] imm,
 	input  [`XLEN-1:0] csr_r_data,
-	input  execute_over,
 	`ifdef CLINT_ENABLE
 		input  interrupt,
 		input  [`XLEN-1:0] csr_mtvec,
@@ -34,7 +33,7 @@ module pcu (
 		.rst(rst), 
 		.din(dnpc), 
 		.dout(pc), 
-		.wen(execute_over)
+		.wen(1)
 	);
 
 	wire [`XLEN-1:0] npc_base, npc_offs, npc_sum, npc;

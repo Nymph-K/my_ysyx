@@ -68,6 +68,7 @@ static void single_cycle() {
 static void reset(int n) {
   mycpu->rst = 1;
   while (n -- > 0) single_cycle();
+  posedge_half_cycle();
   mycpu->rst = 0; mycpu->eval();
 }
 
@@ -108,7 +109,7 @@ void init_cpu(void)
   reset(10);
   #if CONFIG_DIFFTEST
     riscv64_exec_once();
-    while(!is_execute_over) riscv64_exec_once();
+    //while(!is_execute_over) riscv64_exec_once();
   #endif
 }
 
