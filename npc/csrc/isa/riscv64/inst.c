@@ -109,7 +109,7 @@ void init_cpu(void)
   reset(10);
   #if CONFIG_DIFFTEST
     riscv64_exec_once();
-    //while(!is_execute_over) riscv64_exec_once();
+    while(!mycpu->pc_valid) riscv64_exec_once();
   #endif
 }
 

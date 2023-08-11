@@ -58,7 +58,7 @@ typedef uint16_t ioaddr_t;
 #define USE_AXI_LSU         1
 
 // ----------- wave trace -----------
-#define WAVE_TRACE          0
+#define WAVE_TRACE          1
 #if WAVE_TRACE
 #define IFWAVE(...) do{__VA_ARGS__;}while(0)
 #else
@@ -105,5 +105,13 @@ extern TOP_NAME *mycpu;
 extern bool disable_diff;
 extern bool enable_ringbuf;
 extern bool trace_print;
+
+#ifndef CONFIG_TRACE_START
+#define CONFIG_TRACE_START 0
+#endif
+
+#ifndef CONFIG_TRACE_END
+#define CONFIG_TRACE_END -1
+#endif
 
 #endif /* __NPC_COMMON_H__ */

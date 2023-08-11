@@ -25,16 +25,16 @@
 `define DXLEN               128     //double XLEN
 `define HXLEN               32     //half XLEN
 
-`define START_ADDR          `XLEN'h80000000
+`define START_ADDR          64'h80000000
 
 `define EXTENSION_M         1
 
 //`define CLINT_ENABLE      1           // CLINT timer
 
 `ifdef  CLINT_ENABLE        /*  clint device addr  */
-`define CLINT_MSIP_ADDR     `XLEN'h2000000
-`define CLINT_MTIMECMP_ADDR `XLEN'h2004000
-`define CLINT_MTIME_ADDR    `XLEN'h200BFF8
+`define CLINT_MSIP_ADDR     64'h2000000
+`define CLINT_MTIMECMP_ADDR 64'h2004000
+`define CLINT_MTIME_ADDR    64'h200BFF8
 `endif
 
 `define DPI_C_SET_GPR_PTR   1
@@ -54,9 +54,9 @@
 `define USE_AXI_LSU         1
 
 /*  rd src  */
-`define RD_SRC_ALU 		      2'd0		//alu_result
-`define RD_SRC_MEM 		      2'd1		//mem_data_out
-`define RD_SRC_MDU 		      2'd2		//mdu_result
+`define RD_SRC_NONE 	      2'd0		//alu_result
+`define RD_SRC_ALU 		      2'd1		//mem_data_out
+`define RD_SRC_MEM 		      2'd2		//alu_result
 `define RD_SRC_CSR 		      2'd3		//csr_r_data
 
 /*  alu control  */
@@ -187,6 +187,7 @@
 `define CSRRCI	            3'b111
 
 `ifdef EXTENSION_M
+`define FUNCT7_MD           7'b0000001
 //OP
 `define MUL		            3'b000
 `define MULH	            3'b001
