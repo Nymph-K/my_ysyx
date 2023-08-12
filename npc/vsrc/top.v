@@ -376,7 +376,7 @@ module top(
         .out_csr_r_data          (ex_csr_r_data         ),
         .out_exu_src1_xrs1       (ex_exu_src1_xrs1      ),
         .out_exu_src2_xrs2       (ex_exu_src2_xrs2      ),
-        .out_exu_src2_csr       (ex_exu_src2_csr       ),
+        .out_exu_src2_csr        (ex_exu_src2_csr       ),
         .out_exu_src1            (ex_exu_src1           ),
         .out_exu_src2            (ex_exu_src2           ),
         .out_exu_sel_add_sub     (ex_exu_sel_add_sub    ),
@@ -463,6 +463,9 @@ module top(
     wire            mem_inst_system_ebreak  ;
     wire            mem_inst_load           ;
     wire            mem_inst_store          ;
+    wire [63:0]     ex_x_rs2_forward    =   ex_x_rs2_forward_ex  ? mem_x_rd : 
+                                            ex_x_rs2_forward_mem ? wb_x_rd  : ex_x_rs2;
+
     ex_mem_reg u_ex_mem_reg(
         .clk                    (clk                    ),
         .rst                    (rst                    ),
@@ -474,7 +477,7 @@ module top(
         .in_inst                (ex_inst                ),
         .in_rs1                 (ex_rs1                 ),
         .in_rs2                 (ex_rs2                 ),
-        .in_x_rs2               (ex_x_rs2               ),
+        .in_x_rs2               (ex_x_rs2_forward       ),
         .in_x_rd                (ex_x_rd                ),
         .in_rd                  (ex_rd                  ),
         .in_rd_idx_0            (ex_rd_idx_0            ),
@@ -601,6 +604,11 @@ module top(
     );
     
     /********************* data_hazard_ctrl *********************/
+    wire          ex_lsu_r_ready = ex_inst_load;
+    wire          ex_x_rs1_forward_ex ;
+    wire          ex_x_rs2_forward_ex ;
+    wire          ex_x_rs1_forward_mem;
+    wire          ex_x_rs2_forward_mem;
     wire          exu_src1_forward_ex ;
     wire          exu_src2_forward_ex ;
     wire          exu_src2_forward_ex_csr ;
@@ -618,13 +626,17 @@ module top(
         .ex_rd                  (ex_rd                   ),
         .mem_csr_addr           (mem_csr_addr            ),
         .mem_csr_w_en           (mem_csr_w_en            ),
-        .mem_lsu_r_ready        (mem_lsu_r_ready         ),
+        .ex_lsu_r_ready         (ex_lsu_r_ready          ),
         .mem_rd_w_en            (mem_rd_w_en             ),
         .mem_rd_idx_0           (mem_rd_idx_0            ),
         .mem_rd                 (mem_rd                  ),
         .wb_rd_w_en             (wb_rd_w_en              ),
         .wb_rd_idx_0            (wb_rd_idx_0             ),
         .wb_rd                  (wb_rd                   ),
+        .ex_x_rs1_forward_ex    (ex_x_rs1_forward_ex     ),
+        .ex_x_rs2_forward_ex    (ex_x_rs2_forward_ex     ),
+        .ex_x_rs1_forward_mem   (ex_x_rs1_forward_mem    ),
+        .ex_x_rs2_forward_mem   (ex_x_rs2_forward_mem    ),
         .exu_src1_forward_ex    (exu_src1_forward_ex     ),
         .exu_src2_forward_ex    (exu_src2_forward_ex     ),
         .exu_src2_forward_ex_csr(exu_src2_forward_ex_csr ),
@@ -659,3 +671,4 @@ import "DPI-C" function void stopCPU();
 endmodule
 
 `endif /* TOP_V */
+
