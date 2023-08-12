@@ -10,8 +10,8 @@ module ex_mem_reg (
     input  [31:0]   in_inst             ,
     input  [ 4:0]   in_rs1              ,
     input  [ 4:0]   in_rs2              ,
-    input  [63:0]   in_x_rs1            ,
     input  [63:0]   in_x_rs2            ,
+    input  [63:0]   in_x_rd             ,
     input  [ 4:0]   in_rd               ,
     input           in_rd_idx_0         ,
     input           in_rd_w_en          ,
@@ -22,6 +22,7 @@ module ex_mem_reg (
     input  [11:0]   in_csr_addr         ,
     input  [63:0]   in_csr_r_data       ,
     input  [63:0]   in_exu_result       ,
+    input           in_inst_system_ebreak,
     input           in_inst_load        ,
     input           in_inst_store       ,
 
@@ -32,8 +33,8 @@ module ex_mem_reg (
     output [31:0]   out_inst            ,
     output [ 4:0]   out_rs1             ,
     output [ 4:0]   out_rs2             ,
-    output [63:0]   out_x_rs1           ,
     output [63:0]   out_x_rs2           ,
+    output [63:0]   out_x_rd            ,
     output [ 4:0]   out_rd              ,
     output          out_rd_idx_0        ,
     output          out_rd_w_en         ,
@@ -44,6 +45,7 @@ module ex_mem_reg (
     output [11:0]   out_csr_addr        ,
     output [63:0]   out_csr_r_data      ,
     output [63:0]   out_exu_result      ,
+    output          out_inst_system_ebreak,
     output          out_inst_load       ,
     output          out_inst_store      
 );
@@ -100,19 +102,19 @@ module ex_mem_reg (
         .wen(wen)
     );
 
-    Reg #(64, 'b0) u_ex_mem_x_rs1 (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_x_rs1), 
-        .dout(out_x_rs1), 
-        .wen(wen)
-    );
-
     Reg #(64, 'b0) u_ex_mem_x_rs2 (
         .clk(clk), 
         .rst(rst), 
         .din(in_x_rs2), 
         .dout(out_x_rs2), 
+        .wen(wen)
+    );
+
+    Reg #(64, 'b0) u_ex_mem_x_rd (
+        .clk(clk), 
+        .rst(rst), 
+        .din(in_x_rd), 
+        .dout(out_x_rd), 
         .wen(wen)
     );
 
@@ -196,6 +198,13 @@ module ex_mem_reg (
         .wen(wen)
     );
     
+    Reg #(1, 'b0) u_ex_mem_inst_system_ebreak (
+        .clk(clk), 
+        .rst(ctrl_flush), 
+        .din(in_inst_system_ebreak), 
+        .dout(out_inst_system_ebreak), 
+        .wen(wen)
+    );
     Reg #(1, 'b0) u_ex_mem_inst_load (
         .clk(clk), 
         .rst(ctrl_flush), 

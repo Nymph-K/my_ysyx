@@ -41,7 +41,7 @@ module exu (
 );
 
     assign exu_result = mul_valid ? (mul_res_lo     ? mul_result_lo : mul_result_hi) : 
-                        div_valid ? (div_quotient   ? quotient      : remainder)     : alu_result;
+                        div_valid ? (div_quotient   ? quotient      : remainder)     : (inst_32 ? {{32{alu_result[31]}}, alu_result[31:0]} : alu_result);
     assign exu_out_valid =  mul_valid ? mul_out_valid : 
                             div_valid ? div_out_valid : 1;
 

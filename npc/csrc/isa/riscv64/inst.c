@@ -88,6 +88,7 @@ int riscv64_exec_once(void) {
 
 int isa_exec_once(Decode *s) {
   riscv64_exec_once();
+  while(!mycpu->pc_valid) riscv64_exec_once();
   s->pc = mycpu->pc;
   s->snpc = mycpu->pc + 4;
   s->dnpc = mycpu->dnpc;

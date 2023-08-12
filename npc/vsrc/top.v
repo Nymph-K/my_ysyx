@@ -22,8 +22,8 @@ module top(
     assign pc = wb_pc;
     assign pc_valid = mem_wb_valid;
     assign inst = wb_inst;
-    assign dnpc = mem_pc;
-    assign dnpc_valid = ex_mem_valid;
+    assign dnpc = ex_mem_valid ? mem_pc : ex_pc;
+    assign dnpc_valid = ex_mem_valid ? 1 : id_ex_valid;
 
     /********************* pcu *********************/
     wire            pc_b_j, if_id_ready;
@@ -187,9 +187,9 @@ module top(
     );
 
     /********************* gpr *********************/
-    wire [63:0]     wb_x_rd =   wb_rd_w_src_exu ? wb_exu_result : 
-                                wb_rd_w_src_mem ? wb_lsu_r_data :
-                                wb_rd_w_src_csr ? wb_csr_r_data : 0;
+    //wire [63:0]     wb_x_rd =   wb_rd_w_src_exu ? wb_exu_result : 
+    //                            wb_rd_w_src_mem ? wb_lsu_r_data :
+    //                            wb_rd_w_src_csr ? wb_csr_r_data : 0;
     wire [63:0]     id_x_rs1, id_x_rs2;
     gpr u_gpr(
         .clk                    (clk        ),
@@ -212,9 +212,10 @@ module top(
         .inst_system_ecall      (id_inst_system_ecall),
         .inst_system_ebreak     (id_inst_system_ebreak),
         .csr_r_en               (id_csr_r_en),
-        .csr_w_en               (wb_csr_w_en),
-        .csr_addr               (wb_csr_addr),
-        .csr_w_data             (wb_exu_result),
+        .csr_r_addr             (id_csr_addr),
+        .csr_w_en               (mem_csr_w_en),
+        .csr_w_addr             (mem_csr_addr),
+        .csr_w_data             (mem_exu_result),
         .csr_r_data             (id_csr_r_data)
     );
     
@@ -263,7 +264,7 @@ module top(
     );
 
     /********************* id_ex_reg *********************/
-    wire            exu_over;
+    wire            exu_over, exu_idle;
     wire            ex_mem_ready;
     wire            id_ex_valid, id_ex_ready;         
     wire   [31:0]   ex_pc               ;
@@ -271,7 +272,6 @@ module top(
     wire   [ 2:0]   ex_funct3           ;
     wire   [ 4:0]   ex_rs1              ;
     wire   [ 4:0]   ex_rs2              ;
-    wire   [63:0]   ex_x_rs1            ;
     wire   [63:0]   ex_x_rs2            ;
     wire   [ 4:0]   ex_rd               ;
     wire            ex_rd_idx_0         ;
@@ -282,6 +282,9 @@ module top(
     wire            ex_csr_w_en         ;
     wire   [11:0]   ex_csr_addr         ;
     wire   [63:0]   ex_csr_r_data       ;
+    wire            ex_exu_src1_xrs1    ;
+    wire            ex_exu_src2_xrs2    ;
+    wire            ex_exu_src2_csr     ;
     wire   [63:0]   ex_exu_src1         ;
     wire   [63:0]   ex_exu_src2         ;
     wire            ex_exu_sel_add_sub  ;
@@ -300,102 +303,110 @@ module top(
     wire            ex_div_valid        ;
     wire   [ 1:0]   ex_div_signed       ;
     wire            ex_div_quotient     ;
+    wire            ex_inst_system_ebreak;
     wire            ex_inst_load        ;
     wire            ex_inst_store       ;
     wire            ex_inst_32          ;
 
     id_ex_reg u_id_ex_reg(
-        .clk                     (clk                ),
-        .rst                     (rst                ),
-        .if_id_stall             (if_id_stall        ),
-        .exu_over                (exu_over           ),
+        .clk                     (clk                   ),
+        .rst                     (rst                   ),
+        .if_id_stall             (if_id_stall           ),
+        .exu_idle                (exu_idle              ),
 
-        .in_valid                (if_id_valid        ),
-        .in_ready                (ex_mem_ready       ),
-        .in_pc                   (id_pc              ),
-        .in_inst                 (id_inst            ),
-        .in_funct3               (id_funct3          ),
-        .in_rs1                  (id_rs1             ),
-        .in_rs2                  (id_rs2             ),
-        .in_x_rs1                (id_x_rs1           ),
-        .in_x_rs2                (id_x_rs2           ),
-        .in_rd                   (id_rd              ),
-        .in_rd_idx_0             (id_rd_idx_0        ),
-        .in_rd_w_en              (id_rd_w_en         ),
-        .in_rd_w_src_exu         (id_rd_w_src_exu    ),
-        .in_rd_w_src_mem         (id_rd_w_src_mem    ),
-        .in_rd_w_src_csr         (id_rd_w_src_csr    ),
-        .in_csr_w_en             (id_csr_w_en        ),
-        .in_csr_addr             (id_csr_addr        ),
-        .in_csr_r_data           (id_csr_r_data      ),
-        .in_exu_src1             (id_exu_src1        ),
-        .in_exu_src2             (id_exu_src2        ),
-        .in_exu_sel_add_sub      (id_exu_sel_add_sub ),
-        .in_exu_sel_sub          (id_exu_sel_sub     ),
-        .in_exu_sel_slt          (id_exu_sel_slt     ),
-        .in_exu_sel_sltu         (id_exu_sel_sltu    ),
-        .in_exu_sel_and          (id_exu_sel_and     ),
-        .in_exu_sel_or           (id_exu_sel_or      ),
-        .in_exu_sel_xor          (id_exu_sel_xor     ),
-        .in_exu_sel_sll          (id_exu_sel_sll     ),
-        .in_exu_sel_srl          (id_exu_sel_srl     ),
-        .in_exu_sel_sra          (id_exu_sel_sra     ),
-        .in_mul_valid            (id_mul_valid       ),
-        .in_mul_signed           (id_mul_signed      ),
-        .in_mul_res_lo           (id_mul_res_lo      ),
-        .in_div_valid            (id_div_valid       ),
-        .in_div_signed           (id_div_signed      ),
-        .in_div_quotient         (id_div_quotient    ),
-        .in_inst_load            (id_inst_load       ),
-        .in_inst_store           (id_inst_store      ),
-        .in_inst_32              (id_inst_32         ),
+        .in_valid                (if_id_valid           ),
+        .in_ready                (ex_mem_ready          ),
+        .in_pc                   (id_pc                 ),
+        .in_inst                 (id_inst               ),
+        .in_funct3               (id_funct3             ),
+        .in_rs1                  (id_rs1                ),
+        .in_rs2                  (id_rs2                ),
+        .in_x_rs2                (id_x_rs2              ),
+        .in_rd                   (id_rd                 ),
+        .in_rd_idx_0             (id_rd_idx_0           ),
+        .in_rd_w_en              (id_rd_w_en            ),
+        .in_rd_w_src_exu         (id_rd_w_src_exu       ),
+        .in_rd_w_src_mem         (id_rd_w_src_mem       ),
+        .in_rd_w_src_csr         (id_rd_w_src_csr       ),
+        .in_csr_w_en             (id_csr_w_en           ),
+        .in_csr_addr             (id_csr_addr           ),
+        .in_csr_r_data           (id_csr_r_data         ),
+        .in_exu_src1_xrs1        (id_exu_src1_xrs1      ),
+        .in_exu_src2_xrs2        (id_exu_src2_xrs2      ),
+        .in_exu_src2_csr         (id_exu_src2_csr       ),
+        .in_exu_src1             (id_exu_src1           ),
+        .in_exu_src2             (id_exu_src2           ),
+        .in_exu_sel_add_sub      (id_exu_sel_add_sub    ),
+        .in_exu_sel_sub          (id_exu_sel_sub        ),
+        .in_exu_sel_slt          (id_exu_sel_slt        ),
+        .in_exu_sel_sltu         (id_exu_sel_sltu       ),
+        .in_exu_sel_and          (id_exu_sel_and        ),
+        .in_exu_sel_or           (id_exu_sel_or         ),
+        .in_exu_sel_xor          (id_exu_sel_xor        ),
+        .in_exu_sel_sll          (id_exu_sel_sll        ),
+        .in_exu_sel_srl          (id_exu_sel_srl        ),
+        .in_exu_sel_sra          (id_exu_sel_sra        ),
+        .in_mul_valid            (id_mul_valid          ),
+        .in_mul_signed           (id_mul_signed         ),
+        .in_mul_res_lo           (id_mul_res_lo         ),
+        .in_div_valid            (id_div_valid          ),
+        .in_div_signed           (id_div_signed         ),
+        .in_div_quotient         (id_div_quotient       ),
+        .in_inst_system_ebreak   (id_inst_system_ebreak ),
+        .in_inst_load            (id_inst_load          ),
+        .in_inst_store           (id_inst_store         ),
+        .in_inst_32              (id_inst_32            ),
 
-        .out_valid               (id_ex_valid        ),
-        .out_ready               (id_ex_ready        ),
-        .out_pc                  (ex_pc              ),
-        .out_inst                (ex_inst            ),
+        .out_valid               (id_ex_valid           ),
+        .out_ready               (id_ex_ready           ),
+        .out_pc                  (ex_pc                 ),
+        .out_inst                (ex_inst               ),
         .out_funct3              (ex_funct3             ),
         .out_rs1                 (ex_rs1                ),
-        .out_rs2                 (ex_rs2             ),
-        .out_x_rs1               (ex_x_rs1           ),
-        .out_x_rs2               (ex_x_rs2           ),
-        .out_rd                  (ex_rd              ),
-        .out_rd_idx_0            (ex_rd_idx_0        ),
-        .out_rd_w_en             (ex_rd_w_en         ),
-        .out_rd_w_src_exu        (ex_rd_w_src_exu    ),
-        .out_rd_w_src_mem        (ex_rd_w_src_mem    ),
-        .out_rd_w_src_csr        (ex_rd_w_src_csr    ),
-        .out_csr_w_en            (ex_csr_w_en        ),
-        .out_csr_addr            (ex_csr_addr        ),
-        .out_csr_r_data          (ex_csr_r_data      ),
-        .out_exu_src1            (ex_exu_src1        ),
-        .out_exu_src2            (ex_exu_src2        ),
-        .out_exu_sel_add_sub     (ex_exu_sel_add_sub ),
-        .out_exu_sel_sub         (ex_exu_sel_sub     ),
-        .out_exu_sel_slt         (ex_exu_sel_slt     ),
-        .out_exu_sel_sltu        (ex_exu_sel_sltu    ),
-        .out_exu_sel_and         (ex_exu_sel_and     ),
-        .out_exu_sel_or          (ex_exu_sel_or      ),
-        .out_exu_sel_xor         (ex_exu_sel_xor     ),
-        .out_exu_sel_sll         (ex_exu_sel_sll     ),
-        .out_exu_sel_srl         (ex_exu_sel_srl     ),
-        .out_exu_sel_sra         (ex_exu_sel_sra     ),
-        .out_mul_valid           (ex_mul_valid       ),
-        .out_mul_signed          (ex_mul_signed      ),
-        .out_mul_res_lo          (ex_mul_res_lo      ),
-        .out_div_valid           (ex_div_valid       ),
-        .out_div_signed          (ex_div_signed      ),
-        .out_div_quotient        (ex_div_quotient    ),
-        .out_inst_load           (ex_inst_load       ),
-        .out_inst_store          (ex_inst_store      ),
-        .out_inst_32             (ex_inst_32         )
+        .out_rs2                 (ex_rs2                ),
+        .out_x_rs2               (ex_x_rs2              ),
+        .out_rd                  (ex_rd                 ),
+        .out_rd_idx_0            (ex_rd_idx_0           ),
+        .out_rd_w_en             (ex_rd_w_en            ),
+        .out_rd_w_src_exu        (ex_rd_w_src_exu       ),
+        .out_rd_w_src_mem        (ex_rd_w_src_mem       ),
+        .out_rd_w_src_csr        (ex_rd_w_src_csr       ),
+        .out_csr_w_en            (ex_csr_w_en           ),
+        .out_csr_addr            (ex_csr_addr           ),
+        .out_csr_r_data          (ex_csr_r_data         ),
+        .out_exu_src1_xrs1       (ex_exu_src1_xrs1      ),
+        .out_exu_src2_xrs2       (ex_exu_src2_xrs2      ),
+        .out_exu_src2_csr       (ex_exu_src2_csr       ),
+        .out_exu_src1            (ex_exu_src1           ),
+        .out_exu_src2            (ex_exu_src2           ),
+        .out_exu_sel_add_sub     (ex_exu_sel_add_sub    ),
+        .out_exu_sel_sub         (ex_exu_sel_sub        ),
+        .out_exu_sel_slt         (ex_exu_sel_slt        ),
+        .out_exu_sel_sltu        (ex_exu_sel_sltu       ),
+        .out_exu_sel_and         (ex_exu_sel_and        ),
+        .out_exu_sel_or          (ex_exu_sel_or         ),
+        .out_exu_sel_xor         (ex_exu_sel_xor        ),
+        .out_exu_sel_sll         (ex_exu_sel_sll        ),
+        .out_exu_sel_srl         (ex_exu_sel_srl        ),
+        .out_exu_sel_sra         (ex_exu_sel_sra        ),
+        .out_mul_valid           (ex_mul_valid          ),
+        .out_mul_signed          (ex_mul_signed         ),
+        .out_mul_res_lo          (ex_mul_res_lo         ),
+        .out_div_valid           (ex_div_valid          ),
+        .out_div_signed          (ex_div_signed         ),
+        .out_div_quotient        (ex_div_quotient       ),
+        .out_inst_system_ebreak  (ex_inst_system_ebreak ),
+        .out_inst_load           (ex_inst_load          ),
+        .out_inst_store          (ex_inst_store         ),
+        .out_inst_32             (ex_inst_32            )
     );
 
     /********************* exu *********************/
     wire            ex_flush = 0;
     wire  [63:0]    ex_exu_result;
     wire            exu_out_valid;
-    assign          exu_over = ~(id_ex_valid & ~exu_out_valid);// ~exu_busy
+    assign          exu_over = (id_ex_valid & exu_out_valid);// ~exu_busy
+    assign          exu_idle = ~(id_ex_valid & ~exu_out_valid);
     wire  [63:0]    exu_src1_forward;
     wire  [63:0]    exu_src2_forward;
     exu u_exu (
@@ -427,74 +438,79 @@ module top(
     );
 
     /********************* ex_mem_reg *********************/
+    wire [63:0]     ex_x_rd =   ex_rd_w_src_exu ? ex_exu_result : 
+                                ex_rd_w_src_csr ? ex_csr_r_data : 0;
     wire            mem_idle;
     wire            mem_wb_ready;
     wire            ex_mem_valid;
-    wire [ 2:0]     mem_funct3      ;
-    wire [31:0]     mem_pc          ;
-    wire [31:0]     mem_inst        ;
-    wire [ 4:0]     mem_rs1         ;
-    wire [ 4:0]     mem_rs2         ;
-    wire [63:0]     mem_x_rs1       ;
-    wire [63:0]     mem_x_rs2       ;
-    wire [ 4:0]     mem_rd          ;
-    wire            mem_rd_idx_0    ;
-    wire            mem_rd_w_en     ;
-    wire            mem_rd_w_src_exu;
-    wire            mem_rd_w_src_mem;
-    wire            mem_rd_w_src_csr;
-    wire            mem_csr_w_en    ;
-    wire [11:0]     mem_csr_addr    ;
-    wire [63:0]     mem_csr_r_data  ;
-    wire [63:0]     mem_exu_result  ;
-    wire            mem_inst_load   ;
-    wire            mem_inst_store  ;
+    wire [ 2:0]     mem_funct3              ;
+    wire [31:0]     mem_pc                  ;
+    wire [31:0]     mem_inst                ;
+    wire [ 4:0]     mem_rs1                 ;
+    wire [ 4:0]     mem_rs2                 ;
+    wire [63:0]     mem_x_rs2               ;
+    wire [63:0]     mem_x_rd                ;
+    wire [ 4:0]     mem_rd                  ;
+    wire            mem_rd_idx_0            ;
+    wire            mem_rd_w_en             ;
+    wire            mem_rd_w_src_exu        ;
+    wire            mem_rd_w_src_mem        ;
+    wire            mem_rd_w_src_csr        ;
+    wire            mem_csr_w_en            ;
+    wire [11:0]     mem_csr_addr            ;
+    wire [63:0]     mem_csr_r_data          ;
+    wire [63:0]     mem_exu_result          ;
+    wire            mem_inst_system_ebreak  ;
+    wire            mem_inst_load           ;
+    wire            mem_inst_store          ;
     ex_mem_reg u_ex_mem_reg(
-        .clk                 (clk                 ),
-        .rst                 (rst                 ),
-        .mem_idle            (mem_idle            ),
-        .in_valid            (exu_over            ),
-        .in_ready            (mem_wb_ready        ),
-        .in_funct3           (ex_funct3           ),
-        .in_pc               (ex_pc               ),
-        .in_inst             (ex_inst             ),
-        .in_rs1              (ex_rs1              ),
-        .in_rs2              (ex_rs2              ),
-        .in_x_rs1            (ex_x_rs1            ),
-        .in_x_rs2            (ex_x_rs2            ),
-        .in_rd               (ex_rd               ),
-        .in_rd_idx_0         (ex_rd_idx_0         ),
-        .in_rd_w_en          (ex_rd_w_en          ),
-        .in_rd_w_src_exu     (ex_rd_w_src_exu     ),
-        .in_rd_w_src_mem     (ex_rd_w_src_mem     ),
-        .in_rd_w_src_csr     (ex_rd_w_src_csr     ),
-        .in_csr_w_en         (ex_csr_w_en         ),
-        .in_csr_addr         (ex_csr_addr         ),
-        .in_csr_r_data       (ex_csr_r_data       ),
-        .in_exu_result       (ex_exu_result       ),
-        .in_inst_load        (ex_inst_load        ),
-        .in_inst_store       (ex_inst_store       ),
-        .out_valid           (ex_mem_valid        ),
-        .out_ready           (ex_mem_ready        ),
-        .out_funct3          (mem_funct3          ),
-        .out_pc              (mem_pc              ),
-        .out_inst            (mem_inst            ),
-        .out_rs1             (mem_rs1             ),
-        .out_rs2             (mem_rs2             ),
-        .out_x_rs1           (mem_x_rs1           ),
-        .out_x_rs2           (mem_x_rs2           ),
-        .out_rd              (mem_rd              ),
-        .out_rd_idx_0        (mem_rd_idx_0        ),
-        .out_rd_w_en         (mem_rd_w_en         ),
-        .out_rd_w_src_exu    (mem_rd_w_src_exu    ),
-        .out_rd_w_src_mem    (mem_rd_w_src_mem    ),
-        .out_rd_w_src_csr    (mem_rd_w_src_csr    ),
-        .out_csr_w_en        (mem_csr_w_en        ),
-        .out_csr_addr        (mem_csr_addr        ),
-        .out_csr_r_data      (mem_csr_r_data      ),
-        .out_exu_result      (mem_exu_result      ),
-        .out_inst_load       (mem_inst_load       ),
-        .out_inst_store      (mem_inst_store      )
+        .clk                    (clk                    ),
+        .rst                    (rst                    ),
+        .mem_idle               (mem_idle               ),
+        .in_valid               (exu_over               ),
+        .in_ready               (mem_wb_ready           ),
+        .in_funct3              (ex_funct3              ),
+        .in_pc                  (ex_pc                  ),
+        .in_inst                (ex_inst                ),
+        .in_rs1                 (ex_rs1                 ),
+        .in_rs2                 (ex_rs2                 ),
+        .in_x_rs2               (ex_x_rs2               ),
+        .in_x_rd                (ex_x_rd                ),
+        .in_rd                  (ex_rd                  ),
+        .in_rd_idx_0            (ex_rd_idx_0            ),
+        .in_rd_w_en             (ex_rd_w_en             ),
+        .in_rd_w_src_exu        (ex_rd_w_src_exu        ),
+        .in_rd_w_src_mem        (ex_rd_w_src_mem        ),
+        .in_rd_w_src_csr        (ex_rd_w_src_csr        ),
+        .in_csr_w_en            (ex_csr_w_en            ),
+        .in_csr_addr            (ex_csr_addr            ),
+        .in_csr_r_data          (ex_csr_r_data          ),
+        .in_exu_result          (ex_exu_result          ),
+        .in_inst_system_ebreak  (ex_inst_system_ebreak  ),
+        .in_inst_load           (ex_inst_load           ),
+        .in_inst_store          (ex_inst_store          ),
+        .out_valid              (ex_mem_valid           ),
+        .out_ready              (ex_mem_ready           ),
+        .out_funct3             (mem_funct3             ),
+        .out_pc                 (mem_pc                 ),
+        .out_inst               (mem_inst               ),
+        .out_rs1                (mem_rs1                ),
+        .out_rs2                (mem_rs2                ),
+        .out_x_rs2              (mem_x_rs2              ),
+        .out_x_rd               (mem_x_rd               ),
+        .out_rd                 (mem_rd                 ),
+        .out_rd_idx_0           (mem_rd_idx_0           ),
+        .out_rd_w_en            (mem_rd_w_en            ),
+        .out_rd_w_src_exu       (mem_rd_w_src_exu       ),
+        .out_rd_w_src_mem       (mem_rd_w_src_mem       ),
+        .out_rd_w_src_csr       (mem_rd_w_src_csr       ),
+        .out_csr_w_en           (mem_csr_w_en           ),
+        .out_csr_addr           (mem_csr_addr           ),
+        .out_csr_r_data         (mem_csr_r_data         ),
+        .out_exu_result         (mem_exu_result         ),
+        .out_inst_system_ebreak (mem_inst_system_ebreak ),
+        .out_inst_load          (mem_inst_load          ),
+        .out_inst_store         (mem_inst_store         )
     );
 
     /********************* lsu *********************/
@@ -503,7 +519,7 @@ module top(
     wire            mem_lsu_w_valid = mem_inst_store;
     wire            mem_lsu_w_ready;
     wire  [63:0]    mem_lsu_r_data;
-    wire            mem_busy = (mem_lsu_r_ready && ~mem_lsu_r_valid) || (mem_lsu_w_valid && mem_lsu_w_ready);
+    wire            mem_busy = (mem_lsu_r_ready && ~mem_lsu_r_valid) || (mem_lsu_w_valid && ~mem_lsu_w_ready);
     assign          mem_idle = ~mem_busy;
     lsu u_lsu(
         .clk                (clk                ),
@@ -518,111 +534,127 @@ module top(
         .lsu_w_ready        (mem_lsu_w_ready    )
     );
 
-    /********************* bcu *********************/
-    wire            mem_wb_valid    ;
-    wire  [31:0]    wb_pc           ;
-    wire  [31:0]    wb_inst         ;
-    wire  [ 4:0]    wb_rs1          ;
-    wire  [ 4:0]    wb_rs2          ;
-    wire  [63:0]    wb_x_rs1        ;
-    wire  [63:0]    wb_x_rs2        ;
-    wire  [ 4:0]    wb_rd           ;
-    wire            wb_rd_idx_0     ;
-    wire            wb_rd_w_en      ;
-    wire            wb_rd_w_src_exu ;
-    wire            wb_rd_w_src_mem ;
-    wire            wb_rd_w_src_csr ;
-    wire            wb_csr_w_en     ;
-    wire  [11:0]    wb_csr_addr     ;
-    wire  [63:0]    wb_csr_r_data   ;
-    wire  [63:0]    wb_exu_result   ;
-    wire  [63:0]    wb_lsu_r_data   ;
-
     /********************* mem_wb_reg *********************/
+    wire            mem_wb_valid            ;
+    wire  [31:0]    wb_pc                   ;
+    wire  [31:0]    wb_inst                 ;
+    wire  [ 4:0]    wb_rs1                  ;
+    wire  [ 4:0]    wb_rs2                  ;
+    wire  [63:0]    wb_x_rs2                ;
+    wire  [63:0]    wb_x_rd                 ;
+    wire  [ 4:0]    wb_rd                   ;
+    wire            wb_rd_idx_0             ;
+    wire            wb_rd_w_en              ;
+    wire            wb_rd_w_src_exu         ;
+    wire            wb_rd_w_src_mem         ;
+    wire            wb_rd_w_src_csr         ;
+    wire            wb_csr_w_en             ;
+    wire  [11:0]    wb_csr_addr             ;
+    wire  [63:0]    wb_csr_r_data           ;
+    wire  [63:0]    wb_exu_result           ;
+    wire  [63:0]    wb_lsu_r_data           ;
+    wire            wb_inst_system_ebreak   ;
+    wire  [63:0]    mem_x_rd_       = mem_rd_w_src_mem ? mem_lsu_r_data : mem_x_rd;
     mem_wb_reg u_mem_wb_reg(
-	    .clk                 (clk                    ),
-	    .rst                 (rst                    ),
-        .in_valid            (ex_mem_valid           ),
-        .in_pc               (mem_pc                 ),
-        .in_inst             (mem_inst               ),
-        .in_rs1              (mem_rs1                ),
-        .in_rs2              (mem_rs2                ),
-        .in_x_rs1            (mem_x_rs1              ),
-        .in_x_rs2            (mem_x_rs2              ),
-        .in_rd               (mem_rd                 ),
-        .in_rd_idx_0         (mem_rd_idx_0           ),
-        .in_rd_w_en          (mem_rd_w_en            ),
-        .in_rd_w_src_exu     (mem_rd_w_src_exu       ),
-        .in_rd_w_src_mem     (mem_rd_w_src_mem       ),
-        .in_rd_w_src_csr     (mem_rd_w_src_csr       ),
-        .in_csr_w_en         (mem_csr_w_en           ),
-        .in_csr_addr         (mem_csr_addr           ),
-        .in_csr_r_data       (mem_csr_r_data         ),
-        .in_exu_result       (mem_exu_result         ),
-        .in_lsu_r_data       (mem_lsu_r_data         ),
+	    .clk                    (clk                    ),
+	    .rst                    (rst                    ),
+        .in_valid               (ex_mem_valid           ),
+        .in_pc                  (mem_pc                 ),
+        .in_inst                (mem_inst               ),
+        .in_rs1                 (mem_rs1                ),
+        .in_rs2                 (mem_rs2                ),
+        .in_x_rs2               (mem_x_rs2              ),
+        .in_x_rd                (mem_x_rd_              ),
+        .in_rd                  (mem_rd                 ),
+        .in_rd_idx_0            (mem_rd_idx_0           ),
+        .in_rd_w_en             (mem_rd_w_en            ),
+        .in_rd_w_src_exu        (mem_rd_w_src_exu       ),
+        .in_rd_w_src_mem        (mem_rd_w_src_mem       ),
+        .in_rd_w_src_csr        (mem_rd_w_src_csr       ),
+        .in_csr_w_en            (mem_csr_w_en           ),
+        .in_csr_addr            (mem_csr_addr           ),
+        .in_csr_r_data          (mem_csr_r_data         ),
+        .in_exu_result          (mem_exu_result         ),
+        .in_lsu_r_data          (mem_lsu_r_data         ),
+        .in_inst_system_ebreak  (mem_inst_system_ebreak ),
 
-        .out_valid           (mem_wb_valid           ),
-        .out_ready           (mem_wb_ready           ),
-        .out_pc              (wb_pc                  ),
-        .out_inst            (wb_inst                ),
-        .out_rs1             (wb_rs1                 ),
-        .out_rs2             (wb_rs2                 ),
-        .out_x_rs1           (wb_x_rs1               ),
-        .out_x_rs2           (wb_x_rs2               ),
-        .out_rd              (wb_rd                  ),
-        .out_rd_idx_0        (wb_rd_idx_0            ),
-        .out_rd_w_en         (wb_rd_w_en             ),
-        .out_rd_w_src_exu    (wb_rd_w_src_exu        ),
-        .out_rd_w_src_mem    (wb_rd_w_src_mem        ),
-        .out_rd_w_src_csr    (wb_rd_w_src_csr        ),
-        .out_csr_w_en        (wb_csr_w_en            ),
-        .out_csr_addr        (wb_csr_addr            ),
-        .out_csr_r_data      (wb_csr_r_data          ),
-        .out_exu_result      (wb_exu_result          ),
-        .out_lsu_r_data      (wb_lsu_r_data          )
+        .out_valid              (mem_wb_valid           ),
+        .out_ready              (mem_wb_ready           ),
+        .out_pc                 (wb_pc                  ),
+        .out_inst               (wb_inst                ),
+        .out_rs1                (wb_rs1                 ),
+        .out_rs2                (wb_rs2                 ),
+        .out_x_rs2              (wb_x_rs2               ),
+        .out_x_rd               (wb_x_rd                ),
+        .out_rd                 (wb_rd                  ),
+        .out_rd_idx_0           (wb_rd_idx_0            ),
+        .out_rd_w_en            (wb_rd_w_en             ),
+        .out_rd_w_src_exu       (wb_rd_w_src_exu        ),
+        .out_rd_w_src_mem       (wb_rd_w_src_mem        ),
+        .out_rd_w_src_csr       (wb_rd_w_src_csr        ),
+        .out_csr_w_en           (wb_csr_w_en            ),
+        .out_csr_addr           (wb_csr_addr            ),
+        .out_csr_r_data         (wb_csr_r_data          ),
+        .out_exu_result         (wb_exu_result          ),
+        .out_lsu_r_data         (wb_lsu_r_data          ),
+        .out_inst_system_ebreak (wb_inst_system_ebreak  )
     );
     
     /********************* data_hazard_ctrl *********************/
     wire          exu_src1_forward_ex ;
     wire          exu_src2_forward_ex ;
+    wire          exu_src2_forward_ex_csr ;
     wire          exu_src1_forward_mem;
     wire          exu_src2_forward_mem;
     data_hazard_ctrl u_data_hazard_ctrl(
-        .id_rs1                  (id_rs1               ),
-        .id_rs2                  (id_rs2               ),
-        .ex_rs1                  (ex_rs1               ),
-        .ex_rs2                  (ex_rs2               ),
-        .ex_rd                   (ex_rd                ),
-        .mem_lsu_r_ready         (mem_lsu_r_ready      ),
-        .mem_rd_w_en             (mem_rd_w_en          ),
-        .mem_rd_idx_0            (mem_rd_idx_0         ),
-        .mem_rd                  (mem_rd               ),
-        .wb_rd_w_en              (wb_rd_w_en           ),
-        .wb_rd_idx_0             (wb_rd_idx_0          ),
-        .wb_rd                   (wb_rd                ),
-        .exu_src1_forward_ex     (exu_src1_forward_ex  ),
-        .exu_src2_forward_ex     (exu_src2_forward_ex  ),
-        .exu_src1_forward_mem    (exu_src1_forward_mem ),
-        .exu_src2_forward_mem    (exu_src2_forward_mem ),
-        .if_id_stall             (if_id_stall          )
+        .id_rs1                 (id_rs1                  ),
+        .id_rs2                 (id_rs2                  ),
+        .ex_rs1                 (ex_rs1                  ),
+        .ex_rs2                 (ex_rs2                  ),
+        .ex_exu_src1_xrs1       (ex_exu_src1_xrs1        ),
+        .ex_exu_src2_xrs2       (ex_exu_src2_xrs2        ),
+        .ex_exu_src2_csr        (ex_exu_src2_csr         ),
+        .ex_csr_addr            (ex_csr_addr             ),
+        .ex_rd                  (ex_rd                   ),
+        .mem_csr_addr           (mem_csr_addr            ),
+        .mem_csr_w_en           (mem_csr_w_en            ),
+        .mem_lsu_r_ready        (mem_lsu_r_ready         ),
+        .mem_rd_w_en            (mem_rd_w_en             ),
+        .mem_rd_idx_0           (mem_rd_idx_0            ),
+        .mem_rd                 (mem_rd                  ),
+        .wb_rd_w_en             (wb_rd_w_en              ),
+        .wb_rd_idx_0            (wb_rd_idx_0             ),
+        .wb_rd                  (wb_rd                   ),
+        .exu_src1_forward_ex    (exu_src1_forward_ex     ),
+        .exu_src2_forward_ex    (exu_src2_forward_ex     ),
+        .exu_src2_forward_ex_csr(exu_src2_forward_ex_csr ),
+        .exu_src1_forward_mem   (exu_src1_forward_mem    ),
+        .exu_src2_forward_mem   (exu_src2_forward_mem    ),
+        .if_id_stall            (if_id_stall             )
     );
 
     /********************* ex_exu_src_forward *********************/
     ex_exu_src_forward u_ex_exu_src_forward(
-        .ex_exu_src1             (ex_exu_src1           ),
-        .ex_exu_src2             (ex_exu_src2           ),
-        .mem_x_rs1               (mem_x_rs1             ),
-        .mem_x_rs2               (mem_x_rs2             ),
-        .exu_src1_forward_ex     (exu_src1_forward_ex   ),
-        .exu_src2_forward_ex     (exu_src2_forward_ex   ),
-        .wb_x_rs1                (wb_x_rs1              ),
-        .wb_x_rs2                (wb_x_rs2              ),
-        .exu_src1_forward_mem    (exu_src1_forward_mem  ),
-        .exu_src2_forward_mem    (exu_src2_forward_mem  ),
-	    .exu_src1_forward        (exu_src1_forward      ),
-	    .exu_src2_forward        (exu_src2_forward      )
+        .ex_exu_src1             (ex_exu_src1               ),
+        .ex_exu_src2             (ex_exu_src2               ),
+        .mem_x_rd                (mem_x_rd                  ),
+        .mem_exu_result          (mem_exu_result            ),
+        .exu_src1_forward_ex     (exu_src1_forward_ex       ),
+        .exu_src2_forward_ex     (exu_src2_forward_ex       ),
+        .exu_src2_forward_ex_csr (exu_src2_forward_ex_csr   ),
+        .wb_x_rd                 (wb_x_rd                   ),
+        .exu_src1_forward_mem    (exu_src1_forward_mem      ),
+        .exu_src2_forward_mem    (exu_src2_forward_mem      ),
+	    .exu_src1_forward        (exu_src1_forward          ),
+	    .exu_src2_forward        (exu_src2_forward          )
     );
 
+import "DPI-C" function void stopCPU();
+	always @(posedge clk) begin
+		if(wb_inst_system_ebreak) begin
+			stopCPU();
+		end
+	end
 
 endmodule
 

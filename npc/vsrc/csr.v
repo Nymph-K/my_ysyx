@@ -18,7 +18,8 @@ module csr (
     input  inst_system_ebreak,
     input  csr_r_en, 
     input  csr_w_en,
-    input  [11:0] csr_addr,
+    input  [11:0] csr_r_addr,
+    input  [11:0] csr_w_addr,
     input  [63:0] csr_w_data,
 `ifdef CLINT_ENABLE
     input  msip,
@@ -124,27 +125,44 @@ module csr (
         end
     endgenerate
 
-    wire [3:0] csr_idx;
-    assign csr_idx =    (csr_r_en | csr_w_en        ) ? 
-                           ((csr_addr == addr_mstatus   ) ? idx_mstatus     : 
-                            (csr_addr == addr_misa      ) ? idx_misa        : 
-                            (csr_addr == addr_medeleg   ) ? idx_medeleg     : 
-                            (csr_addr == addr_mideleg   ) ? idx_mideleg     : 
-                            (csr_addr == addr_mie       ) ? idx_mie         : 
-                            (csr_addr == addr_mtvec     ) ? idx_mtvec       : 
-                            (csr_addr == addr_mcounteren) ? idx_mcounteren  : 
-                            (csr_addr == addr_mstatush  ) ? idx_mstatush    : 
-                            (csr_addr == addr_mscratch  ) ? idx_mscratch    : 
-                            (csr_addr == addr_mepc      ) ? idx_mepc        : 
-                            (csr_addr == addr_mcause    ) ? idx_mcause      : 
-                            (csr_addr == addr_mtval     ) ? idx_mtval       : 
-                            (csr_addr == addr_mip       ) ? idx_mip         : 
-                            (csr_addr == addr_mtinst    ) ? idx_mtinst      : 
-                            (csr_addr == addr_mtval2    ) ? idx_mtval2      : 0): 0;
+    wire [3:0] csr_r_idx, csr_w_idx;
+    assign csr_r_idx =     csr_r_en ? 
+                           ((csr_r_addr == addr_mstatus   ) ? idx_mstatus     : 
+                            (csr_r_addr == addr_misa      ) ? idx_misa        : 
+                            (csr_r_addr == addr_medeleg   ) ? idx_medeleg     : 
+                            (csr_r_addr == addr_mideleg   ) ? idx_mideleg     : 
+                            (csr_r_addr == addr_mie       ) ? idx_mie         : 
+                            (csr_r_addr == addr_mtvec     ) ? idx_mtvec       : 
+                            (csr_r_addr == addr_mcounteren) ? idx_mcounteren  : 
+                            (csr_r_addr == addr_mstatush  ) ? idx_mstatush    : 
+                            (csr_r_addr == addr_mscratch  ) ? idx_mscratch    : 
+                            (csr_r_addr == addr_mepc      ) ? idx_mepc        : 
+                            (csr_r_addr == addr_mcause    ) ? idx_mcause      : 
+                            (csr_r_addr == addr_mtval     ) ? idx_mtval       : 
+                            (csr_r_addr == addr_mip       ) ? idx_mip         : 
+                            (csr_r_addr == addr_mtinst    ) ? idx_mtinst      : 
+                            (csr_r_addr == addr_mtval2    ) ? idx_mtval2      : 0): 0;
 
-    assign mcsr_w_en = {16{csr_w_en}} & (1 << csr_idx);
+    assign csr_w_idx =     csr_w_en ? 
+                           ((csr_w_addr == addr_mstatus   ) ? idx_mstatus     : 
+                            (csr_w_addr == addr_misa      ) ? idx_misa        : 
+                            (csr_w_addr == addr_medeleg   ) ? idx_medeleg     : 
+                            (csr_w_addr == addr_mideleg   ) ? idx_mideleg     : 
+                            (csr_w_addr == addr_mie       ) ? idx_mie         : 
+                            (csr_w_addr == addr_mtvec     ) ? idx_mtvec       : 
+                            (csr_w_addr == addr_mcounteren) ? idx_mcounteren  : 
+                            (csr_w_addr == addr_mstatush  ) ? idx_mstatush    : 
+                            (csr_w_addr == addr_mscratch  ) ? idx_mscratch    : 
+                            (csr_w_addr == addr_mepc      ) ? idx_mepc        : 
+                            (csr_w_addr == addr_mcause    ) ? idx_mcause      : 
+                            (csr_w_addr == addr_mtval     ) ? idx_mtval       : 
+                            (csr_w_addr == addr_mip       ) ? idx_mip         : 
+                            (csr_w_addr == addr_mtinst    ) ? idx_mtinst      : 
+                            (csr_w_addr == addr_mtval2    ) ? idx_mtval2      : 0): 0;
 
-    assign csr_r_data = mcsr[csr_idx];
+    assign mcsr_w_en = {16{csr_w_en}} & (1 << csr_w_idx);
+
+    assign csr_r_data = (csr_w_en && (csr_w_idx == csr_r_idx)) ? csr_w_data : mcsr[csr_r_idx];
 
 `ifdef CLINT_ENABLE
     wire exception = inst_system_ecall | inst_system_ebreak | interrupt;

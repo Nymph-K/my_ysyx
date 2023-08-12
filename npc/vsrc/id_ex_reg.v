@@ -2,7 +2,7 @@ module id_ex_reg (
 	input           clk                 ,
 	input           rst                 ,
     input           if_id_stall         ,
-    input           exu_over            ,
+    input           exu_idle            ,
 
     input           in_valid            ,
     input           in_ready            ,
@@ -11,7 +11,6 @@ module id_ex_reg (
     input  [ 2:0]   in_funct3           ,
     input  [ 4:0]   in_rs1              ,
     input  [ 4:0]   in_rs2              ,
-	input  [63:0]   in_x_rs1            ,
 	input  [63:0]   in_x_rs2            ,
     input  [ 4:0]   in_rd               ,
     input           in_rd_idx_0         ,
@@ -22,6 +21,9 @@ module id_ex_reg (
     input           in_csr_w_en         ,
     input  [11:0]   in_csr_addr         ,
 	input  [63:0]   in_csr_r_data       ,
+    input           in_exu_src1_xrs1    ,
+    input           in_exu_src2_xrs2    ,
+    input           in_exu_src2_csr     ,
 	input  [63:0]   in_exu_src1         ,
 	input  [63:0]   in_exu_src2         ,
     input           in_exu_sel_add_sub  ,
@@ -40,6 +42,7 @@ module id_ex_reg (
     input           in_div_valid        ,
     input  [ 1:0]   in_div_signed       ,
     input           in_div_quotient     ,
+    input           in_inst_system_ebreak,
     input           in_inst_load        ,
     input           in_inst_store       ,
     input           in_inst_32          ,
@@ -51,7 +54,6 @@ module id_ex_reg (
     output [ 2:0]   out_funct3          ,
     output [ 4:0]   out_rs1             ,
     output [ 4:0]   out_rs2             ,
-	output [63:0]   out_x_rs1           ,
 	output [63:0]   out_x_rs2           ,
     output [ 4:0]   out_rd              ,
     output          out_rd_idx_0        ,
@@ -62,6 +64,9 @@ module id_ex_reg (
     output          out_csr_w_en        ,
     output [11:0]   out_csr_addr        ,
 	output [63:0]   out_csr_r_data      ,
+    output          out_exu_src1_xrs1   ,
+    output          out_exu_src2_xrs2   ,
+    output          out_exu_src2_csr    ,
 	output [63:0]   out_exu_src1        ,
 	output [63:0]   out_exu_src2        ,
     output          out_exu_sel_add_sub ,
@@ -80,12 +85,13 @@ module id_ex_reg (
     output          out_div_valid       ,
     output [ 1:0]   out_div_signed      ,
     output          out_div_quotient    ,
+    output          out_inst_system_ebreak,
     output          out_inst_load       ,
     output          out_inst_store      ,
     output          out_inst_32         
 );
 
-    assign out_ready = in_ready & exu_over;
+    assign out_ready = in_ready & exu_idle;
     wire wen = in_valid & out_ready;
     wire flush = rst | if_id_stall;
     wire ctrl_flush = flush | ~in_valid;
@@ -134,13 +140,6 @@ module id_ex_reg (
         .rst(flush), 
         .din(in_rs2), 
         .dout(out_rs2), 
-        .wen(wen)
-    );
-    Reg #(64, 'b0) u_id_ex_x_rs1 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_x_rs1), 
-        .dout(out_x_rs1), 
         .wen(wen)
     );
     Reg #(64, 'b0) u_id_ex_x_rs2 (
@@ -214,6 +213,27 @@ module id_ex_reg (
         .wen(wen)
     );
 
+    Reg #(1, 'b0) u_id_ex_exu_src1_xrs1 (
+        .clk(clk), 
+        .rst(flush), 
+        .din(in_exu_src1_xrs1), 
+        .dout(out_exu_src1_xrs1), 
+        .wen(wen)
+    );
+    Reg #(1, 'b0) u_id_ex_exu_src2_xrs2 (
+        .clk(clk), 
+        .rst(flush), 
+        .din(in_exu_src2_xrs2), 
+        .dout(out_exu_src2_xrs2), 
+        .wen(wen)
+    );
+    Reg #(1, 'b0) u_id_ex_exu_src2_csr (
+        .clk(clk), 
+        .rst(flush), 
+        .din(in_exu_src2_csr), 
+        .dout(out_exu_src2_csr), 
+        .wen(wen)
+    );
     Reg #(64, 'b0) u_id_ex_exu_src1 (
         .clk(clk), 
         .rst(flush), 
@@ -357,6 +377,13 @@ module id_ex_reg (
         .wen(wen)
     );
 
+    Reg #(1, 'b0) u_id_ex_inst_system_ebreak (
+        .clk(clk), 
+        .rst(ctrl_flush), 
+        .din(in_inst_system_ebreak), 
+        .dout(out_inst_system_ebreak), 
+        .wen(wen)
+    );
     Reg #(1, 'b0) u_id_ex_inst_load (
         .clk(clk), 
         .rst(ctrl_flush), 
