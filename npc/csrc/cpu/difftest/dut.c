@@ -35,6 +35,8 @@ void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 
 static bool is_skip_ref = false;
 static bool is_skip_ref_old = false;
+static bool is_skip_ref_old2 = false;
+static bool is_skip_ref_old3 = false;
 static int skip_dut_nr_inst = 0;
 uint64_t g_nr_diff_skip_inst = 0;
 
@@ -153,22 +155,32 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   //   }
   // }
 
+  is_skip_ref_old3 = is_skip_ref_old2;
+  is_skip_ref_old2 = is_skip_ref_old;
+  is_skip_ref_old = is_skip_ref;
+  if (is_skip_ref_old3)
+  {// npc is one cycle ahead of nemu
+    reg_copy_to(&ref_r);
+    ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
+    g_nr_diff_skip_inst++;
+    return;
+  }
   // if (is_skip_ref_old)
   // {// npc is one cycle ahead of nemu
-  //   reg_copy_to(&ref_r);
-  //   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
-  //   is_skip_ref_old = is_skip_ref;
-  //   return;
+  //   //reg_copy_to(&ref_r);
+  //   //ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
+  //   //is_skip_ref_old = is_skip_ref;
+  //   //is_skip_ref_old2 = is_skip_ref_old;
+  //   //return;
   // }
   if (is_skip_ref) {
     // to skip the checking of an instruction, just copy the reg state to reference design
-    // is_skip_ref_old = true;
     is_skip_ref = false;
-    g_nr_diff_skip_inst++;
-    reg_copy_to(&ref_r);
-    ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
-    return;
+    //reg_copy_to(&ref_r);
+    //ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
+    //return;
   }
+
   ref_difftest_exec(1);
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
 

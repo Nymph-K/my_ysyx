@@ -1,6 +1,7 @@
 
 module data_hazard_ctrl (
     input           id_inst_branch          ,
+    input           id_inst_jalr            ,
     input  [4:0]    id_rs1                  ,
     input  [4:0]    id_rs2                  ,
     input  [4:0]    ex_rs1                  ,
@@ -37,10 +38,6 @@ module data_hazard_ctrl (
     output          bju_x_rs2_forward_wb    ,
     output          if_id_stall             
 );
-    // wire        rs1_id_equ_rd_ex        = ex_rs1 == mem_rd;
-    // wire        rs2_id_equ_rd_ex        = ex_rs2 == mem_rd;
-    // wire        rs1_id_equ_rd_mem       = ex_rs1 == wb_rd;
-    // wire        rs2_id_equ_rd_mem       = ex_rs2 == wb_rd;
 
     assign      ex_x_rs1_forward_mem     = mem_rd_w_en && ~mem_rd_idx_0 && (ex_rs1 == mem_rd);
     assign      ex_x_rs2_forward_mem     = mem_rd_w_en && ~mem_rd_idx_0 && (ex_rs2 == mem_rd);
@@ -66,15 +63,17 @@ module data_hazard_ctrl (
     wire        id_x_rs1_forward_wb     = wb_rd_w_en && ~wb_rd_idx_0 && (id_rs1 == wb_rd);
     wire        id_x_rs2_forward_wb     = wb_rd_w_en && ~wb_rd_idx_0 && (id_rs2 == wb_rd);
 
-    assign      bju_x_rs1_forward_mem   = id_inst_branch && id_x_rs1_forward_mem ;
-    assign      bju_x_rs2_forward_mem   = id_inst_branch && id_x_rs2_forward_mem ;
+    assign      bju_x_rs1_forward_mem   = id_x_rs1_forward_mem  && (id_inst_branch || id_inst_jalr);
+    assign      bju_x_rs2_forward_mem   = id_x_rs2_forward_mem  && id_inst_branch;
 
-    assign      bju_x_rs1_forward_wb    = id_inst_branch && ~id_x_rs1_forward_mem && id_x_rs1_forward_wb;
-    assign      bju_x_rs2_forward_wb    = id_inst_branch && ~id_x_rs2_forward_mem && id_x_rs2_forward_wb;
+    assign      bju_x_rs1_forward_wb    = ~id_x_rs1_forward_mem && id_x_rs1_forward_wb && (id_inst_branch || id_inst_jalr);
+    assign      bju_x_rs2_forward_wb    = ~id_x_rs2_forward_mem && id_x_rs2_forward_wb && id_inst_branch;
 
-    wire        if_id_stall_bju         = id_inst_branch && ((id_x_rs1_forward_ex || id_x_rs2_forward_ex) || (mem_lsu_r_ready && (id_x_rs1_forward_mem || id_x_rs2_forward_mem)));
+    wire        if_id_stall_bju         = (id_inst_branch && ((id_x_rs1_forward_ex || id_x_rs2_forward_ex) || (mem_lsu_r_ready && (id_x_rs1_forward_mem || id_x_rs2_forward_mem)))) || 
+                                          (id_inst_jalr && (id_x_rs1_forward_ex || (mem_lsu_r_ready && id_x_rs1_forward_mem)));
 
     assign      if_id_stall             = if_id_stall_exu | if_id_stall_bju;
 
 endmodule //data_hazard_ctrl
+
 

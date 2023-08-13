@@ -198,6 +198,7 @@ module top(
         .rs2                    (id_rs2     ),
         .rd                     (wb_rd      ),
         .rd_w_en                (wb_rd_w_en ),
+        .rd_idx_0               (wb_rd_idx_0),
         .x_rd                   (wb_x_rd    ),
         .x_rs1                  (id_x_rs1   ),
         .x_rs2                  (id_x_rs2   )
@@ -623,6 +624,7 @@ module top(
     wire          bju_x_rs2_forward_wb   ;
     data_hazard_ctrl u_data_hazard_ctrl(
         .id_inst_branch             (id_inst_branch             ),
+        .id_inst_jalr               (id_inst_jalr               ),
         .id_rs1                     (id_rs1                     ),
         .id_rs2                     (id_rs2                     ),
         .ex_rs1                     (ex_rs1                     ),
@@ -692,4 +694,5 @@ import "DPI-C" function void stopCPU();
 endmodule
 
 `endif /* TOP_V */
+
 

@@ -216,7 +216,7 @@ module idu (
     assign  div_signed      = {2{~funct3[0]}};
     assign  div_quotient    = ~funct3[1];
     
-    assign  csr_r_en        = inst_system & ((funct3_010 | funct3_011 | funct3_110 | funct3_111) | ((funct3_001 | funct3_101) & ~rd_idx_0));
+    assign  csr_r_en        = inst_system & ((funct3_000 | funct3_010 | funct3_011 | funct3_110 | funct3_111) | ((funct3_001 | funct3_101) & ~rd_idx_0));
     assign  csr_w_en        = inst_system & (((funct3_010 | funct3_011 | funct3_110 | funct3_111) & ~rs1_idx_0) | (funct3_001 | funct3_101));
 
     localparam CSR_ADDR_MTVEC        = 12'h305;
