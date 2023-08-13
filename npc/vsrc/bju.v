@@ -20,6 +20,7 @@ module bju (
     input           inst_branch_bgeu,
     input           inst_system_ecall,
     input           inst_system_mret,
+    input           if_id_stall,
 	input   [63:0]  csr_r_data,
     output  [63:0]  dnpc,
     output          pc_b_j
@@ -48,6 +49,6 @@ module bju (
                             inst_jalr                               ? (x_rs1 + imm) & ~1    : 
                             inst_system_ecall | inst_system_mret    ? csr_r_data            : 0;
 
-    assign          pc_b_j = inst_jal || inst_jalr || branch_true || inst_system_ecall || inst_system_mret;
+    assign          pc_b_j = (inst_jal || inst_jalr || branch_true || inst_system_ecall || inst_system_mret) && ~if_id_stall;
 
 endmodule //bju
