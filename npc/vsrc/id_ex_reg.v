@@ -92,16 +92,16 @@ module id_ex_reg (
 );
 
     assign out_ready = in_ready & exu_idle;
-    wire wen = in_valid & out_ready;
     wire flush = rst | if_id_stall;
-    wire ctrl_flush = flush | ~in_valid;
+    wire wen = (in_valid && ~out_valid) || (out_ready && out_valid);
+    wire ctrl_flush = flush || (~in_valid && ~(out_valid && ~out_ready));
     
     Reg #(1, 'b0) u_id_ex_valid (
         .clk(clk), 
         .rst(flush), 
         .din(in_valid), 
         .dout(out_valid), 
-        .wen(1)
+        .wen(wen)
     );
 
     Reg #(32, 'b0) u_id_ex_pc (

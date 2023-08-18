@@ -43,15 +43,15 @@ module mem_wb_reg (
     output          out_inst_system_ebreak   
 );
     assign out_ready = 1;
-    wire wen = in_valid;
-    wire ctrl_flush = rst | ~in_valid;
+    wire wen = (in_valid && ~out_valid) || (out_ready && out_valid);
+    wire ctrl_flush = rst || (~in_valid && ~(out_valid && ~out_ready));
 
     Reg #(1, 1'b0) u_mem_wb_valid (
         .clk(clk), 
         .rst(rst), 
         .din(in_valid), 
         .dout(out_valid), 
-        .wen(1)
+        .wen(wen)
     );
 
     Reg #(32, 'b0) u_mem_wb_pc (

@@ -17,13 +17,23 @@ module lsu (
     input         [31:0]        lsu_addr,
     input                       lsu_r_ready,
     output  reg   [63:0]        lsu_r_data,     // not align
-    output                      lsu_r_valid,
+    output  reg                 lsu_r_valid,
     input                       lsu_w_valid,
     input         [63:0]        lsu_w_data,     // not align
-    output                      lsu_w_ready
+    output  reg                 lsu_w_ready
 );
-    assign lsu_r_valid = lsu_r_ready;
-    assign lsu_w_ready = lsu_w_valid;
+
+    always @(posedge clk) begin
+        if(rst) begin
+            lsu_r_valid <= 0; 
+            lsu_w_ready <= 0; 
+        end else begin
+            lsu_r_valid <= lsu_r_ready;
+            lsu_w_ready <= lsu_w_valid;
+        end
+    end
+    //assign lsu_r_valid = lsu_r_ready;
+    //assign lsu_w_ready = lsu_w_valid;
 
     reg           [ 7:0]        lsu_w_strb;     // 8 Byte align, 8 Byte strobe
     wire          [31:0]        lsu_addr_a = lsu_addr & 32'hFFFFFFF8;     // 8 Byte align
@@ -45,10 +55,10 @@ module lsu (
         if (rst) begin
             mem_rdata = 0;
         end else begin
-            if (lsu_r_ready) begin
+            if (lsu_r_ready && lsu_r_valid) begin
                 paddr_read({32'b0, lsu_addr_a}, mem_rdata);
             end
-            if (lsu_w_valid) begin
+            if (lsu_w_valid && lsu_w_ready) begin
                 paddr_write({32'b0, lsu_addr_a}, lsu_w_data_a, lsu_w_strb);
             end
         end

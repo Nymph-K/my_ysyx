@@ -51,15 +51,15 @@ module ex_mem_reg (
 );
 
     assign out_ready = in_ready & mem_idle;
-    wire wen = in_valid & out_ready;
-    wire ctrl_flush = rst | ~in_valid;
+    wire wen = (in_valid && ~out_valid) || (out_ready && out_valid);
+    wire ctrl_flush = rst || (~in_valid && ~(out_valid && ~out_ready));
     
     Reg #(1, 'b0) u_ex_mem_valid (
         .clk(clk), 
         .rst(rst), 
         .din(in_valid), 
         .dout(out_valid), 
-        .wen(1)
+        .wen(wen)
     );
 
     Reg #(3, 'b0) u_ex_mem_funct3 (
