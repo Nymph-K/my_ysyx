@@ -13,13 +13,14 @@ module if_id_reg (
 	output [31:0]   out_inst
 );
 
-    wire flush = rst | pc_b_j;    // if branch or jump, not regist pre-inst
-    assign out_ready = in_ready & ~if_id_stall;
-    wire wen = (in_valid && ~out_valid) || (out_ready && out_valid);
+    wire stall = (~in_ready && out_valid) || if_id_stall;
+    wire wen = in_valid && ~stall;
+    wire ctrl_flush = rst || ((pc_b_j || ~in_valid) && ~stall);    // if branch or jump, not regist pre-inst
+    assign out_ready = wen;
     
     Reg #(1, 1'b0) u_if_id_valid (
         .clk(clk), 
-        .rst(flush), 
+        .rst(ctrl_flush), 
         .din(in_valid),
         .dout(out_valid), 
         .wen(wen)
@@ -27,7 +28,7 @@ module if_id_reg (
 
     Reg #(32, 32'b0) u_if_id_pc (
         .clk(clk), 
-        .rst(flush), 
+        .rst(ctrl_flush), 
         .din(in_pc), 
         .dout(out_pc), 
         .wen(wen)
@@ -35,7 +36,7 @@ module if_id_reg (
     
     Reg #(32, 32'b0) u_if_id_inst (
         .clk(clk), 
-        .rst(flush), 
+        .rst(ctrl_flush), 
         .din(in_inst), 
         .dout(out_inst), 
         .wen(wen)

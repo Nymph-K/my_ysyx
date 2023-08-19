@@ -91,14 +91,15 @@ module id_ex_reg (
     output          out_inst_32         
 );
 
-    assign out_ready = in_ready & exu_idle;
-    wire flush = rst | if_id_stall;
-    wire wen = (in_valid && ~out_valid) || (out_ready && out_valid);
-    wire ctrl_flush = flush || (~in_valid && ~(out_valid && ~out_ready));
+    wire stall = (~in_ready && out_valid) || ~exu_idle;
+    wire wen = in_valid && ~stall;
+    wire flush = rst || (if_id_stall && ~stall);
+    wire ctrl_flush = flush || (~in_valid && ~stall);
+    assign out_ready = wen;
     
     Reg #(1, 'b0) u_id_ex_valid (
         .clk(clk), 
-        .rst(flush), 
+        .rst(ctrl_flush), 
         .din(in_valid), 
         .dout(out_valid), 
         .wen(wen)

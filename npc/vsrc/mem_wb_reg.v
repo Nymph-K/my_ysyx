@@ -42,13 +42,14 @@ module mem_wb_reg (
     output [63:0]   out_lsu_r_data          ,
     output          out_inst_system_ebreak   
 );
+
+    wire wen = in_valid;
+    wire ctrl_flush = rst || ~in_valid;
     assign out_ready = 1;
-    wire wen = (in_valid && ~out_valid) || (out_ready && out_valid);
-    wire ctrl_flush = rst || (~in_valid && ~(out_valid && ~out_ready));
 
     Reg #(1, 1'b0) u_mem_wb_valid (
         .clk(clk), 
-        .rst(rst), 
+        .rst(ctrl_flush), 
         .din(in_valid), 
         .dout(out_valid), 
         .wen(wen)
@@ -121,7 +122,7 @@ module mem_wb_reg (
 
     Reg #(1, 1'b0) u_mem_wb_rd_w_en (
         .clk(clk), 
-        .rst(ctrl_flush), 
+        .rst(rst), 
         .din(in_rd_w_en), 
         .dout(out_rd_w_en), 
         .wen(wen)
@@ -153,7 +154,7 @@ module mem_wb_reg (
     
     Reg #(1, 'b0) u_mem_wb_csr_w_en (
         .clk(clk), 
-        .rst(ctrl_flush), 
+        .rst(rst), 
         .din(in_csr_w_en), 
         .dout(out_csr_w_en), 
         .wen(wen)

@@ -409,8 +409,8 @@ module top(
     wire            ex_flush = 0;
     wire  [63:0]    ex_exu_result;
     wire            exu_out_valid;
-    assign          exu_over = (id_ex_valid & exu_out_valid);// ~exu_busy
-    assign          exu_idle = ~(id_ex_valid & ~exu_out_valid);
+    assign          exu_over = (id_ex_valid & exu_out_valid);
+    assign          exu_idle = ~(id_ex_valid & ~exu_out_valid);// ~exu_busy
     wire  [63:0]    exu_src1_forward;
     wire  [63:0]    exu_src2_forward;
     exu u_exu (
@@ -565,7 +565,7 @@ module top(
     mem_wb_reg u_mem_wb_reg(
 	    .clk                    (clk                    ),
 	    .rst                    (rst                    ),
-        .in_valid               (ex_mem_valid           ),
+        .in_valid               (ex_mem_valid & mem_idle),
         .in_pc                  (mem_pc                 ),
         .in_inst                (mem_inst               ),
         .in_rs1                 (mem_rs1                ),
@@ -643,6 +643,7 @@ module top(
         .mem_rd_idx_0               (mem_rd_idx_0               ),
         .mem_rd                     (mem_rd                     ),
         .mem_lsu_r_ready            (mem_lsu_r_ready            ),
+        .mem_lsu_r_valid            (mem_lsu_r_valid            ),
         .wb_rd_w_en                 (wb_rd_w_en                 ),
         .wb_rd_idx_0                (wb_rd_idx_0                ),
         .wb_rd                      (wb_rd                      ),

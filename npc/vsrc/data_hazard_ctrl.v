@@ -20,6 +20,7 @@ module data_hazard_ctrl (
     input           mem_rd_idx_0            ,
     input  [4:0]    mem_rd                  ,
     input           mem_lsu_r_ready         ,
+    input           mem_lsu_r_valid         ,
     input           wb_rd_w_en              ,
     input           wb_rd_idx_0             ,
     input  [4:0]    wb_rd                   ,
@@ -54,6 +55,8 @@ module data_hazard_ctrl (
 
     wire        if_id_stall_exu         = ex_lsu_r_ready && ((ex_rd == id_rs1) || (ex_rd == id_rs2));
     
+    wire        if_id_stall_lsu         = mem_lsu_r_ready && ((mem_rd == id_rs1) || (mem_rd == id_rs2)) && ~mem_lsu_r_valid;
+    
     wire        id_x_rs1_forward_ex     = ex_rd_w_en && ~ex_rd_idx_0 && (id_rs1 == ex_rd);
     wire        id_x_rs2_forward_ex     = ex_rd_w_en && ~ex_rd_idx_0 && (id_rs2 == ex_rd);
 
@@ -72,7 +75,7 @@ module data_hazard_ctrl (
     wire        if_id_stall_bju         = (id_inst_branch && ((id_x_rs1_forward_ex || id_x_rs2_forward_ex) || (mem_lsu_r_ready && (id_x_rs1_forward_mem || id_x_rs2_forward_mem)))) || 
                                           (id_inst_jalr && (id_x_rs1_forward_ex || (mem_lsu_r_ready && id_x_rs1_forward_mem)));
 
-    assign      if_id_stall             = if_id_stall_exu | if_id_stall_bju;
+    assign      if_id_stall             = if_id_stall_exu || if_id_stall_lsu || if_id_stall_bju;
 
 endmodule //data_hazard_ctrl
 
