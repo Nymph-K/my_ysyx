@@ -34,7 +34,7 @@ module top(
         .clk                    (clk),
         .rst                    (rst),
         .pc_b_j                 (pc_b_j),
-        .if_id_ready            (if_id_ready),
+        .if_id_handshake        (if_id_ready & if_valid),
         .dnpc                   (id_dnpc),
         .pc                     (if_pc)
     );

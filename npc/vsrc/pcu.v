@@ -14,7 +14,7 @@ module pcu (
     input  clk,
     input  rst,
     input  pc_b_j,	// 0: pc+4      1: dnpc
-    input  if_id_ready,
+    input  if_id_handshake,
     input  [31:0] dnpc,
     output [31:0] pc
 );
@@ -24,7 +24,7 @@ module pcu (
         .rst(rst), 
         .din(npc), 
         .dout(pc), 
-        .wen(if_id_ready)
+        .wen(if_id_handshake | pc_b_j)
     );
 
     wire [31:0] npc = pc_b_j ? dnpc : pc + 4;

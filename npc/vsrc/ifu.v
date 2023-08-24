@@ -3,7 +3,7 @@ module ifu (
 	input  rst,
 	input [31:0] pc,
 	output [31:0] inst,
-    output if_valid
+    output reg if_valid
 );
 
     import "DPI-C" function void paddr_read(input longint raddr, output longint mem_r_data);
@@ -19,6 +19,11 @@ module ifu (
 
     assign inst = pc[2] ? _[63:32] : _[31:0] ;
 
-    assign if_valid = 1;
-
+    always @(posedge clk) begin
+        if(rst)
+            if_valid <= 0;
+        else
+            if_valid <= ~if_valid;
+    end
+    
 endmodule //ifu
