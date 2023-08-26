@@ -16,7 +16,7 @@ module if_id_reg (
     wire stall = (~in_ready && out_valid) || if_id_stall;
     wire wen = in_valid && ~stall;
     wire ctrl_flush = rst || ((pc_b_j || ~in_valid) && ~stall);    // if branch or jump, not regist pre-inst
-    assign out_ready = !(in_valid && ~in_ready && out_valid);
+    assign out_ready = !(in_valid && ~in_ready && out_valid) && ~stall;
     
     Reg #(1, 1'b0) u_if_id_valid (
         .clk(clk), 
