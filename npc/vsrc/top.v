@@ -528,6 +528,57 @@ module top(
     wire  [63:0]    mem_lsu_r_data;
     wire            mem_busy = (mem_lsu_r_ready && ~mem_lsu_r_valid) || (mem_lsu_w_valid && ~mem_lsu_w_ready);
     assign          mem_idle = ~mem_busy;
+    
+    //AW
+    wire [ 3:0]               LSU_AXI_AWID;
+    wire [31:0]               LSU_AXI_AWADDR;
+    wire [ 7:0]               LSU_AXI_AWLEN;
+    wire [ 2:0]               LSU_AXI_AWSIZE;
+    wire [ 1:0]               LSU_AXI_AWBURST;
+    wire                      LSU_AXI_AWLOCK;
+    wire [ 3:0]               LSU_AXI_AWCACHE;
+    wire [ 2:0]               LSU_AXI_AWPROT;
+    wire [ 3:0]               LSU_AXI_AWQOS;
+    wire [ 3:0]               LSU_AXI_AWREGION;
+    wire                      LSU_AXI_AWUSER;
+    wire                      LSU_AXI_AWVALID;
+    wire                      LSU_AXI_AWREADY;
+    //W 
+    wire [63:0]               LSU_AXI_WDATA;
+    wire [ 7:0]               LSU_AXI_WSTRB;
+    wire                      LSU_AXI_WLAST;
+    wire                      LSU_AXI_WUSER;
+    wire                      LSU_AXI_WVALID;
+    wire                      LSU_AXI_WREADY;
+    //BR
+    wire [ 3:0]               LSU_AXI_BID;
+    wire [ 1:0]               LSU_AXI_BRESP;
+    wire                      LSU_AXI_BUSER;
+    wire                      LSU_AXI_BVALID;
+    wire                      LSU_AXI_BREADY;
+    //AR
+    wire [ 3:0]               LSU_AXI_ARID;
+    wire [31:0]               LSU_AXI_ARADDR;
+    wire [ 7:0]               LSU_AXI_ARLEN;
+    wire [ 2:0]               LSU_AXI_ARSIZE;
+    wire [ 1:0]               LSU_AXI_ARBURST;
+    wire                      LSU_AXI_ARLOCK;
+    wire [ 3:0]               LSU_AXI_ARCACHE;
+    wire [ 2:0]               LSU_AXI_ARPROT;
+    wire [ 3:0]               LSU_AXI_ARQOS;
+    wire [ 3:0]               LSU_AXI_ARREGION;
+    wire                      LSU_AXI_ARUSER;
+    wire                      LSU_AXI_ARVALID;
+    wire                      LSU_AXI_ARREADY;
+    //R
+    wire [ 3:0]               LSU_AXI_RID;
+    wire [63:0]               LSU_AXI_RDATA;
+    wire [ 1:0]               LSU_AXI_RRESP;
+    wire                      LSU_AXI_RLAST;
+    wire                      LSU_AXI_RUSER;
+    wire                      LSU_AXI_RVALID;
+    wire                      LSU_AXI_RREADY;
+
     lsu u_lsu(
         .clk                (clk                ),
         .rst                (rst                ),
@@ -538,7 +589,106 @@ module top(
         .lsu_r_valid        (mem_lsu_r_valid    ),
         .lsu_w_valid        (mem_lsu_w_valid    ),
         .lsu_w_data         (mem_x_rs2          ),
-        .lsu_w_ready        (mem_lsu_w_ready    )
+        .lsu_w_ready        (mem_lsu_w_ready    ),
+            
+        .LSU_AXI_AWID           (LSU_AXI_AWID),
+        .LSU_AXI_AWADDR         (LSU_AXI_AWADDR),
+        .LSU_AXI_AWLEN          (LSU_AXI_AWLEN),
+        .LSU_AXI_AWSIZE         (LSU_AXI_AWSIZE),
+        .LSU_AXI_AWBURST        (LSU_AXI_AWBURST),
+        .LSU_AXI_AWLOCK         (LSU_AXI_AWLOCK),
+        .LSU_AXI_AWCACHE        (LSU_AXI_AWCACHE),
+        .LSU_AXI_AWPROT         (LSU_AXI_AWPROT),
+        .LSU_AXI_AWQOS          (LSU_AXI_AWQOS),
+        .LSU_AXI_AWREGION       (LSU_AXI_AWREGION),
+        .LSU_AXI_AWUSER         (LSU_AXI_AWUSER),
+        .LSU_AXI_AWVALID        (LSU_AXI_AWVALID),
+        .LSU_AXI_AWREADY        (LSU_AXI_AWREADY),
+
+        .LSU_AXI_WDATA          (LSU_AXI_WDATA),
+        .LSU_AXI_WSTRB          (LSU_AXI_WSTRB),
+        .LSU_AXI_WLAST          (LSU_AXI_WLAST),
+        .LSU_AXI_WUSER          (LSU_AXI_WUSER),
+        .LSU_AXI_WVALID         (LSU_AXI_WVALID),
+        .LSU_AXI_WREADY         (LSU_AXI_WREADY),
+        
+        .LSU_AXI_BID            (LSU_AXI_BID),
+        .LSU_AXI_BRESP          (LSU_AXI_BRESP),
+        .LSU_AXI_BUSER          (LSU_AXI_BUSER),
+        .LSU_AXI_BVALID         (LSU_AXI_BVALID),
+        .LSU_AXI_BREADY         (LSU_AXI_BREADY),
+        
+        .LSU_AXI_ARID           (LSU_AXI_ARID),
+        .LSU_AXI_ARADDR         (LSU_AXI_ARADDR),
+        .LSU_AXI_ARLEN          (LSU_AXI_ARLEN),
+        .LSU_AXI_ARSIZE         (LSU_AXI_ARSIZE),
+        .LSU_AXI_ARBURST        (LSU_AXI_ARBURST),
+        .LSU_AXI_ARLOCK         (LSU_AXI_ARLOCK),
+        .LSU_AXI_ARCACHE        (LSU_AXI_ARCACHE),
+        .LSU_AXI_ARPROT         (LSU_AXI_ARPROT),
+        .LSU_AXI_ARQOS          (LSU_AXI_ARQOS),
+        .LSU_AXI_ARREGION       (LSU_AXI_ARREGION),
+        .LSU_AXI_ARUSER         (LSU_AXI_ARUSER),
+        .LSU_AXI_ARVALID        (LSU_AXI_ARVALID),
+        .LSU_AXI_ARREADY        (LSU_AXI_ARREADY),
+        
+        .LSU_AXI_RID            (LSU_AXI_RID),
+        .LSU_AXI_RDATA          (LSU_AXI_RDATA),
+        .LSU_AXI_RRESP          (LSU_AXI_RRESP),
+        .LSU_AXI_RLAST          (LSU_AXI_RLAST),
+        .LSU_AXI_RUSER          (LSU_AXI_RUSER),
+        .LSU_AXI_RVALID         (LSU_AXI_RVALID),
+        .LSU_AXI_RREADY         (LSU_AXI_RREADY)
+    );
+    
+    slave_axi_4 u_lsu_slave_axi_4 (
+        .clk(clk),
+        .rst(rst),
+
+        .S_AXI_AWID         (LSU_AXI_AWID),
+        .S_AXI_AWADDR       (LSU_AXI_AWADDR),
+        .S_AXI_AWLEN        (LSU_AXI_AWLEN),
+        .S_AXI_AWSIZE       (LSU_AXI_AWSIZE),
+        .S_AXI_AWBURST      (LSU_AXI_AWBURST),
+        .S_AXI_AWLOCK       (LSU_AXI_AWLOCK),
+        .S_AXI_AWCACHE      (LSU_AXI_AWCACHE),
+        .S_AXI_AWPROT       (LSU_AXI_AWPROT),
+        .S_AXI_AWQOS        (LSU_AXI_AWQOS),
+        .S_AXI_AWREGION     (LSU_AXI_AWREGION),
+        .S_AXI_AWUSER       (LSU_AXI_AWUSER),
+        .S_AXI_AWVALID      (LSU_AXI_AWVALID),
+        .S_AXI_AWREADY      (LSU_AXI_AWREADY),
+        .S_AXI_WDATA        (LSU_AXI_WDATA),
+        .S_AXI_WSTRB        (LSU_AXI_WSTRB),
+        .S_AXI_WLAST        (LSU_AXI_WLAST),
+        .S_AXI_WUSER        (LSU_AXI_WUSER),
+        .S_AXI_WVALID       (LSU_AXI_WVALID),
+        .S_AXI_WREADY       (LSU_AXI_WREADY),
+        .S_AXI_BID          (LSU_AXI_BID),
+        .S_AXI_BRESP        (LSU_AXI_BRESP),
+        .S_AXI_BUSER        (LSU_AXI_BUSER),
+        .S_AXI_BVALID       (LSU_AXI_BVALID),
+        .S_AXI_BREADY       (LSU_AXI_BREADY),
+        .S_AXI_ARID         (LSU_AXI_ARID),
+        .S_AXI_ARADDR       (LSU_AXI_ARADDR),
+        .S_AXI_ARLEN        (LSU_AXI_ARLEN),
+        .S_AXI_ARSIZE       (LSU_AXI_ARSIZE),
+        .S_AXI_ARBURST      (LSU_AXI_ARBURST),
+        .S_AXI_ARLOCK       (LSU_AXI_ARLOCK),
+        .S_AXI_ARCACHE      (LSU_AXI_ARCACHE),
+        .S_AXI_ARPROT       (LSU_AXI_ARPROT),
+        .S_AXI_ARQOS        (LSU_AXI_ARQOS),
+        .S_AXI_ARREGION     (LSU_AXI_ARREGION),
+        .S_AXI_ARUSER       (LSU_AXI_ARUSER),
+        .S_AXI_ARVALID      (LSU_AXI_ARVALID),
+        .S_AXI_ARREADY      (LSU_AXI_ARREADY),
+        .S_AXI_RID          (LSU_AXI_RID),
+        .S_AXI_RDATA        (LSU_AXI_RDATA),
+        .S_AXI_RRESP        (LSU_AXI_RRESP),
+        .S_AXI_RLAST        (LSU_AXI_RLAST),
+        .S_AXI_RUSER        (LSU_AXI_RUSER),
+        .S_AXI_RVALID       (LSU_AXI_RVALID),
+        .S_AXI_RREADY       (LSU_AXI_RREADY)
     );
 
     /********************* mem_wb_reg *********************/
