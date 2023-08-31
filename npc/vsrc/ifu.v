@@ -7,6 +7,7 @@ module ifu (
     output              inst_r_valid,
     input               if_id_ready,
     output reg          if_valid,
+    output              if_busy,
 
     //AW
     output [ 3:0]               IFU_AXI_AWID,
@@ -166,7 +167,8 @@ module ifu (
         .mem_r_burst             ( mem_r_burst  ),
         .mem_r_len               ( mem_r_len    ),
         .mem_r_valid             ( mem_r_valid  ),
-        .mem_r_data              ( mem_r_data   )
+        .mem_r_data              ( mem_r_data   ),
+        .cache_busy              ( if_busy      )
     );
 
     cache_sram  u_icache_sram (

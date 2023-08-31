@@ -15,6 +15,7 @@ module pcu (
     input  rst,
     input  pc_b_j,	// 0: pc+4      1: dnpc
     input  if_id_handshake,
+    input  if_busy,
     input  [31:0] dnpc,
     output [31:0] pc,
     input       inst_r_valid,
@@ -48,8 +49,12 @@ module pcu (
             end else begin // else not discard inst
                 if(inst_r_ready) begin // if fetching inst
                     if(pc_b_j) begin // if branch or jump
-                        inst_r_ready <= 'b0;
-                        discard_inst <= 'b1;
+                        if(if_busy) begin // if ifu busy not wait valid
+                            ;
+                        end else begin // if idle wait valid
+                            inst_r_ready <= 'b0;
+                            discard_inst <= 'b1;
+                        end
                     end else if(inst_r_valid) begin
                         inst_r_ready <= pc_wen;
                     end

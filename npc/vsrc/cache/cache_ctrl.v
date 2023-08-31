@@ -74,11 +74,13 @@ module cache_ctrl (
     output        [ 1:0]        mem_r_burst,    // 0-FIXED, 1-INC, 2-WRAP
     output        [ 7:0]        mem_r_len,      // len+1 times
     input                       mem_r_valid,
-    input         [63:0]        mem_r_data
+    input         [63:0]        mem_r_data,
+
+    output                      cache_busy
 );
     wire [21:0] tag;
     wire [5:0] offset_addr;
-    reg [31:0] cpu_addr_r;
+    reg [31:0] cpu_addr_r, addr_actual;
     reg [5:0] offset_inc;
     reg [1:0] tag_valid_dirty;
     reg [7:0] lfsr;
@@ -92,7 +94,11 @@ module cache_ctrl (
                 C_R_MISS = 3'b101,  // Cache read miss
                 C_R_MEM  = 3'b110;  // Cache read memory
 
-    assign {tag, index, offset_addr} = (cache_state == C_IDLE) ? cpu_addr : cpu_addr_r;
+    assign cache_busy   = cache_state != C_IDLE;
+
+    assign addr_actual  = (cache_state == C_IDLE) ? cpu_addr : cpu_addr_r;
+
+    assign {tag, index, offset_addr} = addr_actual;
 
     // generate random number LFSR 8 bit: x^8 + x^6 + x^5 + x^4 + 1
     wire xor_in = lfsr[7] ^ lfsr[5] ^ lfsr[4] ^ lfsr[3];
@@ -225,13 +231,13 @@ module cache_ctrl (
     end
 
     assign cpu_r_data      = sram_r_data;
-    assign mem_w_addr      = {tag_[way][21:0], index, offset_addr} & ~32'h07; // 8 Byte align
+    assign mem_w_addr      = addr_actual & ~32'h07; // 8 Byte align
     assign mem_w_size      = 3'b011;   // 8 Byte
     assign mem_w_burst     = 2'b10;    // WRAP
     assign mem_w_len       = 8'd7;     // 8 times
     assign mem_w_strb      = 8'hFF;    // all bytes
     assign mem_w_data      = sram_r_data;
-    assign mem_r_addr      = cpu_addr & ~32'h07; // 8 Byte align
+    assign mem_r_addr      = mem_w_addr;
     assign mem_r_size      = 3'b011;   // 8 Byte
     assign mem_r_burst     = 2'b10;    // WRAP
     assign mem_r_len       = 8'd7;     // 8 times
