@@ -68,7 +68,8 @@ static void single_cycle() {
 static void reset(int n) {
   mycpu->rst = 1;
   while (n -- > 0) single_cycle();
-  posedge_half_cycle();
+  //posedge_half_cycle();
+  mycpu->clk = 1; mycpu->eval();
   mycpu->rst = 0; mycpu->eval();
 }
 

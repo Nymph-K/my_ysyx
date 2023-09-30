@@ -2,11 +2,9 @@ module ifu (
 	input               clk,
 	input               rst,
 	input       [31:0]  pc,
-	output reg  [31:0]  inst,
+	output      [63:0]  inst,
     input               inst_r_ready,
     output              inst_r_valid,
-    input               if_id_ready,
-    output reg          if_valid,
     output              if_busy,
 
     //AW
@@ -59,33 +57,6 @@ module ifu (
     input                       IFU_AXI_RVALID,
     output                      IFU_AXI_RREADY
 );
-
-    wire          [63:0]        ifu_r_data;
-
-    wire      inst_handshake = inst_r_ready && inst_r_valid;
-
-    always @(posedge clk) begin
-        if(rst) begin
-            if_valid <= 0;
-        end else begin
-            if(if_valid) begin
-                if(if_id_ready)
-                    if_valid    <= inst_handshake;
-            end else begin
-                if_valid    <= inst_handshake;
-            end
-        end
-    end
-    
-    always @(posedge clk) begin
-        if(rst) begin
-            inst <= 0;
-        end else begin
-            if(inst_handshake) begin
-                inst <= pc[2] ? ifu_r_data[63:32] : ifu_r_data[31:0];
-            end
-        end
-    end
     
     /********************************** instant ************************************/
 
@@ -104,6 +75,7 @@ module ifu (
     wire  [ 1:0]        way;
     wire  [ 3:0]        index;
     wire  [ 5:0]        offset;
+    wire  [ 5:0]        offset_r;
 
     wire                sram_r_en;
     wire                sram_w_en;
@@ -132,9 +104,9 @@ module ifu (
         .clk                     ( clk          ),
         .rst                     ( rst          ),
         .cpu_addr                ( pc           ),
-        .cpu_r_ready             ( inst_r_ready  ),
-        .cpu_r_data              ( ifu_r_data   ),
-        .cpu_r_valid             ( inst_r_valid  ),
+        .cpu_r_ready             ( inst_r_ready ),
+        .cpu_r_data              ( inst         ),
+        .cpu_r_valid             ( inst_r_valid ),
         .cpu_w_valid             ( ifu_w_valid  ),
         .cpu_w_strb              ( ifu_w_strb   ),
         .cpu_w_data              ( ifu_w_data   ),
@@ -148,6 +120,7 @@ module ifu (
         .way                     ( way          ),
         .index                   ( index        ),
         .offset                  ( offset       ),
+        .offset_r                ( offset_r     ),
         .sram_r_en               ( sram_r_en    ),
         .sram_w_en               ( sram_w_en    ),
         .sram_w_data             ( sram_w_data  ),
@@ -177,6 +150,7 @@ module ifu (
         .way                     ( way           ),
         .index                   ( index         ),
         .offset                  ( offset        ),
+        .offset_r                ( offset_r      ),
         .sram_r_en               ( sram_r_en     ),
         .sram_w_en               ( sram_w_en     ),
         .sram_w_data             ( sram_w_data   ),

@@ -32,6 +32,7 @@ module cache_sram (
     input     [1:0]     way,
     input     [3:0]     index,
     input     [5:0]     offset,
+    input     [5:0]     offset_r,
     input               sram_r_en,
     input               sram_w_en,
     input    [63:0]     sram_w_data,
@@ -45,7 +46,7 @@ module cache_sram (
     wire [63:0]     sram_w_strb_bit = {{8{sram_w_strb[7]}}, {8{sram_w_strb[6]}}, {8{sram_w_strb[5]}}, {8{sram_w_strb[4]}}, {8{sram_w_strb[3]}}, {8{sram_w_strb[2]}}, {8{sram_w_strb[1]}}, {8{sram_w_strb[0]}}};
     wire [127:0]    sram_bwen = offset[3] ? {sram_w_strb_bit, 64'b0} : {64'b0, sram_w_strb_bit};
     wire [127:0]    sram_rdata[0:3];
-    assign          sram_r_data = offset[3] ? sram_rdata[offset[5:4]][127:64] : sram_rdata[offset[5:4]][63:0];
+    assign          sram_r_data = offset_r[3] ? sram_rdata[offset_r[5:4]][127:64] : sram_rdata[offset_r[5:4]][63:0];
 
     S011HD1P_X32Y2D128_BW u_sram_0(
         .Q              (sram_rdata[0]),

@@ -91,9 +91,8 @@ module lsu (
 
     wire                        cache_r_ready = lsu_r_ready & ~device_access;
     wire                        cache_w_valid = lsu_w_valid & ~device_access;
-    assign                      lsu_r_valid = cache_r_ready ? cache_r_valid : device_r_valid;
-    assign                      lsu_w_ready = cache_w_valid ? cache_w_ready : device_w_ready;
-
+    assign                      lsu_r_valid = cache_r_valid | device_r_valid;//cache_r_ready ? cache_r_valid : device_r_valid;
+    assign                      lsu_w_ready = cache_w_ready | device_w_ready;//cache_w_valid ? cache_w_ready : device_w_ready;
 
 import "DPI-C" function void paddr_read(input longint raddr, output longint mem_r_data);
 import "DPI-C" function void paddr_write(input longint waddr, input longint mem_w_data, input byte wmask);
@@ -102,13 +101,9 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
         if (rst) begin
             device_r_valid <= 1'b0;
         end else begin
+            device_r_valid <= lsu_r_ready & device_access;
             if (lsu_r_ready & device_access) begin
-                if (device_r_valid) begin
-                    device_r_valid <= 1'b0;
-                end else begin
-                    device_r_valid <= 1'b1;
-                    paddr_read({32'b0, lsu_addr_a}, device_r_data);
-                end
+                paddr_read({32'b0, lsu_addr_a}, device_r_data);
             end
         end
     end
@@ -117,13 +112,9 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
         if (rst) begin
             device_w_ready <= 1'b0;
         end else begin
+            device_w_ready <= lsu_w_valid & device_access;
             if (lsu_w_valid & device_access) begin
-                if (device_w_ready) begin
-                    device_w_ready <= 1'b0;
-                end else begin
-                    device_w_ready <= 1'b1;
                     paddr_write({32'b0, lsu_addr_a}, lsu_w_data_a, lsu_w_strb);
-                end
             end
         end
     end
@@ -171,6 +162,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
     wire  [ 1:0]        way;
     wire  [ 3:0]        index;
     wire  [ 5:0]        offset;
+    wire  [ 5:0]        offset_r;
 
     wire                sram_r_en;
     wire                sram_w_en;
@@ -215,6 +207,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
         .way                     ( way          ),
         .index                   ( index        ),
         .offset                  ( offset       ),
+        .offset_r                ( offset_r     ),
         .sram_r_en               ( sram_r_en    ),
         .sram_w_en               ( sram_w_en    ),
         .sram_w_data             ( sram_w_data  ),
@@ -244,6 +237,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
         .way                     ( way           ),
         .index                   ( index         ),
         .offset                  ( offset        ),
+        .offset_r                ( offset_r      ),
         .sram_r_en               ( sram_r_en     ),
         .sram_w_en               ( sram_w_en     ),
         .sram_w_data             ( sram_w_data   ),

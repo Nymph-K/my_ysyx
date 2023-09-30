@@ -30,23 +30,25 @@ module top(
     wire [31:0]     id_dnpc, _;
     wire [31:0]     if_pc;
     wire            inst_r_valid, inst_r_ready;
+    wire            if_id_stall;
+    wire            if_busy;
 
     pcu u_pcu (
         .clk                    (clk),
         .rst                    (rst),
         .pc_b_j                 (pc_b_j),
-        .if_id_handshake        (if_id_ready & if_valid),
         .if_busy                (if_busy),
+        .if_id_stall            (if_id_stall),
+        .if_id_ready            (if_id_ready),
         .dnpc                   (id_dnpc),
         .pc                     (if_pc),
         .inst_r_valid           (inst_r_valid),
         .inst_r_ready           (inst_r_ready)
     );
 
-    /********************* ifu *********************/
-    wire [31:0]     if_inst;
-    wire            if_valid;
-    wire            if_busy;
+    /********************* if_id_reg *********************/
+    wire            id_ex_ready, if_id_valid;
+    wire [31:0]     id_pc, id_inst;
     //AW
     wire [ 3:0]               IFU_AXI_AWID;
     wire [31:0]               IFU_AXI_AWADDR;
@@ -98,67 +100,66 @@ module top(
     wire                      IFU_AXI_RREADY;
 
 
-    ifu u_ifu(
+    if_id_reg u_if_id_reg(
         .clk                    (clk),
         .rst                    (rst),
-        .pc                     (if_pc),
-        .inst                   (if_inst),
-        .if_valid               (if_valid),
-        .if_busy                (if_busy),
-        .if_id_ready            (if_id_ready),
+        .if_id_stall            (if_id_stall),
+        .pc_b_j                 (pc_b_j),
+        .in_ready               (id_ex_ready),
+        .in_pc                  (if_pc),
+        .out_valid              (if_id_valid),
+        .out_ready              (if_id_ready),
+        .out_pc                 (id_pc),
+        .out_inst               (id_inst),
         .inst_r_ready           (inst_r_ready),
-        .inst_r_valid           (inst_r_valid),
+        .if_busy                (if_busy),
 
-        .IFU_AXI_AWID			(IFU_AXI_AWID),
-        .IFU_AXI_AWADDR			(IFU_AXI_AWADDR),
-        .IFU_AXI_AWLEN			(IFU_AXI_AWLEN),
-        .IFU_AXI_AWSIZE			(IFU_AXI_AWSIZE),
-        .IFU_AXI_AWBURST		(IFU_AXI_AWBURST),
-        .IFU_AXI_AWLOCK			(IFU_AXI_AWLOCK),
-        .IFU_AXI_AWCACHE		(IFU_AXI_AWCACHE),
-        .IFU_AXI_AWPROT			(IFU_AXI_AWPROT),
-        .IFU_AXI_AWQOS			(IFU_AXI_AWQOS),
-        .IFU_AXI_AWREGION		(IFU_AXI_AWREGION),
-        .IFU_AXI_AWUSER			(IFU_AXI_AWUSER),
-        .IFU_AXI_AWVALID		(IFU_AXI_AWVALID),
-        .IFU_AXI_AWREADY		(IFU_AXI_AWREADY),
-
-        .IFU_AXI_WDATA			(IFU_AXI_WDATA),
-        .IFU_AXI_WSTRB			(IFU_AXI_WSTRB),
-        .IFU_AXI_WLAST			(IFU_AXI_WLAST),
-        .IFU_AXI_WUSER			(IFU_AXI_WUSER),
-        .IFU_AXI_WVALID			(IFU_AXI_WVALID),
-        .IFU_AXI_WREADY			(IFU_AXI_WREADY),
-
-        .IFU_AXI_BID			(IFU_AXI_BID),
-        .IFU_AXI_BRESP			(IFU_AXI_BRESP),
-        .IFU_AXI_BUSER			(IFU_AXI_BUSER),
-        .IFU_AXI_BVALID			(IFU_AXI_BVALID),
-        .IFU_AXI_BREADY			(IFU_AXI_BREADY),
-
-        .IFU_AXI_ARID			(IFU_AXI_ARID),
-        .IFU_AXI_ARADDR			(IFU_AXI_ARADDR),
-        .IFU_AXI_ARLEN			(IFU_AXI_ARLEN),
-        .IFU_AXI_ARSIZE			(IFU_AXI_ARSIZE),
-        .IFU_AXI_ARBURST		(IFU_AXI_ARBURST),
-        .IFU_AXI_ARLOCK			(IFU_AXI_ARLOCK),
-        .IFU_AXI_ARCACHE		(IFU_AXI_ARCACHE),
-        .IFU_AXI_ARPROT			(IFU_AXI_ARPROT),
-        .IFU_AXI_ARQOS			(IFU_AXI_ARQOS),
-        .IFU_AXI_ARREGION		(IFU_AXI_ARREGION),
-        .IFU_AXI_ARUSER			(IFU_AXI_ARUSER),
-        .IFU_AXI_ARVALID		(IFU_AXI_ARVALID),
-        .IFU_AXI_ARREADY		(IFU_AXI_ARREADY),
-
-        .IFU_AXI_RID			(IFU_AXI_RID),
-        .IFU_AXI_RDATA			(IFU_AXI_RDATA),
-        .IFU_AXI_RRESP			(IFU_AXI_RRESP),
-        .IFU_AXI_RLAST			(IFU_AXI_RLAST),
-        .IFU_AXI_RUSER			(IFU_AXI_RUSER),
-        .IFU_AXI_RVALID			(IFU_AXI_RVALID),
-        .IFU_AXI_RREADY			(IFU_AXI_RREADY)
+        .IFU_AXI_AWID           (IFU_AXI_AWID),
+        .IFU_AXI_AWADDR         (IFU_AXI_AWADDR),
+        .IFU_AXI_AWLEN          (IFU_AXI_AWLEN),
+        .IFU_AXI_AWSIZE         (IFU_AXI_AWSIZE),
+        .IFU_AXI_AWBURST        (IFU_AXI_AWBURST),
+        .IFU_AXI_AWLOCK         (IFU_AXI_AWLOCK),
+        .IFU_AXI_AWCACHE        (IFU_AXI_AWCACHE),
+        .IFU_AXI_AWPROT         (IFU_AXI_AWPROT),
+        .IFU_AXI_AWQOS          (IFU_AXI_AWQOS),
+        .IFU_AXI_AWREGION       (IFU_AXI_AWREGION),
+        .IFU_AXI_AWUSER         (IFU_AXI_AWUSER),
+        .IFU_AXI_AWVALID        (IFU_AXI_AWVALID),
+        .IFU_AXI_AWREADY        (IFU_AXI_AWREADY),
+        .IFU_AXI_WDATA          (IFU_AXI_WDATA),
+        .IFU_AXI_WSTRB          (IFU_AXI_WSTRB),
+        .IFU_AXI_WLAST          (IFU_AXI_WLAST),
+        .IFU_AXI_WUSER          (IFU_AXI_WUSER),
+        .IFU_AXI_WVALID         (IFU_AXI_WVALID),
+        .IFU_AXI_WREADY         (IFU_AXI_WREADY),
+        .IFU_AXI_BID            (IFU_AXI_BID),
+        .IFU_AXI_BRESP          (IFU_AXI_BRESP),
+        .IFU_AXI_BUSER          (IFU_AXI_BUSER),
+        .IFU_AXI_BVALID         (IFU_AXI_BVALID),
+        .IFU_AXI_BREADY         (IFU_AXI_BREADY),
+        .IFU_AXI_ARID           (IFU_AXI_ARID),
+        .IFU_AXI_ARADDR         (IFU_AXI_ARADDR),
+        .IFU_AXI_ARLEN          (IFU_AXI_ARLEN),
+        .IFU_AXI_ARSIZE         (IFU_AXI_ARSIZE),
+        .IFU_AXI_ARBURST        (IFU_AXI_ARBURST),
+        .IFU_AXI_ARLOCK         (IFU_AXI_ARLOCK),
+        .IFU_AXI_ARCACHE        (IFU_AXI_ARCACHE),
+        .IFU_AXI_ARPROT         (IFU_AXI_ARPROT),
+        .IFU_AXI_ARQOS          (IFU_AXI_ARQOS),
+        .IFU_AXI_ARREGION       (IFU_AXI_ARREGION),
+        .IFU_AXI_ARUSER         (IFU_AXI_ARUSER),
+        .IFU_AXI_ARVALID        (IFU_AXI_ARVALID),
+        .IFU_AXI_ARREADY        (IFU_AXI_ARREADY),
+        .IFU_AXI_RID            (IFU_AXI_RID),
+        .IFU_AXI_RDATA          (IFU_AXI_RDATA),
+        .IFU_AXI_RRESP          (IFU_AXI_RRESP),
+        .IFU_AXI_RLAST          (IFU_AXI_RLAST),
+        .IFU_AXI_RUSER          (IFU_AXI_RUSER),
+        .IFU_AXI_RVALID         (IFU_AXI_RVALID),
+        .IFU_AXI_RREADY         (IFU_AXI_RREADY)
     );
-
+    
     slave_axi_4 u_ifu_slave_axi_4 (
         .clk(clk),
         .rst(rst),
@@ -207,24 +208,6 @@ module top(
         .S_AXI_RUSER        (IFU_AXI_RUSER),
         .S_AXI_RVALID       (IFU_AXI_RVALID),
         .S_AXI_RREADY       (IFU_AXI_RREADY)
-    );
-    /********************* if_id_reg *********************/
-    wire            if_id_stall, id_ex_ready, if_id_valid;
-    wire [31:0]     id_pc, id_inst;
-
-    if_id_reg u_if_id_reg(
-        .clk                    (clk),
-        .rst                    (rst),
-        .if_id_stall            (if_id_stall),
-        .pc_b_j                 (pc_b_j),
-        .in_valid               (if_valid),
-        .in_ready               (id_ex_ready),
-        .in_pc                  (if_pc),
-        .in_inst                (if_inst),
-        .out_valid              (if_id_valid),
-        .out_ready              (if_id_ready),
-        .out_pc                 (id_pc),
-        .out_inst               (id_inst)
     );
     
     /********************* idu *********************/
