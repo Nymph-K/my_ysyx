@@ -112,6 +112,7 @@ module top(
         .out_pc                 (id_pc),
         .out_inst               (id_inst),
         .inst_r_ready           (inst_r_ready),
+        .inst_r_valid           (inst_r_valid),
         .if_busy                (if_busy),
 
         .IFU_AXI_AWID           (IFU_AXI_AWID),

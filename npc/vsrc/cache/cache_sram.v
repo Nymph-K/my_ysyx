@@ -40,7 +40,7 @@ module cache_sram (
     output   [63:0]     sram_r_data
 );
 
-    wire [3:0]      sram_cen = 4'hF;//{4{sram_w_en | sram_r_en}};
+    wire [3:0]      sram_cen = {4{sram_w_en | sram_r_en}};
     wire [3:0]      sram_wen = (4'b1 << offset[5:4]) & {4{sram_w_en}};
     wire [127:0]    sram_wdata = {2{sram_w_data}};
     wire [63:0]     sram_w_strb_bit = {{8{sram_w_strb[7]}}, {8{sram_w_strb[6]}}, {8{sram_w_strb[5]}}, {8{sram_w_strb[4]}}, {8{sram_w_strb[3]}}, {8{sram_w_strb[2]}}, {8{sram_w_strb[1]}}, {8{sram_w_strb[0]}}};

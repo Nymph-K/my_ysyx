@@ -50,7 +50,7 @@ module cache_ctrl (
     input         [23:0]        tag3,
 
     output  reg   [ 1:0]        way,
-    output        [ 3:0]        index,
+    output  reg   [ 3:0]        index,
     output  reg   [ 5:0]        offset,
     output        [ 5:0]        offset_r,
 
@@ -79,10 +79,11 @@ module cache_ctrl (
 
     output                      cache_busy
 );
-    wire [21:0] tag;
+    wire [21:0] tag, tag_r;
+    wire [ 3:0] index_addr, index_r;
     wire [5:0] offset_addr;
     reg [31:0] cpu_addr_r;
-    wire [31:0] addr_actual;
+    //wire [31:0] addr_actual;
     reg [5:0] offset_inc;
     reg [7:0] lfsr;
     reg [63:0] cpu_rdata, cpu_rdata_r;
@@ -97,13 +98,12 @@ module cache_ctrl (
                 C_R_MISS = 3'b101,  // Cache read miss
                 C_R_MEM  = 3'b110;  // Cache read memory
 
-    assign cache_busy   = (cache_state == C_W_MEM) || (cache_state == C_R_MEM);
+    assign cache_busy   = (cache_state == C_W_MEM) || (cache_state == C_R_MEM) || (cache_state == C_R_HIT && ~r_hit) || (cache_state == C_W_HIT && ~w_hit);
 
-    assign addr_actual  = (cache_state == C_IDLE) ? cpu_addr : cpu_addr_r;
+    //assign addr_actual  = (cache_state == C_IDLE) ? cpu_addr : cpu_addr_r;
 
-    assign {tag, index, offset_addr} = addr_actual;
-
-    assign offset_r = cpu_addr_r[5:0];
+    assign {tag, index_addr, offset_addr} = cpu_addr;
+    assign {tag_r, index_r, offset_r} = cpu_addr_r;
 
     wire xor_in = lfsr[7] ^ lfsr[5] ^ lfsr[4] ^ lfsr[3];    // generate random number LFSR 8 bit: x^8 + x^6 + x^5 + x^4 + 1
 
@@ -212,7 +212,7 @@ module cache_ctrl (
     end
 
     assign cpu_r_data      = cpu_r_valid ? cpu_rdata : cpu_rdata_r;
-    assign mem_w_addr      = addr_actual & ~32'h07; // 8 Byte align
+    assign mem_w_addr      = cpu_addr_r & ~32'h07; // 8 Byte align
     assign mem_w_size      = 3'b011;   // 8 Byte
     assign mem_w_burst     = 2'b10;    // WRAP
     assign mem_w_len       = 8'd7;     // 8 times
@@ -231,6 +231,7 @@ module cache_ctrl (
             tag_w_en        = 1'b0;
             tag_w_data      = 24'b0;
             way             = 2'b00;
+            index           = 4'b0;
             offset          = 6'b0;
             sram_r_en       = 1'b0;
             sram_w_en       = 1'b0;
@@ -247,6 +248,7 @@ module cache_ctrl (
                     tag_w_en        = w_hit;
                     tag_w_data      = {2'b11, tag};
                     way             = way_hit;
+                    index           = index_addr;
                     offset          = offset_addr;
                     sram_r_en       = r_hit;
                     sram_w_en       = w_hit;
@@ -260,14 +262,15 @@ module cache_ctrl (
                     cpu_r_valid     = 1'b0;
                     cpu_rdata       = 64'b0;
                     cpu_w_ready     = 1'b1;
-                    tag_w_en        = 1'b0;
-                    tag_w_data      = 24'b0;
+                    tag_w_en        = w_hit;
+                    tag_w_data      = {2'b11, tag};
                     way             = way_hit;
+                    index           = index_addr;
                     offset          = offset_addr;
-                    sram_r_en       = 1'b0;
-                    sram_w_en       = 1'b0;
-                    sram_w_data     = 64'b0;
-                    sram_w_strb     = 8'b0;
+                    sram_r_en       = r_hit;
+                    sram_w_en       = w_hit;
+                    sram_w_data     = cpu_w_data;
+                    sram_w_strb     = cpu_w_strb;
                     mem_r_ready     = 1'b0;
                     mem_w_valid     = 1'b0;
                 end
@@ -276,14 +279,15 @@ module cache_ctrl (
                     cpu_r_valid     = 1'b1;
                     cpu_rdata       = sram_r_data;
                     cpu_w_ready     = 1'b0;
-                    tag_w_en        = 1'b0;
-                    tag_w_data      = 24'b0;
+                    tag_w_en        = w_hit;
+                    tag_w_data      = {2'b11, tag};
                     way             = way_hit;
+                    index           = index_addr;
                     offset          = offset_addr;
-                    sram_r_en       = 1'b0;
-                    sram_w_en       = 1'b0;
-                    sram_w_data     = 64'b0;
-                    sram_w_strb     = 8'b0;
+                    sram_r_en       = r_hit;
+                    sram_w_en       = w_hit;
+                    sram_w_data     = cpu_w_data;
+                    sram_w_strb     = cpu_w_strb;
                     mem_r_ready     = 1'b0;
                     mem_w_valid     = 1'b0;
                 end
@@ -299,6 +303,7 @@ module cache_ctrl (
                     end
                     tag_w_data      = 24'b0;
                     way             = way_random;
+                    index           = index_r;
                     offset          = offset_inc;
                     sram_r_en       = 1'b1;
                     sram_w_en       = 1'b0;
@@ -317,8 +322,9 @@ module cache_ctrl (
                     end else begin
                         tag_w_en        = 1'b0;
                     end
-                    tag_w_data      = {1'b1, cpu_w, tag};
+                    tag_w_data      = {1'b1, cpu_w, tag_r};
                     way             = full_flag ? way_random : way_empty;
+                    index           = index_r;
                     offset          = offset_inc;
                     sram_r_en       = 1'b0;
                     sram_w_en       = mem_r_valid;
@@ -335,6 +341,7 @@ module cache_ctrl (
                     tag_w_en        = 1'b0;
                     tag_w_data      = 24'b0;
                     way             = 2'b00;
+                    index           = 4'b0;
                     offset          = 6'b0;
                     sram_r_en       = 1'b0;
                     sram_w_en       = 1'b0;

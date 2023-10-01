@@ -23,20 +23,23 @@ module pcu (
     output      inst_r_ready
 );
 
-    wire pc_wen = (inst_r_ready && ~if_busy && ~if_id_stall && if_id_ready) || pc_b_j;
-    reg [31:0] pc_;
+    wire        pc_wen;
+    reg [31:0]  pc_;
     
-    assign inst_r_ready = 1'b1;// & ~pc_b_j;
+    assign pc_wen = (inst_r_ready && ~if_busy && ~if_id_stall && if_id_ready) || pc_b_j;
     assign pc = pc_b_j ? dnpc : pc_;//
+    assign inst_r_ready = 1;
 
     always @(posedge clk) begin
         if(rst)
-            pc_ <= 32'h80000000;
+            pc_             <= 32'h80000000;
         else begin
-            if(pc_wen) 
-                pc_ <= pc + 4; 
+            if(pc_wen) begin
+                pc_             <= pc + 4; 
+            end
         end
     end
+
     
 endmodule //pcu
 

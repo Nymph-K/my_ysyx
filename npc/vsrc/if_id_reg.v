@@ -9,8 +9,9 @@ module if_id_reg (
     output          out_ready,
 	output [31:0]   out_pc,
 	output [31:0]   out_inst,
-    input               inst_r_ready,
-    output              if_busy,
+    input           inst_r_ready,
+    output          inst_r_valid,
+    output          if_busy,
 
     //AW
     output [ 3:0]               IFU_AXI_AWID,
@@ -68,7 +69,6 @@ module if_id_reg (
     wire ctrl_flush = rst;    // || (pc_b_j && ~stall)
 
     wire [63:0] inst;
-    wire inst_r_valid;
     reg out_valid_r;
 
     assign out_inst = out_pc[2] ? inst[63:32] : inst[31:0];
@@ -113,7 +113,7 @@ module if_id_reg (
         .pc                     (in_pc),
         .inst                   (inst),
         .if_busy                (if_busy),
-        .inst_r_ready           (inst_r_ready),
+        .inst_r_ready           (inst_r_ready & ~stall),
         .inst_r_valid           (inst_r_valid),
 
         .IFU_AXI_AWID			(IFU_AXI_AWID),
