@@ -75,15 +75,20 @@ module lsu (
 );
     reg           [ 7:0]        lsu_w_strb;     // 8 Byte align, 8 Byte strobe
     wire          [31:0]        lsu_addr_a = lsu_addr & 32'hFFFFFFF8;     // 8 Byte align
+    reg           [31:0]        lsu_addr_r;
     wire          [63:0]        cache_r_data;   // 8 Byte align
     reg           [63:0]        device_r_data;   // 8 Byte align
     wire                        cache_r_valid, cache_w_ready;
     reg                         device_r_valid, device_w_ready;
+    reg           [ 2:0]        funct3_r;
     
-    wire [2:0]                  shift_n_byte = lsu_addr[2:0];
-    wire [5:0]                  shift_n_bit  = {shift_n_byte, 3'b000}; // *8
+    wire [2:0]                  shift_n_byte   = lsu_addr[2:0];
+    wire [2:0]                  shift_n_byte_r = lsu_addr_r[2:0];
+    wire [5:0]                  shift_n_bit    = {shift_n_byte  , 3'b000}; // *8
+    wire [5:0]                  shift_n_bit_r  = {shift_n_byte_r, 3'b000}; // *8
 
-    wire [63:0]                 lsu_rdata_shift = (device_access ? device_r_data : cache_r_data) >> shift_n_bit;
+
+    wire [63:0]                 lsu_rdata_shift = (device_access ? device_r_data : cache_r_data) >> shift_n_bit_r;
 
     wire [63:0]                 lsu_w_data_a = lsu_w_data << shift_n_bit;
 
@@ -119,21 +124,37 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
         end
     end
 
-    always @(*) begin
-        if(lsu_r_ready) begin
-            case (funct3)
-                `LB		: lsu_r_data = {{(64-8){lsu_rdata_shift[7]}}, lsu_rdata_shift[7:0]};
-                `LH		: lsu_r_data = {{(64-16){lsu_rdata_shift[15]}}, lsu_rdata_shift[15:0]};
-                `LW		: lsu_r_data = {{(64-32){lsu_rdata_shift[31]}}, lsu_rdata_shift[31:0]};
-                `LBU	: lsu_r_data = {{(64-8){1'b0}}, lsu_rdata_shift[7:0]};
-                `LHU	: lsu_r_data = {{(64-16){1'b0}}, lsu_rdata_shift[15:0]};
-                `LWU	: lsu_r_data = {{(64-32){1'b0}}, lsu_rdata_shift[31:0]};
-                `LD		: lsu_r_data = lsu_rdata_shift;
-                default : lsu_r_data = 64'b0;
-            endcase
+    always @(posedge clk ) begin
+        if (rst) begin
+            funct3_r <= 3'b0;
         end else begin
-            lsu_r_data = 64'b0;
+            if (lsu_r_ready) begin
+                    funct3_r <= funct3;
+            end
         end
+    end
+    
+    always @(posedge clk ) begin
+        if (rst) begin
+            lsu_addr_r <= 0;
+        end else begin
+            if (lsu_r_ready | lsu_w_valid) begin
+                    lsu_addr_r <= lsu_addr;
+            end
+        end
+    end
+
+    always @(*) begin
+        case (funct3_r)
+            `LB		: lsu_r_data = {{(64-8){lsu_rdata_shift[7]}}, lsu_rdata_shift[7:0]};
+            `LH		: lsu_r_data = {{(64-16){lsu_rdata_shift[15]}}, lsu_rdata_shift[15:0]};
+            `LW		: lsu_r_data = {{(64-32){lsu_rdata_shift[31]}}, lsu_rdata_shift[31:0]};
+            `LBU	: lsu_r_data = {{(64-8){1'b0}}, lsu_rdata_shift[7:0]};
+            `LHU	: lsu_r_data = {{(64-16){1'b0}}, lsu_rdata_shift[15:0]};
+            `LWU	: lsu_r_data = {{(64-32){1'b0}}, lsu_rdata_shift[31:0]};
+            `LD		: lsu_r_data = lsu_rdata_shift;
+            default : lsu_r_data = 64'b0;
+        endcase
     end
     
     always @(*) begin

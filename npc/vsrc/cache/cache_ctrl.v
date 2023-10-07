@@ -98,7 +98,7 @@ module cache_ctrl (
                 C_R_MISS = 3'b101,  // Cache read miss
                 C_R_MEM  = 3'b110;  // Cache read memory
 
-    assign cache_busy   = (cache_state == C_W_MEM) || (cache_state == C_R_MEM) || (cache_state == C_R_HIT && ~r_hit) || (cache_state == C_W_HIT && ~w_hit);
+    assign cache_busy   = (cache_state == C_W_MEM) || (cache_state == C_R_MEM);// || (cache_state == C_R_HIT && ~r_hit) || (cache_state == C_W_HIT && ~w_hit);
 
     //assign addr_actual  = (cache_state == C_IDLE) ? cpu_addr : cpu_addr_r;
 
