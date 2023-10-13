@@ -1,6 +1,12 @@
 module mem_wb_reg (
 	input           clk                     ,
 	input           rst                     ,
+    input           mem_idle                ,
+    input           mem_lsu_r_ready         ,
+    input           mem_lsu_r_valid         ,
+    input           mem_lsu_w_valid         ,
+    input           mem_lsu_w_ready         ,
+    input  [63:0]   mem_lsu_r_data          ,
     input           in_valid                ,
     input  [31:0]   in_pc                   ,
     input  [31:0]   in_inst                 ,
@@ -18,7 +24,6 @@ module mem_wb_reg (
     input  [11:0]   in_csr_addr             ,
     input  [63:0]   in_csr_r_data           ,
     input  [63:0]   in_exu_result           ,
-    input  [63:0]   in_lsu_r_data           ,
     input           in_inst_system_ebreak   ,
 
     output          out_valid               ,
@@ -43,17 +48,44 @@ module mem_wb_reg (
     output          out_inst_system_ebreak   
 );
 
-    wire wen = in_valid;
+    wire [63:0] out_x_rd_;
+    wire wen = in_valid && mem_idle;
     wire ctrl_flush = rst || ~in_valid;
-    assign out_ready = 1;
+    assign out_ready = mem_idle;
+    reg out_valid_r;
 
-    Reg #(1, 1'b0) u_mem_wb_valid (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_valid), 
-        .dout(out_valid), 
-        .wen(wen)
-    );
+    localparam IDLE = 0; // not access mem
+    localparam AMEM = 1; // access mem
+    reg [0:0] fsm;
+
+    assign out_valid = (fsm == IDLE) ? out_valid_r : mem_lsu_r_valid || mem_lsu_w_ready;
+    assign out_x_rd = out_rd_w_src_mem ? mem_lsu_r_data : out_x_rd_;
+    assign out_lsu_r_data = mem_lsu_r_data;
+
+    always @(posedge clk) begin
+        if (ctrl_flush) begin
+            fsm <= IDLE;
+        end else begin
+            case (fsm)
+                IDLE: begin
+                    if (wen && (mem_lsu_r_ready || mem_lsu_w_valid)) fsm <= AMEM;
+                end
+                AMEM: begin
+                    if (wen && (mem_lsu_r_ready || mem_lsu_w_valid)) fsm <= AMEM;
+                    else if(mem_lsu_r_valid || mem_lsu_w_ready) fsm <= IDLE;
+                end
+                default: fsm <= IDLE;
+            endcase
+        end
+    end
+
+    always @(posedge clk) begin
+        if (ctrl_flush) begin
+            out_valid_r <= 0;
+        end else begin
+            out_valid_r <= wen;
+        end
+    end
 
     Reg #(32, 'b0) u_mem_wb_pc (
         .clk(clk), 
@@ -100,7 +132,7 @@ module mem_wb_reg (
         .clk(clk), 
         .rst(rst), 
         .din(in_x_rd), 
-        .dout(out_x_rd), 
+        .dout(out_x_rd_), 
         .wen(wen)
     );
 
@@ -181,14 +213,6 @@ module mem_wb_reg (
         .rst(rst), 
         .din(in_exu_result), 
         .dout(out_exu_result), 
-        .wen(wen)
-    );
-    
-    Reg #(64, 'b0) u_mem_wb_lsu_r_data (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_lsu_r_data), 
-        .dout(out_lsu_r_data), 
         .wen(wen)
     );
     

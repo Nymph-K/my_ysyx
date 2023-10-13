@@ -31,13 +31,13 @@ module top(
     wire [31:0]     if_pc;
     wire            inst_r_valid, inst_r_ready;
     wire            if_id_stall;
-    wire            if_busy;
+    wire            if_idle;
 
     pcu u_pcu (
         .clk                    (clk),
         .rst                    (rst),
         .pc_b_j                 (pc_b_j),
-        .if_busy                (if_busy),
+        .if_idle                (if_idle),
         .if_id_stall            (if_id_stall),
         .if_id_ready            (if_id_ready),
         .dnpc                   (id_dnpc),
@@ -113,7 +113,7 @@ module top(
         .out_inst               (id_inst),
         .inst_r_ready           (inst_r_ready),
         .inst_r_valid           (inst_r_valid),
-        .if_busy                (if_busy),
+        .if_idle                (if_idle),
 
         .IFU_AXI_AWID           (IFU_AXI_AWID),
         .IFU_AXI_AWADDR         (IFU_AXI_AWADDR),
@@ -338,7 +338,7 @@ module top(
         .rs1                    (id_rs1     ),
         .rs2                    (id_rs2     ),
         .rd                     (wb_rd      ),
-        .rd_w_en                (wb_rd_w_en ),
+        .rd_w_en                (wb_rd_w_en & mem_wb_valid),
         .rd_idx_0               (wb_rd_idx_0),
         .x_rd                   (wb_x_rd    ),
         .x_rs1                  (id_x_rs1   ),
@@ -662,14 +662,14 @@ module top(
     );
 
     /********************* lsu *********************/
-    wire            mem_lsu_r_ready = mem_inst_load;
+    wire            lsu_idle;
+    wire            mem_lsu_r_ready = mem_inst_load & lsu_idle;
     wire            mem_lsu_r_valid;
-    wire            mem_lsu_w_valid = mem_inst_store;
+    wire            mem_lsu_w_valid = mem_inst_store & lsu_idle;
     wire            mem_lsu_w_ready;
     wire  [63:0]    mem_lsu_r_data;
-    wire            mem_busy = (mem_lsu_r_ready && ~mem_lsu_r_valid) || (mem_lsu_w_valid && ~mem_lsu_w_ready);
-    wire            lsu_busy;
-    assign          mem_idle = ~mem_busy;
+    //wire            mem_busy = (mem_lsu_r_ready && ~mem_lsu_r_valid) || (mem_lsu_w_valid && ~mem_lsu_w_ready);
+    assign          mem_idle = lsu_idle;
     
     //AW
     wire [ 3:0]               LSU_AXI_AWID;
@@ -732,7 +732,7 @@ module top(
         .lsu_w_valid        (mem_lsu_w_valid    ),
         .lsu_w_data         (mem_x_rs2          ),
         .lsu_w_ready        (mem_lsu_w_ready    ),
-        .lsu_busy           (lsu_busy           ),
+        .lsu_idle           (lsu_idle           ),
             
         .LSU_AXI_AWID           (LSU_AXI_AWID),
         .LSU_AXI_AWADDR         (LSU_AXI_AWADDR),
@@ -858,7 +858,13 @@ module top(
     mem_wb_reg u_mem_wb_reg(
 	    .clk                    (clk                    ),
 	    .rst                    (rst                    ),
-        .in_valid               (ex_mem_valid & mem_idle),
+        .mem_idle               (mem_idle               ),
+        .mem_lsu_r_ready        (mem_lsu_r_ready        ),
+        .mem_lsu_r_valid        (mem_lsu_r_valid        ),
+        .mem_lsu_w_valid        (mem_lsu_w_valid        ),
+        .mem_lsu_w_ready        (mem_lsu_w_ready        ),
+        .mem_lsu_r_data         (mem_lsu_r_data         ),
+        .in_valid               (ex_mem_valid           ),
         .in_pc                  (mem_pc                 ),
         .in_inst                (mem_inst               ),
         .in_rs1                 (mem_rs1                ),
@@ -875,7 +881,6 @@ module top(
         .in_csr_addr            (mem_csr_addr           ),
         .in_csr_r_data          (mem_csr_r_data         ),
         .in_exu_result          (mem_exu_result         ),
-        .in_lsu_r_data          (mem_lsu_r_data         ),
         .in_inst_system_ebreak  (mem_inst_system_ebreak ),
 
         .out_valid              (mem_wb_valid           ),

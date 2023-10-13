@@ -21,7 +21,7 @@ module lsu (
     input                       lsu_w_valid,
     input         [63:0]        lsu_w_data,     // not align
     output                      lsu_w_ready,
-    output                      lsu_busy,
+    output                      lsu_idle,
 
     //AW
     output [ 3:0]               LSU_AXI_AWID,
@@ -249,7 +249,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
         .mem_r_len               ( mem_r_len    ),
         .mem_r_valid             ( mem_r_valid  ),
         .mem_r_data              ( mem_r_data   ),
-        .cache_busy              ( lsu_busy     )
+        .cache_idle              ( lsu_idle     )
     );
 
     cache_sram  u_dcache_sram (

@@ -77,7 +77,7 @@ module cache_ctrl (
     input                       mem_r_valid,
     input         [63:0]        mem_r_data,
 
-    output                      cache_busy
+    output                      cache_idle
 );
     wire [21:0] tag, tag_r;
     wire [ 3:0] index_addr, index_r;
@@ -87,6 +87,8 @@ module cache_ctrl (
     reg [5:0] offset_inc;
     reg [7:0] lfsr;
     reg [63:0] cpu_rdata, cpu_rdata_r;
+    reg [63:0] cpu_w_data_r;
+    reg [7:0] cpu_w_strb_r;
     reg cpu_r, cpu_w;
 
     reg [2:0] cache_state;
@@ -98,7 +100,7 @@ module cache_ctrl (
                 C_R_MISS = 3'b101,  // Cache read miss
                 C_R_MEM  = 3'b110;  // Cache read memory
 
-    assign cache_busy   = (cache_state == C_W_MEM) || (cache_state == C_R_MEM);// || (cache_state == C_R_HIT && ~r_hit) || (cache_state == C_W_HIT && ~w_hit);
+    assign cache_idle   = (cache_state == C_IDLE) || (cache_state == C_W_HIT) || (cache_state == C_R_HIT);// || (cache_state == C_R_HIT && ~r_hit) || (cache_state == C_W_HIT && ~w_hit);
 
     //assign addr_actual  = (cache_state == C_IDLE) ? cpu_addr : cpu_addr_r;
 
@@ -328,8 +330,8 @@ module cache_ctrl (
                     offset          = offset_inc;
                     sram_r_en       = 1'b0;
                     sram_w_en       = mem_r_valid;
-                    sram_w_data     = (cpu_w && r_cnt == 8'd0) ? cpu_w_data : mem_r_data;
-                    sram_w_strb     = (cpu_w && r_cnt == 8'd0) ? cpu_w_strb : 8'hFF;
+                    sram_w_data     = (cpu_w && r_cnt == 8'd0) ? cpu_w_data_r : mem_r_data;
+                    sram_w_strb     = (cpu_w && r_cnt == 8'd0) ? cpu_w_strb_r : 8'hFF;
                     mem_r_ready     = 1'b1;
                     mem_w_valid     = 1'b0;
                 end
@@ -359,6 +361,8 @@ module cache_ctrl (
             cpu_r           <= 1'b0;
             cpu_rdata_r     <= 64'b0;
             cpu_w           <= 1'b0;
+            cpu_w_strb_r    <= 0;
+            cpu_w_data_r    <= 0;
             cpu_addr_r      <= 32'b0;
             r_cnt           <= 8'b0;
             w_cnt           <= 8'b0;
@@ -369,6 +373,8 @@ module cache_ctrl (
                 C_IDLE, C_R_HIT, C_W_HIT: begin
                     if (cpu_r_ready | cpu_w_valid) begin
                         cpu_addr_r      <= cpu_addr;
+                        cpu_w_strb_r    <= cpu_w_strb;
+                        cpu_w_data_r    <= cpu_w_data;
                     end
                     cpu_r           <= cpu_r_ready;
                     cpu_w           <= cpu_w_valid;

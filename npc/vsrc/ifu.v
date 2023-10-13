@@ -5,7 +5,7 @@ module ifu (
 	output      [63:0]  inst,
     input               inst_r_ready,
     output              inst_r_valid,
-    output              if_busy,
+    output              if_idle,
 
     //AW
     output [ 3:0]               IFU_AXI_AWID,
@@ -141,7 +141,7 @@ module ifu (
         .mem_r_len               ( mem_r_len    ),
         .mem_r_valid             ( mem_r_valid  ),
         .mem_r_data              ( mem_r_data   ),
-        .cache_busy              ( if_busy      )
+        .cache_idle              ( if_idle      )
     );
 
     cache_sram  u_icache_sram (

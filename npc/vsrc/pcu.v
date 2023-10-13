@@ -14,7 +14,7 @@ module pcu (
     input  clk,
     input  rst,
     input  pc_b_j,	// 0: pc+4      1: dnpc
-    input  if_busy,
+    input  if_idle,
     input           if_id_stall,
     input           if_id_ready,
     input  [31:0] dnpc,
@@ -26,7 +26,7 @@ module pcu (
     wire        pc_wen;
     reg [31:0]  pc_;
     
-    assign pc_wen = (inst_r_ready && ~if_busy && ~if_id_stall && if_id_ready) || pc_b_j;
+    assign pc_wen = (inst_r_ready && if_idle && ~if_id_stall && if_id_ready) || pc_b_j;
     assign pc = pc_b_j ? dnpc : pc_;//
     assign inst_r_ready = 1;
 
