@@ -65,36 +65,27 @@ module if_id_reg (
 );
 
     wire stall = (~in_ready && out_valid) || if_id_stall;
-    wire wen = (((inst_r_ready && if_idle) || pc_b_j) && ~stall);
+    wire wen = ((inst_r_ready || pc_b_j) && if_idle && ~stall);
     wire ctrl_flush = rst;    // || (pc_b_j && ~stall)
 
     wire [63:0] inst;
     reg out_valid_r;
 
     assign out_inst = out_pc[2] ? inst[63:32] : inst[31:0];
+
+    assign out_ready = in_ready & if_idle;
     
     assign out_valid = out_valid_r | inst_r_valid;
-
-    assign out_ready = in_ready;
 
     always @(posedge clk) begin
         if (ctrl_flush) begin
             out_valid_r <= 0;
         end else begin
-            if(out_valid_r) begin
-                if(in_ready) begin
-                    if(inst_r_valid)
-                        out_valid_r   <= 1;
-                    else
-                        out_valid_r   <= 0;
-                end
-            end else begin
-                if(inst_r_valid) begin
-                    if(in_ready)
-                        out_valid_r   <= 0;
-                    else
-                        out_valid_r   <= 1;
-                end
+            if(out_valid) begin
+                if(in_ready && ~stall)
+                    out_valid_r   <= 0;
+                else
+                    out_valid_r   <= 1;
             end
         end
     end
