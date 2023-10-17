@@ -63,7 +63,7 @@ module mem_wb_reg (
     assign out_lsu_r_data = mem_lsu_r_data;
 
     always @(posedge clk) begin
-        if (ctrl_flush) begin
+        if (rst) begin
             fsm <= IDLE;
         end else begin
             case (fsm)

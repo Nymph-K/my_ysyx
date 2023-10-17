@@ -663,9 +663,9 @@ module top(
 
     /********************* lsu *********************/
     wire            lsu_idle;
-    wire            mem_lsu_r_ready = mem_inst_load & lsu_idle;
+    wire            mem_lsu_r_ready = mem_inst_load;
     wire            mem_lsu_r_valid;
-    wire            mem_lsu_w_valid = mem_inst_store & lsu_idle;
+    wire            mem_lsu_w_valid = mem_inst_store;
     wire            mem_lsu_w_ready;
     wire  [63:0]    mem_lsu_r_data;
     //wire            mem_busy = (mem_lsu_r_ready && ~mem_lsu_r_valid) || (mem_lsu_w_valid && ~mem_lsu_w_ready);
@@ -726,10 +726,10 @@ module top(
         .rst                (rst                ),
         .funct3             (mem_funct3         ),
         .lsu_addr           (mem_exu_result[31:0]),
-        .lsu_r_ready        (mem_lsu_r_ready    ),
+        .lsu_r_ready        (mem_inst_load & lsu_idle    ),
         .lsu_r_data         (mem_lsu_r_data     ),
         .lsu_r_valid        (mem_lsu_r_valid    ),
-        .lsu_w_valid        (mem_lsu_w_valid    ),
+        .lsu_w_valid        (mem_inst_store & lsu_idle    ),
         .lsu_w_data         (mem_x_rs2          ),
         .lsu_w_ready        (mem_lsu_w_ready    ),
         .lsu_idle           (lsu_idle           ),

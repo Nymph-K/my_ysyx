@@ -76,9 +76,9 @@ module idu (
     assign          rs1 = inst[19:15];
     assign          rs2 = inst[24:20];
 
-    assign rd_idx_0 = rd == 5'b0;
-    assign rs1_idx_0 = rs1 == 5'b0;
-    assign rs2_idx_0 = rs2 == 5'b0;
+    assign rd_idx_0 = rd == 5'b0 | inst_type_s | inst_type_b;
+    assign rs1_idx_0 = rs1 == 5'b0 | inst_type_u | inst_type_j;
+    assign rs2_idx_0 = rs2 == 5'b0 | inst_type_i | inst_type_u | inst_type_j;
 
     wire    opcode_1_0_11   = opcode[1:0] == 2'b11;
 
