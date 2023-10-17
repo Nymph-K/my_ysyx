@@ -49,8 +49,8 @@ module mem_wb_reg (
 );
 
     wire [63:0] out_x_rd_;
-    wire wen = in_valid && mem_idle;
-    wire ctrl_flush = rst || ~in_valid;
+    wire wen = in_valid & mem_idle;
+    wire ctrl_flush = rst | ~in_valid;
     assign out_ready = mem_idle;
     reg out_valid_r;
 
@@ -58,7 +58,7 @@ module mem_wb_reg (
     localparam AMEM = 1; // access mem
     reg [0:0] fsm;
 
-    assign out_valid = (fsm == IDLE) ? out_valid_r : mem_lsu_r_valid || mem_lsu_w_ready;
+    assign out_valid = (fsm == IDLE) ? out_valid_r : mem_lsu_r_valid | mem_lsu_w_ready;
     assign out_x_rd = out_rd_w_src_mem ? mem_lsu_r_data : out_x_rd_;
     assign out_lsu_r_data = mem_lsu_r_data;
 
@@ -68,11 +68,11 @@ module mem_wb_reg (
         end else begin
             case (fsm)
                 IDLE: begin
-                    if (wen && (mem_lsu_r_ready || mem_lsu_w_valid)) fsm <= AMEM;
+                    if (wen & (mem_lsu_r_ready | mem_lsu_w_valid)) fsm <= AMEM;
                 end
                 AMEM: begin
-                    if (wen && (mem_lsu_r_ready || mem_lsu_w_valid)) fsm <= AMEM;
-                    else if(mem_lsu_r_valid || mem_lsu_w_ready) fsm <= IDLE;
+                    if (wen & (mem_lsu_r_ready | mem_lsu_w_valid)) fsm <= AMEM;
+                    else if(mem_lsu_r_valid | mem_lsu_w_ready) fsm <= IDLE;
                 end
                 default: fsm <= IDLE;
             endcase

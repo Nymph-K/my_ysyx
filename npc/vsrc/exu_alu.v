@@ -34,7 +34,7 @@ module exu_alu (
 	assign cmp_b = sub ? ~b : b;
 	assign {cout, adder_out} = a + cmp_b + (sub ? 1 : 0);
 	assign equal = ~(| adder_out);
-	assign overflow = (a[63] == cmp_b[63]) && (a[63] != adder_out[63]);//signed
+	assign overflow = (a[63] == cmp_b[63]) & (a[63] != adder_out[63]);//signed
 	wire smaller_s = adder_out[63] ^ overflow;
 	wire smaller_u = sub ^ cout;
 

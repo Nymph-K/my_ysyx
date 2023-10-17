@@ -668,7 +668,7 @@ module top(
     wire            mem_lsu_w_valid = mem_inst_store;
     wire            mem_lsu_w_ready;
     wire  [63:0]    mem_lsu_r_data;
-    //wire            mem_busy = (mem_lsu_r_ready && ~mem_lsu_r_valid) || (mem_lsu_w_valid && ~mem_lsu_w_ready);
+    //wire            mem_busy = (mem_lsu_r_ready & ~mem_lsu_r_valid) | (mem_lsu_w_valid & ~mem_lsu_w_ready);
     assign          mem_idle = lsu_idle;
     
     //AW

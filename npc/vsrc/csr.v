@@ -162,12 +162,12 @@ module csr (
 
     assign mcsr_w_en = {16{csr_w_en}} & (1 << csr_w_idx);
 
-    assign csr_r_data = (csr_w_en && (csr_w_idx == csr_r_idx)) ? csr_w_data : mcsr[csr_r_idx];
+    assign csr_r_data = (csr_w_en & (csr_w_idx == csr_r_idx)) ? csr_w_data : mcsr[csr_r_idx];
 
 `ifdef CLINT_ENABLE
     wire exception = inst_system_ecall | inst_system_ebreak | interrupt;
     assign csr_mtvec = mcsr[idx_mtvec];
-    assign interrupt = ((mcsr[idx_mstatus] & mask_mstatus_mie) != 0) && ((mcsr[idx_mie] & mcsr[idx_mip]) != 0);
+    assign interrupt = ((mcsr[idx_mstatus] & mask_mstatus_mie) != 0) & ((mcsr[idx_mie] & mcsr[idx_mip]) != 0);
     wire [63:0] mcause_source = 	inst_system_ecall ? 64'd11 : inst_system_ebreak ? 64'd3 : 
                                         interrupt ? (((mcsr[idx_mip] & mask_mip_msip) != 0) ? mask_mcause_msi : 
                                                        ((mcsr[idx_mip] & mask_mip_mtip) != 0) ? mask_mcause_mti : csr_w_data) : csr_w_data;

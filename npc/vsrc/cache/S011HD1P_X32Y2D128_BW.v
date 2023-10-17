@@ -20,10 +20,10 @@ wire [Wen_Width-1:0] bwen = BWEN;//~ TODO
 
 reg [Bits-1:0] ram [0:Word_Depth-1];
 always @(posedge CLK) begin
-    if(cen && wen) begin
+    if(cen & wen) begin
         ram[A] <= (D & bwen) | (ram[A] & ~bwen);
     end
-    Q <= cen && !wen ? ram[A] : {4{$random}};
+    Q <= cen & !wen ? ram[A] : {4{$random}};
 end
 
 endmodule

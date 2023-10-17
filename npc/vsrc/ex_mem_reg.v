@@ -50,10 +50,10 @@ module ex_mem_reg (
     output          out_inst_store      
 );
 
-    wire stall = (~in_ready && out_valid) || ~mem_idle;
-    wire wen = in_valid && ~stall;
-    wire ctrl_flush = rst || (~in_valid && ~stall);
-    assign out_ready = mem_idle && !(in_valid && ~in_ready && out_valid);
+    wire stall = (~in_ready & out_valid) | ~mem_idle;
+    wire wen = in_valid & ~stall;
+    wire ctrl_flush = rst | (~in_valid & ~stall);
+    assign out_ready = mem_idle & !(in_valid & ~in_ready & out_valid);
     
     Reg #(1, 'b0) u_ex_mem_valid (
         .clk(clk), 

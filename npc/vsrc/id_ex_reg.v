@@ -91,11 +91,11 @@ module id_ex_reg (
     output          out_inst_32         
 );
 
-    wire stall = (~in_ready && out_valid) || ~exu_idle;
-    wire wen = in_valid && ~stall;
-    wire flush = rst || (if_id_stall && ~stall);
-    wire ctrl_flush = flush || (~in_valid && ~stall);
-    assign out_ready = exu_idle && !(in_valid && ~in_ready && out_valid);
+    wire stall = (~in_ready & out_valid) | ~exu_idle;
+    wire wen = in_valid & ~stall;
+    wire flush = rst | (if_id_stall & ~stall);
+    wire ctrl_flush = flush | (~in_valid & ~stall);
+    assign out_ready = exu_idle & !(in_valid & ~in_ready & out_valid);
     
     Reg #(1, 'b0) u_id_ex_valid (
         .clk(clk), 

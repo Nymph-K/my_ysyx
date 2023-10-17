@@ -64,9 +64,9 @@ module if_id_reg (
     output                      IFU_AXI_RREADY
 );
 
-    wire stall = (~in_ready && out_valid) || if_id_stall;
-    wire wen = ((inst_r_ready || pc_b_j) && if_idle && ~stall);
-    wire ctrl_flush = rst;    // || (pc_b_j && ~stall)
+    wire stall = (~in_ready & out_valid) | if_id_stall;
+    wire wen = ((inst_r_ready | pc_b_j) & if_idle & ~stall);
+    wire ctrl_flush = rst;    // | (pc_b_j & ~stall)
 
     wire [63:0] inst;
     reg out_valid_r;
@@ -82,7 +82,7 @@ module if_id_reg (
             out_valid_r <= 0;
         end else begin
             if(out_valid) begin
-                if(in_ready && ~stall)
+                if(in_ready & ~stall)
                     out_valid_r   <= 0;
                 else
                     out_valid_r   <= 1;

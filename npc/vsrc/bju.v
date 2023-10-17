@@ -29,7 +29,7 @@ module bju (
     // wire    [63:0]  sub_result;
     
     // assign          {cout, sub_result} = x_rs1 - x_rs2;
-	// wire            overflow = (x_rs1[63] != x_rs2[63]) && (x_rs1[63] != sub_result[63]);//signed
+	// wire            overflow = (x_rs1[63] != x_rs2[63]) & (x_rs1[63] != sub_result[63]);//signed
     // wire            equal = ~(| sub_result);
 	// wire            smaller_s = sub_result[63] ^ overflow;
 	// wire            smaller_u = ~cout;
@@ -38,17 +38,17 @@ module bju (
 	wire            smaller_s = $signed(x_rs1) < $signed(x_rs2);
 	wire            smaller_u = $unsigned(x_rs1) < $unsigned(x_rs2);
 
-    wire            branch_true =   (inst_branch_beq    &&  equal    ) ||
-                                    (inst_branch_bne    && ~equal    ) ||
-                                    (inst_branch_blt    &&  smaller_s) ||
-                                    (inst_branch_bge    && ~smaller_s) ||
-                                    (inst_branch_bltu   &&  smaller_u) ||
-                                    (inst_branch_bgeu   && ~smaller_u) ;
+    wire            branch_true =   (inst_branch_beq    &  equal    ) |
+                                    (inst_branch_bne    & ~equal    ) |
+                                    (inst_branch_blt    &  smaller_s) |
+                                    (inst_branch_bge    & ~smaller_s) |
+                                    (inst_branch_bltu   &  smaller_u) |
+                                    (inst_branch_bgeu   & ~smaller_u) ;
 
     assign          dnpc =  inst_jal | branch_true                  ? pc + imm              : 
                             inst_jalr                               ? (x_rs1 + imm) & ~1    : 
                             inst_system_ecall | inst_system_mret    ? csr_r_data            : pc + 4;
 
-    assign          pc_b_j = (inst_jal || inst_jalr || branch_true || inst_system_ecall || inst_system_mret) && ~if_id_stall;
+    assign          pc_b_j = (inst_jal | inst_jalr | branch_true | inst_system_ecall | inst_system_mret) & ~if_id_stall;
 
 endmodule //bju

@@ -14,10 +14,10 @@ input   [Bits-1:0]      D;
 
 reg [Bits-1:0] ram [0:Word_Depth-1];
 always @(posedge CLK) begin
-    if(!CEN && !WEN) begin
+    if(!CEN & !WEN) begin
         ram[A] <= D;
     end
-    Q <= !CEN && WEN ? ram[A] : {4{$random}};
+    Q <= !CEN & WEN ? ram[A] : {4{$random}};
 end
 
 endmodule

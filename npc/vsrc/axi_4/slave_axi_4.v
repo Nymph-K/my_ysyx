@@ -149,7 +149,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
             case(w_state)
                 FSM_IDLE    : begin
                     if (S_AXI_AWVALID & S_AXI_WVALID) begin
-                        if (S_AXI_AWLEN == 8'b0 && S_AXI_WLAST == 1'b1) begin
+                        if (S_AXI_AWLEN == 8'b0 & S_AXI_WLAST == 1'b1) begin
                             w_state         <= FSM_BR;
                             axi_bvalid      <= 1'b1;
                         end else begin
@@ -199,7 +199,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
 
                 FSM_W      : begin
                     if (S_AXI_WVALID) begin
-                        if (axi_awlen == w_cnt && S_AXI_WLAST == 1'b1) begin
+                        if (axi_awlen == w_cnt & S_AXI_WLAST == 1'b1) begin
                             w_state         <= FSM_BR;
                             axi_bvalid      <= 1'b1;
                         end else begin
@@ -217,7 +217,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
 
                 FSM_AW      : begin
                     if (S_AXI_AWVALID) begin
-                        if (axi_awlen == w_cnt && axi_wlast == 1'b1) begin
+                        if (axi_awlen == w_cnt & axi_wlast == 1'b1) begin
                             w_state         <= FSM_BR;
                             axi_bvalid      <= 1'b1;
                         end else begin

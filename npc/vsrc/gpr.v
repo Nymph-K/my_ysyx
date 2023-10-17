@@ -26,8 +26,8 @@ module gpr (
 	wire [31:0] gpr_w_en;
 
 	assign gpr[0] = 0;
-	assign x_rs1 = (rs1 == rd && ~rd_idx_0 && rd_w_en) ? x_rd : gpr[rs1];
-	assign x_rs2 = (rs2 == rd && ~rd_idx_0 && rd_w_en) ? x_rd : gpr[rs2];
+	assign x_rs1 = (rs1 == rd & ~rd_idx_0 & rd_w_en) ? x_rd : gpr[rs1];
+	assign x_rs2 = (rs2 == rd & ~rd_idx_0 & rd_w_en) ? x_rd : gpr[rs2];
 
 	assign gpr_w_en = {32{rd_w_en}} & (1 << rd);
 

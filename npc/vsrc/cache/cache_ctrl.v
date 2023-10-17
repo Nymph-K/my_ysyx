@@ -100,7 +100,7 @@ module cache_ctrl (
                 C_R_MISS = 3'b101,  // Cache read miss
                 C_R_MEM  = 3'b110;  // Cache read memory
 
-    assign cache_idle   = (cache_state == C_IDLE) || (cache_state == C_W_HIT) || (cache_state == C_R_HIT);// || (cache_state == C_R_HIT && ~r_hit) || (cache_state == C_W_HIT && ~w_hit);
+    assign cache_idle   = (cache_state == C_IDLE) | (cache_state == C_W_HIT) | (cache_state == C_R_HIT);// | (cache_state == C_R_HIT & ~r_hit) | (cache_state == C_W_HIT & ~w_hit);
 
     //assign addr_actual  = (cache_state == C_IDLE) ? cpu_addr : cpu_addr_r;
 
@@ -120,16 +120,16 @@ module cache_ctrl (
     reg [1:0] way_hit;      // [2] miss , [1:0] hit way
     reg hit_flag;
     always @(*) begin
-        if ((tag == tag0[21:0]) && (`valid(tag0) == 1'b1)) begin
+        if ((tag == tag0[21:0]) & (`valid(tag0) == 1'b1)) begin
             way_hit  = 0;
             hit_flag = 1;
-        end else if ((tag == tag1[21:0]) && (`valid(tag1) == 1'b1)) begin
+        end else if ((tag == tag1[21:0]) & (`valid(tag1) == 1'b1)) begin
             way_hit  = 1;
             hit_flag = 1;
-        end else if ((tag == tag2[21:0]) && (`valid(tag2) == 1'b1)) begin
+        end else if ((tag == tag2[21:0]) & (`valid(tag2) == 1'b1)) begin
             way_hit  = 2;
             hit_flag = 1;
-        end else if ((tag == tag3[21:0]) && (`valid(tag3) == 1'b1)) begin
+        end else if ((tag == tag3[21:0]) & (`valid(tag3) == 1'b1)) begin
             way_hit  = 3;
             hit_flag = 1;
         end else begin
@@ -195,13 +195,13 @@ module cache_ctrl (
                 end
 
                 C_W_MEM: begin
-                    if (mem_w_ready && w_cnt == 8'd7) begin // last Byte
+                    if (mem_w_ready & w_cnt == 8'd7) begin // last Byte
                             cache_state     <= C_R_MEM;
                         end
                     end
 
                 C_R_MEM: begin
-                    if (mem_r_valid && r_cnt == 8'd7) begin // last Byte
+                    if (mem_r_valid & r_cnt == 8'd7) begin // last Byte
                             cache_state     <= C_IDLE;
                         end
                     end
@@ -298,7 +298,7 @@ module cache_ctrl (
                     cpu_r_valid     = 1'b0;
                     cpu_rdata       = 64'b0;
                     cpu_w_ready     = 1'b0;
-                    if (w_cnt == 8'd7 && mem_w_ready) begin
+                    if (w_cnt == 8'd7 & mem_w_ready) begin
                         tag_w_en        = 1'b1;
                     end else begin
                         tag_w_en        = 1'b0;
@@ -316,10 +316,10 @@ module cache_ctrl (
                 end
 
                 C_R_MEM: begin
-                    cpu_r_valid     = cpu_r && r_cnt == 8'd0 && mem_r_valid;
+                    cpu_r_valid     = cpu_r & r_cnt == 8'd0 & mem_r_valid;
                     cpu_rdata       = mem_r_data;
-                    cpu_w_ready     = cpu_w && r_cnt == 8'd0 && mem_r_valid;
-                    if (r_cnt == 8'd7 && mem_r_valid) begin
+                    cpu_w_ready     = cpu_w & r_cnt == 8'd0 & mem_r_valid;
+                    if (r_cnt == 8'd7 & mem_r_valid) begin
                         tag_w_en        = 1'b1;
                     end else begin
                         tag_w_en        = 1'b0;
@@ -330,8 +330,8 @@ module cache_ctrl (
                     offset          = offset_inc;
                     sram_r_en       = 1'b0;
                     sram_w_en       = mem_r_valid;
-                    sram_w_data     = (cpu_w && r_cnt == 8'd0) ? cpu_w_data_r : mem_r_data;
-                    sram_w_strb     = (cpu_w && r_cnt == 8'd0) ? cpu_w_strb_r : 8'hFF;
+                    sram_w_data     = (cpu_w & r_cnt == 8'd0) ? cpu_w_data_r : mem_r_data;
+                    sram_w_strb     = (cpu_w & r_cnt == 8'd0) ? cpu_w_strb_r : 8'hFF;
                     mem_r_ready     = 1'b1;
                     mem_w_valid     = 1'b0;
                 end
@@ -399,7 +399,7 @@ module cache_ctrl (
                     if(mem_r_valid) begin
                         r_cnt <= r_cnt + 1;
                         offset_inc <= offset_inc + 6'd8;
-                        if (r_cnt == 8'd7 && mem_r_valid) begin
+                        if (r_cnt == 8'd7 & mem_r_valid) begin
                             cpu_r           <= 1'b0;
                             cpu_w           <= 1'b0;
                         end
