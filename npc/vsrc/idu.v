@@ -72,13 +72,17 @@ module idu (
     wire    [ 6:0]  opcode = inst[6:0];
     assign          funct3 = inst[14:12];
     wire    [ 6:0]  funct7 = inst[31:25];
-    assign          rd  = inst[11:7];
-    assign          rs1 = inst[19:15];
-    assign          rs2 = inst[24:20];
 
-    assign rd_idx_0 = rd == 5'b0 | inst_type_s | inst_type_b;
-    assign rs1_idx_0 = rs1 == 5'b0 | inst_type_u | inst_type_j;
-    assign rs2_idx_0 = rs2 == 5'b0 | inst_type_i | inst_type_u | inst_type_j;
+    wire      rd_valid = ~(inst_type_s | inst_type_b);
+    wire      rs1_valid = ~(inst_type_u | inst_type_j);
+    wire      rs2_valid = inst_type_r | inst_type_s | inst_type_b;
+    assign          rd  = inst[11:7]  & {5{rd_valid}};
+    assign          rs1 = inst[19:15] & {5{rs1_valid}};
+    assign          rs2 = inst[24:20] & {5{rs2_valid}};
+
+    assign rd_idx_0 = rd == 5'b0;
+    assign rs1_idx_0 = rs1 == 5'b0;
+    assign rs2_idx_0 = rs2 == 5'b0;
 
     wire    opcode_1_0_11   = opcode[1:0] == 2'b11;
 

@@ -921,6 +921,8 @@ module top(
     wire          bju_x_rs1_forward_wb   ;
     wire          bju_x_rs2_forward_wb   ;
     data_hazard_ctrl u_data_hazard_ctrl(
+	    .clk                        (clk                        ),
+	    .rst                        (rst                        ),
         .id_inst_branch             (id_inst_branch             ),
         .id_inst_jalr               (id_inst_jalr               ),
         .id_rs1                     (id_rs1                     ),
