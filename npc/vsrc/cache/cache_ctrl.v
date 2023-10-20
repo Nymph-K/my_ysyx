@@ -52,7 +52,6 @@ module cache_ctrl (
     output  reg   [ 1:0]        way,
     output  reg   [ 3:0]        index,
     output  reg   [ 5:0]        offset,
-    output        [ 5:0]        offset_r,
 
     output  reg                 sram_r_en,
     output  reg                 sram_w_en,
@@ -82,6 +81,7 @@ module cache_ctrl (
     wire [21:0] tag, tag_r;
     wire [ 3:0] index_addr, index_r;
     wire [5:0] offset_addr;
+    wire [5:0] offset_r;
     reg [31:0] cpu_addr_r;
     //wire [31:0] addr_actual;
     reg [5:0] offset_inc;
@@ -214,13 +214,13 @@ module cache_ctrl (
     end
 
     assign cpu_r_data      = cpu_r_valid ? cpu_rdata : cpu_rdata_r;
-    assign mem_w_addr      = cpu_addr_r & ~32'h07; // 8 Byte align
+    assign mem_w_addr      = {tag_[way][21:0], index, offset} & ~32'h07; // 8 Byte align
     assign mem_w_size      = 3'b011;   // 8 Byte
     assign mem_w_burst     = 2'b10;    // WRAP
     assign mem_w_len       = 8'd7;     // 8 times
     assign mem_w_strb      = 8'hFF;    // all bytes
     assign mem_w_data      = sram_r_data;
-    assign mem_r_addr      = mem_w_addr;
+    assign mem_r_addr      = full_flag ? mem_w_addr : cpu_addr_r & ~32'h07;
     assign mem_r_size      = 3'b011;   // 8 Byte
     assign mem_r_burst     = 2'b10;    // WRAP
     assign mem_r_len       = 8'd7;     // 8 times
@@ -240,7 +240,6 @@ module cache_ctrl (
             sram_w_data     = 64'b0;
             sram_w_strb     = 8'b0;
             mem_r_ready     = 1'b0;
-            mem_w_valid     = 1'b0;
         end else begin
             case (cache_state)
                 C_IDLE: begin
@@ -252,12 +251,11 @@ module cache_ctrl (
                     way             = way_hit;
                     index           = index_addr;
                     offset          = offset_addr;
-                    sram_r_en       = r_hit;
+                    sram_r_en       = 1;
                     sram_w_en       = w_hit;
                     sram_w_data     = cpu_w_data;
                     sram_w_strb     = cpu_w_strb;
                     mem_r_ready     = 1'b0;
-                    mem_w_valid     = 1'b0;
                 end
 
                 C_W_HIT: begin
@@ -269,12 +267,11 @@ module cache_ctrl (
                     way             = way_hit;
                     index           = index_addr;
                     offset          = offset_addr;
-                    sram_r_en       = r_hit;
+                    sram_r_en       = 1;
                     sram_w_en       = w_hit;
                     sram_w_data     = cpu_w_data;
                     sram_w_strb     = cpu_w_strb;
                     mem_r_ready     = 1'b0;
-                    mem_w_valid     = 1'b0;
                 end
 
                 C_R_HIT: begin
@@ -286,12 +283,11 @@ module cache_ctrl (
                     way             = way_hit;
                     index           = index_addr;
                     offset          = offset_addr;
-                    sram_r_en       = r_hit;
+                    sram_r_en       = 1;
                     sram_w_en       = w_hit;
                     sram_w_data     = cpu_w_data;
                     sram_w_strb     = cpu_w_strb;
                     mem_r_ready     = 1'b0;
-                    mem_w_valid     = 1'b0;
                 end
 
                 C_W_MEM: begin
@@ -312,7 +308,6 @@ module cache_ctrl (
                     sram_w_data     = 64'b0;
                     sram_w_strb     = 8'b0;
                     mem_r_ready     = 1'b0;
-                    mem_w_valid     = 1'b1;
                 end
 
                 C_R_MEM: begin
@@ -328,12 +323,11 @@ module cache_ctrl (
                     way             = full_flag ? way_random : way_empty;
                     index           = index_r;
                     offset          = offset_inc;
-                    sram_r_en       = 1'b0;
+                    sram_r_en       = 1;
                     sram_w_en       = mem_r_valid;
                     sram_w_data     = (cpu_w & r_cnt == 8'd0) ? cpu_w_data_r : mem_r_data;
                     sram_w_strb     = (cpu_w & r_cnt == 8'd0) ? cpu_w_strb_r : 8'hFF;
                     mem_r_ready     = 1'b1;
-                    mem_w_valid     = 1'b0;
                 end
 
                 default: begin
@@ -350,7 +344,6 @@ module cache_ctrl (
                     sram_w_data     = 64'b0;
                     sram_w_strb     = 8'b0;
                     mem_r_ready     = 1'b0;
-                    mem_w_valid     = 1'b0;
                 end
             endcase
         end
@@ -368,6 +361,7 @@ module cache_ctrl (
             w_cnt           <= 8'b0;
             offset_inc      <= 6'b0;
             lfsr            <= 8'd1;
+            mem_w_valid     <= 1'b0;
         end else begin
             case (cache_state)
                 C_IDLE, C_R_HIT, C_W_HIT: begin
@@ -381,6 +375,7 @@ module cache_ctrl (
                     r_cnt           <= 8'b0;
                     w_cnt           <= 8'b0;
                     offset_inc      <= offset_addr;
+                    mem_w_valid     <= 1'b0;
                 end
 
                 C_W_MEM: begin
@@ -392,6 +387,10 @@ module cache_ctrl (
                             lfsr <= {lfsr[6:0], xor_in};
                         end
                     end
+                    if(mem_w_valid & mem_w_ready)
+                        mem_w_valid     <= 1'b0;
+                    else
+                        mem_w_valid     <= 1'b1;
                 end
 
                 C_R_MEM: begin
@@ -399,11 +398,13 @@ module cache_ctrl (
                     if(mem_r_valid) begin
                         r_cnt <= r_cnt + 1;
                         offset_inc <= offset_inc + 6'd8;
-                        if (r_cnt == 8'd7 & mem_r_valid) begin
+                        if (r_cnt == 8'd7) begin
                             cpu_r           <= 1'b0;
                             cpu_w           <= 1'b0;
+                            if(full_flag) lfsr <= {lfsr[6:0], xor_in}; // not dirty
                         end
                     end
+                    mem_w_valid     <= 1'b0;
                 end
 
                 default: begin
@@ -412,6 +413,7 @@ module cache_ctrl (
                     r_cnt           <= 8'b0;
                     w_cnt           <= 8'b0;
                     offset_inc      <= 6'b0;
+                    mem_w_valid     <= 1'b0;
                 end
             endcase
             if(cpu_r_valid) begin
