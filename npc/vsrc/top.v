@@ -942,7 +942,7 @@ module top(
         .mem_rd_w_en                (mem_rd_w_en                ),
         .mem_rd_idx_0               (mem_rd_idx_0               ),
         .mem_rd                     (mem_rd                     ),
-        .mem_lsu_r_ready            (mem_lsu_r_ready            ),
+        .mem_lsu_r_ready            (mem_inst_load & lsu_idle   ),
         .mem_lsu_r_valid            (mem_lsu_r_valid            ),
         .wb_rd_w_en                 (wb_rd_w_en                 ),
         .wb_rd_idx_0                (wb_rd_idx_0                ),

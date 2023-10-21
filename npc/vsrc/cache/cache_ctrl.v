@@ -104,6 +104,7 @@ module cache_ctrl (
 
     //assign addr_actual  = (cache_state == C_IDLE) ? cpu_addr : cpu_addr_r;
 
+    assign sram_r_en       = 1'b1;
     assign {tag, index_addr, offset_addr} = cpu_addr;
     assign {tag_r, index_r, offset_r} = cpu_addr_r;
 
@@ -201,10 +202,20 @@ module cache_ctrl (
                     end
 
                 C_R_MEM: begin
-                    if (mem_r_valid & r_cnt == 8'd7) begin // last Byte
+                    if (mem_r_valid) begin
+                        if (r_cnt == 8'd0) begin // first Byte
+                            if (cpu_w) begin
+                                cache_state     <= C_W_MISS;
+                            end
+                        end else if (r_cnt == 8'd7) begin // last Byte
                             cache_state     <= C_IDLE;
                         end
                     end
+                end
+
+                C_W_MISS: begin
+                    cache_state <= C_R_MEM;
+                end
 
                 default: begin
                     cache_state     <= C_IDLE;
@@ -235,7 +246,6 @@ module cache_ctrl (
             way             = 2'b00;
             index           = 4'b0;
             offset          = 6'b0;
-            sram_r_en       = 1'b0;
             sram_w_en       = 1'b0;
             sram_w_data     = 64'b0;
             sram_w_strb     = 8'b0;
@@ -251,7 +261,6 @@ module cache_ctrl (
                     way             = way_hit;
                     index           = index_addr;
                     offset          = offset_addr;
-                    sram_r_en       = 1;
                     sram_w_en       = w_hit;
                     sram_w_data     = cpu_w_data;
                     sram_w_strb     = cpu_w_strb;
@@ -267,7 +276,6 @@ module cache_ctrl (
                     way             = way_hit;
                     index           = index_addr;
                     offset          = offset_addr;
-                    sram_r_en       = 1;
                     sram_w_en       = w_hit;
                     sram_w_data     = cpu_w_data;
                     sram_w_strb     = cpu_w_strb;
@@ -283,7 +291,6 @@ module cache_ctrl (
                     way             = way_hit;
                     index           = index_addr;
                     offset          = offset_addr;
-                    sram_r_en       = 1;
                     sram_w_en       = w_hit;
                     sram_w_data     = cpu_w_data;
                     sram_w_strb     = cpu_w_strb;
@@ -303,7 +310,6 @@ module cache_ctrl (
                     way             = way_random;
                     index           = index_r;
                     offset          = offset_inc;
-                    sram_r_en       = 1'b1;
                     sram_w_en       = 1'b0;
                     sram_w_data     = 64'b0;
                     sram_w_strb     = 8'b0;
@@ -313,7 +319,7 @@ module cache_ctrl (
                 C_R_MEM: begin
                     cpu_r_valid     = cpu_r & r_cnt == 8'd0 & mem_r_valid;
                     cpu_rdata       = mem_r_data;
-                    cpu_w_ready     = cpu_w & r_cnt == 8'd0 & mem_r_valid;
+                    cpu_w_ready     = 1'b0;
                     if (r_cnt == 8'd7 & mem_r_valid) begin
                         tag_w_en        = 1'b1;
                     end else begin
@@ -323,11 +329,25 @@ module cache_ctrl (
                     way             = full_flag ? way_random : way_empty;
                     index           = index_r;
                     offset          = offset_inc;
-                    sram_r_en       = 1;
                     sram_w_en       = mem_r_valid;
-                    sram_w_data     = (cpu_w & r_cnt == 8'd0) ? cpu_w_data_r : mem_r_data;
-                    sram_w_strb     = (cpu_w & r_cnt == 8'd0) ? cpu_w_strb_r : 8'hFF;
+                    sram_w_data     = mem_r_data;
+                    sram_w_strb     = 8'hFF;
                     mem_r_ready     = 1'b1;
+                end
+
+                C_W_MISS: begin
+                    cpu_r_valid     = 1'b0;
+                    cpu_rdata       = 64'b0;
+                    cpu_w_ready     = 1'b1;
+                    tag_w_en        = 0;
+                    tag_w_data      = 0;
+                    way             = full_flag ? way_random : way_empty;
+                    index           = index_r;
+                    offset          = offset_r;
+                    sram_w_en       = 1;
+                    sram_w_data     = cpu_w_data_r;
+                    sram_w_strb     = cpu_w_strb_r;
+                    mem_r_ready     = 1'b0;
                 end
 
                 default: begin
@@ -339,7 +359,6 @@ module cache_ctrl (
                     way             = 2'b00;
                     index           = 4'b0;
                     offset          = 6'b0;
-                    sram_r_en       = 1'b0;
                     sram_w_en       = 1'b0;
                     sram_w_data     = 64'b0;
                     sram_w_strb     = 8'b0;
@@ -407,6 +426,15 @@ module cache_ctrl (
                     mem_w_valid     <= 1'b0;
                 end
 
+                C_W_MISS: begin
+                    cpu_r           <= 1'b0;
+                    // cpu_w           <= 1'b0;
+                    // r_cnt           <= 8'b0;
+                    w_cnt           <= 8'b0;
+                    // offset_inc      <= 6'b0;
+                    mem_w_valid     <= 1'b0;
+                end
+
                 default: begin
                     cpu_r           <= 1'b0;
                     cpu_w           <= 1'b0;
@@ -425,4 +453,5 @@ module cache_ctrl (
 endmodule //cache_ctrl
 
 `endif// CACHE_CTRL_V
+
 
