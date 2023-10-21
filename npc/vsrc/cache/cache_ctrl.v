@@ -220,7 +220,7 @@ module cache_ctrl (
     assign mem_w_len       = 8'd7;     // 8 times
     assign mem_w_strb      = 8'hFF;    // all bytes
     assign mem_w_data      = sram_r_data;
-    assign mem_r_addr      = full_flag ? mem_w_addr : cpu_addr_r & ~32'h07;
+    assign mem_r_addr      = cpu_addr_r & ~32'h07;
     assign mem_r_size      = 3'b011;   // 8 Byte
     assign mem_r_burst     = 2'b10;    // WRAP
     assign mem_r_len       = 8'd7;     // 8 times

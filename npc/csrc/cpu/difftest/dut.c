@@ -163,8 +163,8 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
     reg_copy_to(&ref_r);
     ref_difftest_regcpy(&ref_r, DIFFTEST_TO_REF);
     g_nr_diff_skip_inst++;
-    return;
-  } 
+    return; 
+  }
   // if (is_skip_ref_old)
   // {// npc is one cycle ahead of nemu
   //   //reg_copy_to(&ref_r);

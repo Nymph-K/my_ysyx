@@ -81,6 +81,7 @@ module lsu (
     wire                        cache_r_valid, cache_w_ready;
     reg                         device_r_valid, device_w_ready;
     reg           [ 2:0]        funct3_r;
+    reg                         device_access_r;
     
     wire [2:0]                  shift_n_byte   = lsu_addr[2:0];
     wire [2:0]                  shift_n_byte_r = lsu_addr_r[2:0];
@@ -88,7 +89,7 @@ module lsu (
     wire [5:0]                  shift_n_bit_r  = {shift_n_byte_r, 3'b000}; // *8
 
 
-    wire [63:0]                 lsu_rdata_shift = (device_access ? device_r_data : cache_r_data) >> shift_n_bit_r;
+    wire [63:0]                 lsu_rdata_shift = (device_access_r ? device_r_data : cache_r_data) >> shift_n_bit_r;
 
     wire [63:0]                 lsu_w_data_a = lsu_w_data << shift_n_bit;
 
@@ -105,11 +106,13 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
     always @(posedge clk ) begin
         if (rst) begin
             device_r_valid <= 1'b0;
+            device_access_r <= 0;
         end else begin
             device_r_valid <= lsu_r_ready & device_access;
             if (lsu_r_ready & device_access) begin
                 paddr_read({32'b0, lsu_addr_a}, device_r_data);
             end
+            device_access_r <= device_access;
         end
     end
 
