@@ -21,6 +21,9 @@ module bju (
     input           inst_system_ecall,
     input           inst_system_mret,
     input           if_id_stall,
+    input           bju_x_rs1_forward_wb    ,
+    input           bju_x_rs2_forward_wb    ,
+    input           mem_wb_valid            ,
 	input   [63:0]  csr_r_data,
     output  [63:0]  dnpc,
     output          pc_b_j
@@ -34,16 +37,18 @@ module bju (
 	// wire            smaller_s = sub_result[63] ^ overflow;
 	// wire            smaller_u = ~cout;
     
+    wire            forward_not_valid = (bju_x_rs1_forward_wb | bju_x_rs2_forward_wb) & ~mem_wb_valid;
+
     wire            equal = x_rs1 == x_rs2;
 	wire            smaller_s = $signed(x_rs1) < $signed(x_rs2);
 	wire            smaller_u = $unsigned(x_rs1) < $unsigned(x_rs2);
 
-    wire            branch_true =   (inst_branch_beq    &  equal    ) |
+    wire            branch_true =  ((inst_branch_beq    &  equal    ) |
                                     (inst_branch_bne    & ~equal    ) |
                                     (inst_branch_blt    &  smaller_s) |
                                     (inst_branch_bge    & ~smaller_s) |
                                     (inst_branch_bltu   &  smaller_u) |
-                                    (inst_branch_bgeu   & ~smaller_u) ;
+                                    (inst_branch_bgeu   & ~smaller_u) ) & ~forward_not_valid;
 
     assign          dnpc =  inst_jal | branch_true                  ? pc + imm              : 
                             inst_jalr                               ? (x_rs1 + imm) & ~1    : 

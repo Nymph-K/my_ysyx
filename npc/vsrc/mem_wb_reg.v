@@ -154,7 +154,7 @@ module mem_wb_reg (
 
     Reg #(1, 1'b0) u_mem_wb_rd_w_en (
         .clk(clk), 
-        .rst(rst), 
+        .rst(ctrl_flush), 
         .din(in_rd_w_en), 
         .dout(out_rd_w_en), 
         .wen(wen)

@@ -380,6 +380,9 @@ module top(
         .inst_system_ecall   (id_inst_system_ecall   ),
         .inst_system_mret    (id_inst_system_mret    ),
         .if_id_stall         (if_id_stall            ),
+        .bju_x_rs1_forward_wb(bju_x_rs1_forward_wb   ),
+        .bju_x_rs2_forward_wb(bju_x_rs2_forward_wb   ),
+        .mem_wb_valid        (mem_wb_valid           ),
 	    .csr_r_data          (id_csr_r_data          ),
         .dnpc                ({_, id_dnpc}           ),
         .pc_b_j              (pc_b_j                 )
@@ -964,10 +967,10 @@ module top(
     );
 
     /********************* id_bju_x_rs_forward *********************/
-    assign id_x_rs1_forward =   bju_x_rs1_forward_mem   ? mem_x_rd : 
-                                bju_x_rs1_forward_wb    ?  wb_x_rd : id_x_rs1;
-    assign id_x_rs2_forward =   bju_x_rs2_forward_mem   ? mem_x_rd : 
-                                bju_x_rs2_forward_wb    ?  wb_x_rd : id_x_rs2;
+    assign id_x_rs1_forward =   bju_x_rs1_forward_mem   ? mem_x_rd : id_x_rs1;
+                                // bju_x_rs1_forward_wb    ?  wb_x_rd : 
+    assign id_x_rs2_forward =   bju_x_rs2_forward_mem   ? mem_x_rd : id_x_rs2;
+                                // bju_x_rs2_forward_wb    ?  wb_x_rd : 
 
     /********************* ex_exu_src_forward *********************/
     ex_exu_src_forward u_ex_exu_src_forward(
