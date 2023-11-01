@@ -26,7 +26,7 @@ module pcu (
     wire        pc_wen;
     reg [31:0]  pc_;
     
-    assign pc_wen = (if_id_ready & ~if_id_stall);
+    assign pc_wen = (if_id_ready & ~if_id_stall) | (pc_b_j);
     assign pc = pc_b_j ? dnpc : pc_;//
     assign inst_r_ready = 1;
 
@@ -35,7 +35,7 @@ module pcu (
             pc_             <= 32'h80000000;
         else begin
             if(pc_wen) begin
-                pc_             <= pc + 4; 
+                pc_             <= pc + (if_id_ready ? 4 : 0); 
             end
         end
     end

@@ -71,7 +71,7 @@ module if_id_reg (
     wire [63:0] inst;
     reg out_valid_r;
 
-    assign out_inst = out_pc[2] ? inst[63:32] : inst[31:0];
+    assign out_inst = (out_pc[2] ? inst[63:32] : inst[31:0]) & {32{out_valid}};
 
     assign out_ready = in_ready & if_idle;
     

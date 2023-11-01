@@ -16,4 +16,7 @@ init:;
 install-file:
 	ln -sf -T $(abspath $(REPO_PATH)/data) $(NAVY_HOME)/fsimg/share/games/pal
 
+txt:
+	riscv64-linux-gnu-objdump -d ./build/pal-riscv64 > ./build/pal-riscv64.txt
+
 .PHONY: install-file init
