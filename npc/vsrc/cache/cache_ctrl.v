@@ -53,7 +53,7 @@ module cache_ctrl (
     output  reg   [ 3:0]        index,
     output  reg   [ 5:0]        offset,
 
-    output  reg                 sram_r_en,
+    output                      sram_r_en,
     output  reg                 sram_w_en,
     output  reg   [63:0]        sram_w_data,
     output  reg   [ 7:0]        sram_w_strb, // 8 Byte strobe

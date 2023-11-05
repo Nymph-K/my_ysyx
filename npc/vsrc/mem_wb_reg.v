@@ -45,13 +45,15 @@ module mem_wb_reg (
     output [63:0]   out_csr_r_data          ,
     output [63:0]   out_exu_result          ,
     output [63:0]   out_lsu_r_data          ,
+    output          out_lsu_r_ready         ,
+    output          out_lsu_r_valid         ,
     output          out_inst_system_ebreak   
 );
 
     wire [63:0] out_x_rd_;
-    wire wen = in_valid & mem_idle;
-    wire ctrl_flush = rst | ~in_valid;
-    assign out_ready = mem_idle;
+    wire wen = in_valid & mem_idle; // TODO: wen = in_valid & (mem_idle | (~mem_idle & ~(mem_lsu_r_ready | mem_lsu_w_valid)))
+    wire ctrl_flush = rst | (~in_valid & out_valid);
+    assign out_ready = mem_idle; // TODO: (mem_idle | (~mem_idle & ~(mem_lsu_r_ready | mem_lsu_w_valid)))
     reg out_valid_r;
 
     localparam IDLE = 0; // not access mem
@@ -61,21 +63,14 @@ module mem_wb_reg (
     assign out_valid = (fsm == IDLE) ? out_valid_r : mem_lsu_r_valid | mem_lsu_w_ready;
     assign out_x_rd = out_rd_w_src_mem ? mem_lsu_r_data : out_x_rd_;
     assign out_lsu_r_data = mem_lsu_r_data;
+    assign out_lsu_r_valid = mem_lsu_r_valid;
 
     always @(posedge clk) begin
         if (rst) begin
             fsm <= IDLE;
         end else begin
-            case (fsm)
-                IDLE: begin
-                    if (wen & (mem_lsu_r_ready | mem_lsu_w_valid)) fsm <= AMEM;
-                end
-                AMEM: begin
-                    if (wen & (mem_lsu_r_ready | mem_lsu_w_valid)) fsm <= AMEM;
-                    else if(mem_lsu_r_valid | mem_lsu_w_ready) fsm <= IDLE;
-                end
-                default: fsm <= IDLE;
-            endcase
+            if (wen & (mem_lsu_r_ready | mem_lsu_w_valid)) fsm <= AMEM;
+            else if(mem_lsu_r_valid | mem_lsu_w_ready) fsm <= IDLE;
         end
     end
 
@@ -92,6 +87,14 @@ module mem_wb_reg (
         .rst(rst), 
         .din(in_pc), 
         .dout(out_pc), 
+        .wen(wen)
+    );
+
+    Reg #(1, 'b0) u_mem_wb_lsu_r_ready (
+        .clk(clk), 
+        .rst(ctrl_flush), 
+        .din(mem_lsu_r_ready), 
+        .dout(out_lsu_r_ready), 
         .wen(wen)
     );
 
@@ -228,3 +231,4 @@ module mem_wb_reg (
 
 
 endmodule //mem_wb_reg
+
