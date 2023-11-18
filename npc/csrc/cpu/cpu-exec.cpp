@@ -137,7 +137,7 @@ static void exec_once(Decode *s) {
 #endif
 }
 
-#define is_interrupt mycpu->rootp->top__DOT__u_exu__DOT__interrupt
+#define WHEN_DEVICE_UPDATE 255 // 256 inst update device
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
@@ -150,6 +150,7 @@ static void execute(uint64_t n) {
   }
 }
 
+extern uint64_t g_nr_clock;
 extern uint64_t g_nr_diff_inst;
 extern uint64_t g_nr_diff_skip_inst;
 
@@ -158,6 +159,8 @@ static void statistic() {
 #define NUMBERIC_FMT MUXDEF(CONFIG_TARGET_AM, "%ld", "%'ld")
   Log("host time spent = " NUMBERIC_FMT " us", g_timer);
   Log("total guest instructions = " NUMBERIC_FMT, g_nr_guest_inst);
+  Log("total guest CLOCK = " NUMBERIC_FMT, g_nr_clock);
+  Log("IPC = %1.3lf", (double)g_nr_guest_inst / (double)g_nr_clock);
   #ifdef CONFIG_DIFFTEST
   Log("Pass Diff instructions = " NUMBERIC_FMT "  Skip Diff instructions = " NUMBERIC_FMT , g_nr_diff_inst, g_nr_diff_skip_inst);
   #endif

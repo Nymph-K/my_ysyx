@@ -22,6 +22,7 @@
 #include "Vtop__Dpi.h"//DPI-C
 
 
+uint64_t g_nr_clock = 0;
 static VerilatedContext* contextp = new VerilatedContext;
 TOP_NAME* mycpu = new TOP_NAME{contextp};
 bool trace_print = true;
@@ -84,6 +85,7 @@ void stopCPU(void)
 int riscv64_exec_once(void) {
   posedge_half_cycle();
   negedge_half_cycle();
+  g_nr_clock++;
   return 0;
 }
 
