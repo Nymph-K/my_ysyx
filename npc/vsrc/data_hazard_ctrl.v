@@ -9,14 +9,10 @@ module data_hazard_ctrl (
     input  [4:0]    ex_rs2                  ,
     input           ex_exu_src1_xrs1        ,
     input           ex_exu_src2_xrs2        ,
-    input           ex_exu_src2_csr         ,
-    input  [11:0]   ex_csr_addr             ,
     input           ex_rd_w_en              ,
     input           ex_rd_idx_0             ,
     input  [4:0]    ex_rd                   ,
     input           ex_lsu_r_ready          ,
-    input  [11:0]   mem_csr_addr            ,
-    input           mem_csr_w_en            ,
     input           mem_rd_w_en             ,
     input           mem_rd_idx_0            ,
     input  [4:0]    mem_rd                  ,
@@ -33,7 +29,6 @@ module data_hazard_ctrl (
     output          ex_rs2_eq_wb_rd         ,
     output          exu_src1_forward_mem    ,
     output          exu_src2_forward_mem    ,
-    output          exu_src2_forward_mem_csr,
     output          exu_src1_forward_wb     ,
     output          exu_src2_forward_wb     ,
     output          bju_x_rs1_forward_mem   ,
@@ -73,8 +68,6 @@ module data_hazard_ctrl (
     /***** data forward *****/
     assign      exu_src1_forward_mem     = ex_exu_src1_xrs1 & ex_rs1_eq_mem_rd;             // ex <- mem
     assign      exu_src2_forward_mem     = ex_exu_src2_xrs2 & ex_rs2_eq_mem_rd;             // ex <- mem
-    
-    assign      exu_src2_forward_mem_csr = ex_exu_src2_csr  & mem_csr_w_en & (ex_csr_addr == mem_csr_addr);
 
     assign      exu_src1_forward_wb     = ex_exu_src1_xrs1 & ~ex_rs1_eq_mem_rd & ex_rs1_eq_wb_rd;// ex <- wb
     assign      exu_src2_forward_wb     = ex_exu_src2_xrs2 & ~ex_rs2_eq_mem_rd & ex_rs2_eq_wb_rd;// ex <- wb

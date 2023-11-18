@@ -355,9 +355,9 @@ module top(
         .inst_system_ebreak     (id_inst_system_ebreak),
         .csr_r_en               (id_csr_r_en),
         .csr_r_addr             (id_csr_addr),
-        .csr_w_en               (mem_csr_w_en),
-        .csr_w_addr             (mem_csr_addr),
-        .csr_w_data             (mem_exu_result),
+        .csr_w_en               (ex_csr_w_en & exu_out_valid),
+        .csr_w_addr             (ex_csr_addr),
+        .csr_w_data             (ex_exu_result),
         .csr_r_data             (id_csr_r_data)
     );
     
@@ -917,13 +917,10 @@ module top(
     wire          ex_rs2_eq_wb_rd;
     wire          exu_src1_forward_mem ;
     wire          exu_src2_forward_mem ;
-    wire          exu_src2_forward_mem_csr ;
     wire          exu_src1_forward_wb;
     wire          exu_src2_forward_wb;
     wire          bju_x_rs1_forward_mem  ;
     wire          bju_x_rs2_forward_mem  ;
-    // wire          bju_x_rs1_forward_wb   ;
-    // wire          bju_x_rs2_forward_wb   ;
     data_hazard_ctrl u_data_hazard_ctrl(
 	    .clk                        (clk                        ),
 	    .rst                        (rst                        ),
@@ -935,14 +932,10 @@ module top(
         .ex_rs2                     (ex_rs2                     ),
         .ex_exu_src1_xrs1           (ex_exu_src1_xrs1           ),
         .ex_exu_src2_xrs2           (ex_exu_src2_xrs2           ),
-        .ex_exu_src2_csr            (ex_exu_src2_csr            ),
-        .ex_csr_addr                (ex_csr_addr                ),
         .ex_rd_w_en                 (ex_rd_w_en                 ),
         .ex_rd_idx_0                (ex_rd_idx_0                ),
         .ex_rd                      (ex_rd                      ),
         .ex_lsu_r_ready             (ex_lsu_r_ready             ),
-        .mem_csr_addr               (mem_csr_addr               ),
-        .mem_csr_w_en               (mem_csr_w_en               ),
         .mem_rd_w_en                (mem_rd_w_en                ),
         .mem_rd_idx_0               (mem_rd_idx_0               ),
         .mem_rd                     (mem_rd                     ),
@@ -959,21 +952,16 @@ module top(
         .ex_rs2_eq_wb_rd            (ex_rs2_eq_wb_rd            ),
         .exu_src1_forward_mem       (exu_src1_forward_mem       ),
         .exu_src2_forward_mem       (exu_src2_forward_mem       ),
-        .exu_src2_forward_mem_csr   (exu_src2_forward_mem_csr   ),
         .exu_src1_forward_wb        (exu_src1_forward_wb        ),
         .exu_src2_forward_wb        (exu_src2_forward_wb        ),
         .bju_x_rs1_forward_mem      (bju_x_rs1_forward_mem      ),
         .bju_x_rs2_forward_mem      (bju_x_rs2_forward_mem      ),
-        // .bju_x_rs1_forward_wb       (bju_x_rs1_forward_wb       ),
-        // .bju_x_rs2_forward_wb       (bju_x_rs2_forward_wb       ),
         .if_id_stall                (if_id_stall                )
     );
 
     /********************* id_bju_x_rs_forward *********************/
     assign id_x_rs1_forward =   bju_x_rs1_forward_mem   ? mem_x_rd : id_x_rs1;
-                                // bju_x_rs1_forward_wb    ?  wb_x_rd : 
     assign id_x_rs2_forward =   bju_x_rs2_forward_mem   ? mem_x_rd : id_x_rs2;
-                                // bju_x_rs2_forward_wb    ?  wb_x_rd : 
 
     /********************* ex_exu_src_forward *********************/
     ex_exu_src_forward u_ex_exu_src_forward(
@@ -983,7 +971,6 @@ module top(
         .mem_exu_result             (mem_exu_result             ),
         .exu_src1_forward_mem       (exu_src1_forward_mem       ),
         .exu_src2_forward_mem       (exu_src2_forward_mem       ),
-        .exu_src2_forward_mem_csr   (exu_src2_forward_mem_csr   ),
         .wb_x_rd                    (wb_x_rd                    ),
         .exu_src1_forward_wb        (exu_src1_forward_wb        ),
         .exu_src2_forward_wb        (exu_src2_forward_wb        ),
