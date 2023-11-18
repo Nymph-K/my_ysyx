@@ -47,48 +47,48 @@ module id_ex_reg (
     input           in_inst_store       ,
     input           in_inst_32          ,
 
-    output          out_valid           ,
-    output          out_ready           ,
-	output [31:0]   out_pc              ,
-	output [31:0]   out_inst            ,
-    output [ 2:0]   out_funct3          ,
-    output [ 4:0]   out_rs1             ,
-    output [ 4:0]   out_rs2             ,
-	output [63:0]   out_x_rs2           ,
-    output [ 4:0]   out_rd              ,
-    output          out_rd_idx_0        ,
-	output	        out_rd_w_en         ,
-	output	        out_rd_w_src_exu    ,
-    output	        out_rd_w_src_mem    ,
-    output	        out_rd_w_src_csr    ,
-    output          out_csr_w_en        ,
-    output [11:0]   out_csr_addr        ,
-	output [63:0]   out_csr_r_data      ,
-    output          out_exu_src1_xrs1   ,
-    output          out_exu_src2_xrs2   ,
-    output          out_exu_src2_csr    ,
-	output [63:0]   out_exu_src1        ,
-	output [63:0]   out_exu_src2        ,
-    output          out_exu_sel_add_sub ,
-    output          out_exu_sel_sub     ,
-    output          out_exu_sel_slt     ,
-    output          out_exu_sel_sltu    ,
-    output          out_exu_sel_and     ,
-    output          out_exu_sel_or      ,
-    output          out_exu_sel_xor     ,
-    output          out_exu_sel_sll     ,
-    output          out_exu_sel_srl     ,
-    output          out_exu_sel_sra     ,
-    output          out_mul_valid       ,
-    output [ 1:0]   out_mul_signed      ,
-    output          out_mul_res_lo      ,
-    output          out_div_valid       ,
-    output [ 1:0]   out_div_signed      ,
-    output          out_div_quotient    ,
-    output          out_inst_system_ebreak,
-    output          out_inst_load       ,
-    output          out_inst_store      ,
-    output          out_inst_32         
+    output reg          out_valid           ,
+    output              out_ready           ,
+	output reg [31:0]   out_pc              ,
+	output reg [31:0]   out_inst            ,
+    output reg [ 2:0]   out_funct3          ,
+    output reg [ 4:0]   out_rs1             ,
+    output reg [ 4:0]   out_rs2             ,
+	output reg [63:0]   out_x_rs2           ,
+    output reg [ 4:0]   out_rd              ,
+    output reg          out_rd_idx_0        ,
+	output reg	        out_rd_w_en         ,
+	output reg	        out_rd_w_src_exu    ,
+    output reg	        out_rd_w_src_mem    ,
+    output reg	        out_rd_w_src_csr    ,
+    output reg          out_csr_w_en        ,
+    output reg [11:0]   out_csr_addr        ,
+	output reg [63:0]   out_csr_r_data      ,
+    output reg          out_exu_src1_xrs1   ,
+    output reg          out_exu_src2_xrs2   ,
+    output reg          out_exu_src2_csr    ,
+	output reg [63:0]   out_exu_src1        ,
+	output reg [63:0]   out_exu_src2        ,
+    output reg          out_exu_sel_add_sub ,
+    output reg          out_exu_sel_sub     ,
+    output reg          out_exu_sel_slt     ,
+    output reg          out_exu_sel_sltu    ,
+    output reg          out_exu_sel_and     ,
+    output reg          out_exu_sel_or      ,
+    output reg          out_exu_sel_xor     ,
+    output reg          out_exu_sel_sll     ,
+    output reg          out_exu_sel_srl     ,
+    output reg          out_exu_sel_sra     ,
+    output reg          out_mul_valid       ,
+    output reg [ 1:0]   out_mul_signed      ,
+    output reg          out_mul_res_lo      ,
+    output reg          out_div_valid       ,
+    output reg [ 1:0]   out_div_signed      ,
+    output reg          out_div_quotient    ,
+    output reg          out_inst_system_ebreak,
+    output reg          out_inst_load       ,
+    output reg          out_inst_store      ,
+    output reg          out_inst_32         
 );
 
     wire stall = (~in_ready & out_valid) | ~exu_idle;
@@ -97,314 +97,102 @@ module id_ex_reg (
     wire ctrl_flush = flush | (~in_valid & ~stall);
     assign out_ready = exu_idle & !(in_valid & ~in_ready & out_valid);
     
-    Reg #(1, 'b0) u_id_ex_valid (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_valid), 
-        .dout(out_valid), 
-        .wen(wen)
-    );
-
-    Reg #(32, 'b0) u_id_ex_pc (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_pc), 
-        .dout(out_pc), 
-        .wen(wen)
-    );
-
-    Reg #(32, 'b0) u_id_ex_inst (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_inst), 
-        .dout(out_inst), 
-        .wen(wen)
-    );
-
-    Reg #(3, 'b0) u_id_ex_funct3 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_funct3), 
-        .dout(out_funct3), 
-        .wen(wen)
-    );
-
-    Reg #(5, 'b0) u_id_ex_rs1 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_rs1), 
-        .dout(out_rs1), 
-        .wen(wen)
-    );
-    Reg #(5, 'b0) u_id_ex_rs2 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_rs2), 
-        .dout(out_rs2), 
-        .wen(wen)
-    );
-    Reg #(64, 'b0) u_id_ex_x_rs2 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_x_rs2), 
-        .dout(out_x_rs2), 
-        .wen(wen)
-    );
-    Reg #(5, 'b0) u_id_ex_rd (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_rd), 
-        .dout(out_rd), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_rd_idx_0 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_rd_idx_0), 
-        .dout(out_rd_idx_0), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_rd_w_en (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_rd_w_en), 
-        .dout(out_rd_w_en), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_rd_w_src_exu (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_rd_w_src_exu), 
-        .dout(out_rd_w_src_exu), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_rd_w_src_mem (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_rd_w_src_mem), 
-        .dout(out_rd_w_src_mem), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_rd_w_src_csr (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_rd_w_src_csr), 
-        .dout(out_rd_w_src_csr), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_csr_w_en (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_csr_w_en), 
-        .dout(out_csr_w_en), 
-        .wen(wen)
-    );
-    Reg #(12, 'b0) u_id_ex_csr_addr (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_csr_addr), 
-        .dout(out_csr_addr), 
-        .wen(wen)
-    );
-    Reg #(64, 'b0) u_id_ex_csr_r_data (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_csr_r_data), 
-        .dout(out_csr_r_data), 
-        .wen(wen)
-    );
-
-    Reg #(1, 'b0) u_id_ex_exu_src1_xrs1 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_src1_xrs1), 
-        .dout(out_exu_src1_xrs1), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_exu_src2_xrs2 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_src2_xrs2), 
-        .dout(out_exu_src2_xrs2), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_exu_src2_csr (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_src2_csr), 
-        .dout(out_exu_src2_csr), 
-        .wen(wen)
-    );
-    Reg #(64, 'b0) u_id_ex_exu_src1 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_src1), 
-        .dout(out_exu_src1), 
-        .wen(wen)
-    );
-    Reg #(64, 'b0) u_id_ex_exu_src2 (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_src2), 
-        .dout(out_exu_src2), 
-        .wen(wen)
-    );
+    always @(posedge clk ) begin
+        if (ctrl_flush) begin
+                out_valid               <= 0;
+                out_rd_w_en             <= 0;
+                out_csr_w_en            <= 0;
+                out_mul_valid           <= 0;
+                out_div_valid           <= 0;
+                out_inst_system_ebreak  <= 0;
+                out_inst_load           <= 0;
+                out_inst_store          <= 0;
+                out_inst_32             <= 0;
+        end else begin
+            if(wen) begin
+                out_valid               <= in_valid; 
+                out_rd_w_en             <= in_rd_w_en; 
+                out_csr_w_en            <= in_csr_w_en; 
+                out_mul_valid           <= in_mul_valid; 
+                out_div_valid           <= in_div_valid; 
+                out_inst_system_ebreak  <= in_inst_system_ebreak; 
+                out_inst_load           <= in_inst_load; 
+                out_inst_store          <= in_inst_store; 
+                out_inst_32             <= in_inst_32; 
+            end
+        end
+    end
     
-    Reg #(1, 'b0) u_id_ex_exu_sel_add_sub (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_add_sub), 
-        .dout(out_exu_sel_add_sub), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_exu_sel_sub (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_sub), 
-        .dout(out_exu_sel_sub), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_exu_sel_slt (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_slt), 
-        .dout(out_exu_sel_slt), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_exu_sel_sltu (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_sltu), 
-        .dout(out_exu_sel_sltu), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_exu_sel_and (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_and), 
-        .dout(out_exu_sel_and), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_exu_sel_or (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_or), 
-        .dout(out_exu_sel_or), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_exu_sel_xor (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_xor), 
-        .dout(out_exu_sel_xor), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_exu_sel_sll (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_sll), 
-        .dout(out_exu_sel_sll), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_exu_sel_srl (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_srl), 
-        .dout(out_exu_sel_srl), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_exu_sel_sra (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_exu_sel_sra), 
-        .dout(out_exu_sel_sra), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_mul_valid (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_mul_valid), 
-        .dout(out_mul_valid), 
-        .wen(wen)
-    );
-    
-    Reg #(2, 'b0) u_id_ex_mul_signed (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_mul_signed), 
-        .dout(out_mul_signed), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_mul_res_lo (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_mul_res_lo), 
-        .dout(out_mul_res_lo), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_id_ex_div_valid (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_div_valid), 
-        .dout(out_div_valid), 
-        .wen(wen)
-    );
-
-    Reg #(2, 'b0) u_id_ex_div_signed (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_div_signed), 
-        .dout(out_div_signed), 
-        .wen(wen)
-    );
-
-    Reg #(1, 'b0) u_id_ex_div_quotient (
-        .clk(clk), 
-        .rst(flush), 
-        .din(in_div_quotient), 
-        .dout(out_div_quotient), 
-        .wen(wen)
-    );
-
-    Reg #(1, 'b0) u_id_ex_inst_system_ebreak (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_inst_system_ebreak), 
-        .dout(out_inst_system_ebreak), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_inst_load (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_inst_load), 
-        .dout(out_inst_load), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_inst_store (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_inst_store), 
-        .dout(out_inst_store), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_id_ex_inst_32 (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_inst_32), 
-        .dout(out_inst_32), 
-        .wen(wen)
-    );
+    always @(posedge clk ) begin
+        if (flush) begin
+                out_pc              <= 0;
+                out_inst            <= 0;
+                out_funct3          <= 0;
+                out_rs1             <= 0;
+                out_rs2             <= 0;
+                out_x_rs2           <= 0;
+                out_rd              <= 0;
+                out_rd_idx_0        <= 0;
+                out_rd_w_src_exu    <= 0;
+                out_rd_w_src_mem    <= 0;
+                out_rd_w_src_csr    <= 0;
+                out_csr_addr        <= 0;
+                out_csr_r_data      <= 0;
+                out_exu_src1_xrs1   <= 0;
+                out_exu_src2_xrs2   <= 0;
+                out_exu_src2_csr    <= 0;
+                out_exu_src1        <= 0;
+                out_exu_src2        <= 0;
+                out_exu_sel_add_sub <= 0;
+                out_exu_sel_sub     <= 0;
+                out_exu_sel_slt     <= 0;
+                out_exu_sel_sltu    <= 0;
+                out_exu_sel_and     <= 0;
+                out_exu_sel_or      <= 0;
+                out_exu_sel_xor     <= 0;
+                out_exu_sel_sll     <= 0;
+                out_exu_sel_srl     <= 0;
+                out_exu_sel_sra     <= 0;
+                out_mul_signed      <= 0;
+                out_mul_res_lo      <= 0;
+                out_div_signed      <= 0;
+                out_div_quotient    <= 0;
+        end else begin
+            if(wen) begin
+                out_pc              <= in_pc; 
+                out_inst            <= in_inst; 
+                out_funct3          <= in_funct3; 
+                out_rs1             <= in_rs1; 
+                out_rs2             <= in_rs2; 
+                out_x_rs2           <= in_x_rs2; 
+                out_rd              <= in_rd; 
+                out_rd_idx_0        <= in_rd_idx_0; 
+                out_rd_w_src_exu    <= in_rd_w_src_exu; 
+                out_rd_w_src_mem    <= in_rd_w_src_mem; 
+                out_rd_w_src_csr    <= in_rd_w_src_csr; 
+                out_csr_addr        <= in_csr_addr; 
+                out_csr_r_data      <= in_csr_r_data; 
+                out_exu_src1_xrs1   <= in_exu_src1_xrs1; 
+                out_exu_src2_xrs2   <= in_exu_src2_xrs2; 
+                out_exu_src2_csr    <= in_exu_src2_csr; 
+                out_exu_src1        <= in_exu_src1; 
+                out_exu_src2        <= in_exu_src2; 
+                out_exu_sel_add_sub <= in_exu_sel_add_sub; 
+                out_exu_sel_sub     <= in_exu_sel_sub; 
+                out_exu_sel_slt     <= in_exu_sel_slt; 
+                out_exu_sel_sltu    <= in_exu_sel_sltu; 
+                out_exu_sel_and     <= in_exu_sel_and; 
+                out_exu_sel_or      <= in_exu_sel_or; 
+                out_exu_sel_xor     <= in_exu_sel_xor; 
+                out_exu_sel_sll     <= in_exu_sel_sll; 
+                out_exu_sel_srl     <= in_exu_sel_srl; 
+                out_exu_sel_sra     <= in_exu_sel_sra; 
+                out_mul_signed      <= in_mul_signed; 
+                out_mul_res_lo      <= in_mul_res_lo; 
+                out_div_signed      <= in_div_signed; 
+                out_div_quotient    <= in_div_quotient; 
+            end
+        end
+    end
 
 endmodule //id_ex_reg

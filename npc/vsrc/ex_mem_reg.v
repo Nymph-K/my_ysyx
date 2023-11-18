@@ -26,28 +26,28 @@ module ex_mem_reg (
     input           in_inst_load        ,
     input           in_inst_store       ,
 
-    output          out_valid           ,
-    output          out_ready           ,
-    output [ 2:0]   out_funct3          ,
-    output [31:0]   out_pc              ,
-    output [31:0]   out_inst            ,
-    output [ 4:0]   out_rs1             ,
-    output [ 4:0]   out_rs2             ,
-    output [63:0]   out_x_rs2           ,
-    output [63:0]   out_x_rd            ,
-    output [ 4:0]   out_rd              ,
-    output          out_rd_idx_0        ,
-    output          out_rd_w_en         ,
-    output          out_rd_w_src_exu    ,
-    output          out_rd_w_src_mem    ,
-    output          out_rd_w_src_csr    ,
-    output          out_csr_w_en        ,
-    output [11:0]   out_csr_addr        ,
-    output [63:0]   out_csr_r_data      ,
-    output [63:0]   out_exu_result      ,
-    output          out_inst_system_ebreak,
-    output          out_inst_load       ,
-    output          out_inst_store      
+    output reg          out_valid           ,
+    output              out_ready           ,
+    output reg [ 2:0]   out_funct3          ,
+    output reg [31:0]   out_pc              ,
+    output reg [31:0]   out_inst            ,
+    output reg [ 4:0]   out_rs1             ,
+    output reg [ 4:0]   out_rs2             ,
+    output reg [63:0]   out_x_rs2           ,
+    output reg [63:0]   out_x_rd            ,
+    output reg [ 4:0]   out_rd              ,
+    output reg          out_rd_idx_0        ,
+    output reg          out_rd_w_en         ,
+    output reg          out_rd_w_src_exu    ,
+    output reg          out_rd_w_src_mem    ,
+    output reg          out_rd_w_src_csr    ,
+    output reg          out_csr_w_en        ,
+    output reg [11:0]   out_csr_addr        ,
+    output reg [63:0]   out_csr_r_data      ,
+    output reg [63:0]   out_exu_result      ,
+    output reg          out_inst_system_ebreak,
+    output reg          out_inst_load       ,
+    output reg          out_inst_store      
 );
 
     wire stall = (~in_ready & out_valid) | ~mem_idle;
@@ -55,171 +55,62 @@ module ex_mem_reg (
     wire ctrl_flush = rst | (~in_valid & ~stall);
     assign out_ready = mem_idle & !(in_valid & ~in_ready & out_valid);
     
-    Reg #(1, 'b0) u_ex_mem_valid (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_valid), 
-        .dout(out_valid), 
-        .wen(wen)
-    );
-
-    Reg #(3, 'b0) u_ex_mem_funct3 (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_funct3), 
-        .dout(out_funct3), 
-        .wen(wen)
-    );
-
-    Reg #(32, 'b0) u_ex_mem_pc (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_pc), 
-        .dout(out_pc), 
-        .wen(wen)
-    );
-
-    Reg #(32, 'b0) u_ex_mem_inst (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_inst), 
-        .dout(out_inst), 
-        .wen(wen)
-    );
-
-    Reg #(5, 'b0) u_ex_mem_rs1 (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_rs1), 
-        .dout(out_rs1), 
-        .wen(wen)
-    );
-
-    Reg #(5, 'b0) u_ex_mem_rs2 (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_rs2), 
-        .dout(out_rs2), 
-        .wen(wen)
-    );
-
-    Reg #(64, 'b0) u_ex_mem_x_rs2 (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_x_rs2), 
-        .dout(out_x_rs2), 
-        .wen(wen)
-    );
-
-    Reg #(64, 'b0) u_ex_mem_x_rd (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_x_rd), 
-        .dout(out_x_rd), 
-        .wen(wen)
-    );
-
-    Reg #(5, 'b0) u_ex_mem_rd (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_rd), 
-        .dout(out_rd), 
-        .wen(wen)
-    );
+    always @(posedge clk ) begin
+        if (ctrl_flush) begin
+            out_valid               <= 0;
+            out_rd_w_en             <= 0;
+            out_csr_w_en            <= 0;
+            out_inst_system_ebreak  <= 0;
+            out_inst_load           <= 0;
+            out_inst_store          <= 0;
+        end else begin
+            if(wen) begin
+                out_valid               <= in_valid;
+                out_rd_w_en             <= in_rd_w_en;
+                out_csr_w_en            <= in_csr_w_en;
+                out_inst_system_ebreak  <= in_inst_system_ebreak;
+                out_inst_load           <= in_inst_load;
+                out_inst_store          <= in_inst_store;
+            end
+        end
+    end
     
-    Reg #(1, 'b0) u_ex_mem_rd_idx_0 (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_rd_idx_0), 
-        .dout(out_rd_idx_0), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_ex_mem_rd_w_en (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_rd_w_en), 
-        .dout(out_rd_w_en), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_ex_mem_rd_w_src_exu (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_rd_w_src_exu), 
-        .dout(out_rd_w_src_exu), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_ex_mem_rd_w_src_mem (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_rd_w_src_mem), 
-        .dout(out_rd_w_src_mem), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_ex_mem_rd_w_src_csr (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_rd_w_src_csr), 
-        .dout(out_rd_w_src_csr), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_ex_mem_csr_w_en (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_csr_w_en), 
-        .dout(out_csr_w_en), 
-        .wen(wen)
-    );
-    
-    Reg #(12, 'b0) u_ex_mem_csr_addr (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_csr_addr), 
-        .dout(out_csr_addr), 
-        .wen(wen)
-    );
-    
-    Reg #(64, 'b0) u_ex_mem_csr_r_data (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_csr_r_data), 
-        .dout(out_csr_r_data), 
-        .wen(wen)
-    );
-    
-    Reg #(64, 'b0) u_ex_mem_exu_result (
-        .clk(clk), 
-        .rst(rst), 
-        .din(in_exu_result), 
-        .dout(out_exu_result), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_ex_mem_inst_system_ebreak (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_inst_system_ebreak), 
-        .dout(out_inst_system_ebreak), 
-        .wen(wen)
-    );
-    Reg #(1, 'b0) u_ex_mem_inst_load (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_inst_load), 
-        .dout(out_inst_load), 
-        .wen(wen)
-    );
-    
-    Reg #(1, 'b0) u_ex_mem_inst_store (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_inst_store), 
-        .dout(out_inst_store), 
-        .wen(wen)
-    );
+    always @(posedge clk ) begin
+        if (rst) begin
+            out_funct3          <= 0;
+            out_pc              <= 0;
+            out_inst            <= 0;
+            out_rs1             <= 0;
+            out_rs2             <= 0;
+            out_x_rs2           <= 0;
+            out_x_rd            <= 0;
+            out_rd              <= 0;
+            out_rd_idx_0        <= 0;
+            out_rd_w_src_exu    <= 0;
+            out_rd_w_src_mem    <= 0;
+            out_rd_w_src_csr    <= 0;
+            out_csr_addr        <= 0;
+            out_csr_r_data      <= 0;
+            out_exu_result      <= 0;
+        end else begin
+            if(wen) begin
+                out_funct3          <= in_funct3; 
+                out_pc              <= in_pc; 
+                out_inst            <= in_inst; 
+                out_rs1             <= in_rs1; 
+                out_rs2             <= in_rs2; 
+                out_x_rs2           <= in_x_rs2; 
+                out_x_rd            <= in_x_rd; 
+                out_rd              <= in_rd; 
+                out_rd_idx_0        <= in_rd_idx_0; 
+                out_rd_w_src_exu    <= in_rd_w_src_exu; 
+                out_rd_w_src_mem    <= in_rd_w_src_mem; 
+                out_rd_w_src_csr    <= in_rd_w_src_csr; 
+                out_csr_addr        <= in_csr_addr; 
+                out_csr_r_data      <= in_csr_r_data; 
+                out_exu_result      <= in_exu_result; 
+            end
+        end
+    end
 
 endmodule //ex_mem_reg

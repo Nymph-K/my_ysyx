@@ -1,7 +1,7 @@
 /*************************************************************
  * @ name           : gpr.v
  * @ description    : General Purpose Register
- * @ use module     : Reg
+ * @ use module     : 
  * @ author         : K
  * @ date modified  : 2023-3-10
 *************************************************************/
@@ -22,26 +22,51 @@ module gpr (
 	output [63:0] x_rs1,
 	output [63:0] x_rs2
 );
-	wire [63:0] gpr[31:0];
-	wire [31:0] gpr_w_en;
+	reg [63:0] gpr[31:0];
 
-	assign gpr[0] = 0;
 	assign x_rs1 = (rs1 == rd & ~rd_idx_0 & rd_w_en) ? x_rd : gpr[rs1];
 	assign x_rs2 = (rs2 == rd & ~rd_idx_0 & rd_w_en) ? x_rd : gpr[rs2];
-
-	assign gpr_w_en = {32{rd_w_en}} & (1 << rd);
-
-	generate
-		for (genvar n = 1; n < 32; n = n + 1) begin: gir_gen
-				Reg #(64, 64'b0) u_gir (
-					.clk(clk), 
-					.rst(rst), 
-					.din(x_rd), 
-					.dout(gpr[n]), 
-					.wen(gpr_w_en[n])
-				);
-		end
-	endgenerate
+	
+    always @(posedge clk) begin
+        if (rst) begin
+            gpr[ 0]         <= 0;
+            gpr[ 1]         <= 0;
+            gpr[ 2]         <= 0;
+            gpr[ 3]         <= 0;
+            gpr[ 4]         <= 0;
+            gpr[ 5]         <= 0;
+            gpr[ 6]         <= 0;
+            gpr[ 7]         <= 0;
+            gpr[ 8]         <= 0;
+            gpr[ 9]         <= 0;
+            gpr[10]         <= 0;
+            gpr[11]         <= 0;
+            gpr[12]         <= 0;
+            gpr[13]         <= 0;
+            gpr[14]         <= 0;
+            gpr[15]         <= 0;
+            gpr[16]         <= 0;
+            gpr[17]         <= 0;
+            gpr[18]         <= 0;
+            gpr[19]         <= 0;
+            gpr[20]         <= 0;
+            gpr[21]         <= 0;
+            gpr[22]         <= 0;
+            gpr[23]         <= 0;
+            gpr[24]         <= 0;
+            gpr[25]         <= 0;
+            gpr[26]         <= 0;
+            gpr[27]         <= 0;
+            gpr[28]         <= 0;
+            gpr[29]         <= 0;
+            gpr[30]         <= 0;
+            gpr[31]         <= 0;
+        end else begin
+            if(rd_w_en) begin
+				gpr[rd]         <= ~rd_idx_0 ? x_rd : 0;
+            end
+        end
+    end
 
 `ifdef DPI_C_SET_GPR_PTR
 import "DPI-C" function void set_gpr_ptr(input logic [63:0] gpr []);

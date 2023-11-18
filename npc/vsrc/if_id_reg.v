@@ -7,7 +7,7 @@ module if_id_reg (
 	input  [31:0]   in_pc,
     output          out_valid,
     output          out_ready,
-	output [31:0]   out_pc,
+	output reg [31:0]   out_pc,
 	output [31:0]   out_inst,
     input           inst_r_ready,
     output          inst_r_valid,
@@ -80,6 +80,7 @@ module if_id_reg (
     always @(posedge clk) begin
         if (ctrl_flush) begin
             out_valid_r <= 0;
+            out_pc      <= 0;
         end else begin
             if(out_valid) begin
                 if(in_ready & ~stall)
@@ -87,16 +88,11 @@ module if_id_reg (
                 else
                     out_valid_r   <= 1;
             end
+            if(wen) begin
+                out_pc  <= in_pc;
+            end
         end
     end
-
-    Reg #(32, 32'b0) u_if_id_pc (
-        .clk(clk), 
-        .rst(ctrl_flush), 
-        .din(in_pc), 
-        .dout(out_pc), 
-        .wen(wen)
-    );
     
     ifu u_ifu(
         .clk                    (clk),
