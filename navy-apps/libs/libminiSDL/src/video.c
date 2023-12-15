@@ -79,7 +79,13 @@ void SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, uint32_t color) {
   }
 }
 
+// static uint8_t is_ndl_canvas_opend = 0;
 void SDL_UpdateRect(SDL_Surface *s, int x, int y, int w, int h) {
+  // if(is_ndl_canvas_opend == 0)
+  // {
+  //   NDL_OpenCanvas(&s->w, &s->h);
+  //   is_ndl_canvas_opend = 1;
+  // }
   if ( (x | y | w | h) == 0)
   {
     w = s->w;

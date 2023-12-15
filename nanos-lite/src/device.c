@@ -52,26 +52,31 @@ size_t get_fbsize(void)
   return cfg.vmemsz;
 }
 
+// size_t fb_write(const void *buf, size_t offset, size_t len) {
+//   AM_GPU_CONFIG_T cfg;
+//   ioe_read(AM_GPU_CONFIG, &cfg);
+//   AM_GPU_FBDRAW_T ctl;
+
+//   ctl.x = (offset / 4) % cfg.width;
+//   ctl.y = (offset / 4) / cfg.width;
+//   ctl.pixels = (void *)buf;
+//   ctl.w = len / 4;
+//   ctl.h = 1;
+//   ctl.sync = 1;
+//   ioe_write(AM_GPU_FBDRAW, &ctl);
+//   return len;
+// }
+
 size_t fb_write(const void *buf, size_t offset, size_t len) {
   AM_GPU_CONFIG_T cfg;
   ioe_read(AM_GPU_CONFIG, &cfg);
   AM_GPU_FBDRAW_T ctl;
-
   ctl.x = (offset / 4) % cfg.width;
   ctl.y = (offset / 4) / cfg.width;
   ctl.pixels = (void *)buf;
-  ctl.w = len / 4;
-  // if (ctl.w > cfg.width && offset == 0)
-  // {
-  //   ctl.h = ctl.w / cfg.width;
-  //   ctl.w = cfg.width;
-  //   ctl.sync = 1;
-  // }
-  // else
-  {
-    ctl.h = 1;
-    ctl.sync = 1;
-  }
+  ctl.w = (len >> 16) & 0xFFFF;
+  ctl.h = len & 0xFFFF;
+  ctl.sync = 1;
   ioe_write(AM_GPU_FBDRAW, &ctl);
   return len;
 }

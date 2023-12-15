@@ -50,7 +50,7 @@ void getWindowSize(int *win_w, int *win_h)
 
 void NDL_OpenCanvas(int *w, int *h) {
   getWindowSize(&window_w, &window_h);
-  if ((*w |*h) == 0)
+  if ((*w | *h) == 0)
   {
     *w = window_w;
     *h = window_h;
@@ -81,28 +81,24 @@ void NDL_OpenCanvas(int *w, int *h) {
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  //static int count = 0;
-  //printf("x = %d, y = %d, w = %d, h = %d, window_w = %d, window_h = %d, screen_w = %d, screen_h = %d, screen_x = %d, screen_y = %d, count = %d\n", x, y, w, h, window_w, window_h, screen_w, screen_h, screen_x, screen_y, count);
-  //count++;
   x += screen_x;
   y += screen_y;
-  // if (w == window_w && (x|y) == 0)
+
+  // size_t offset = (y * window_w + x) * 4;
+  // size_t len = w * 4;
+
+  // for (size_t i = 0; i < h; i++)
   // {
-  //   lseek(fd_fb, 0, SEEK_SET);
-  //   write(fd_fb, pixels, w*h*sizeof(uint32_t));
+  //   lseek(fd_fb, offset, SEEK_SET);
+  //   write(fd_fb, pixels, len);
+  //   offset += window_w * 4;
+  //   pixels += w;
   // }
-  // else
-  {
-    size_t offset = (y * window_w + x) * 4;
-    size_t len = w*sizeof(uint32_t);
-    for (size_t i = 0; i < h; i++)
-    {
-      lseek(fd_fb, offset, SEEK_SET);
-      write(fd_fb, pixels, len);
-      offset += window_w * 4;
-      pixels += w;
-    }
-  }
+  
+  size_t offset = (y * window_w + x) * 4;
+  size_t len = (w << 16) | h;
+  lseek(fd_fb, offset, SEEK_SET);
+  write(fd_fb, pixels, len);
 }
 
 

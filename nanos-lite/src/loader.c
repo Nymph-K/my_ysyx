@@ -73,7 +73,7 @@ int get_file_header(int fd)
     
     if (get_filedata(fd, (uint8_t *)(&elf_header) + EI_NIDENT, EI_NIDENT, sizeof(Elf_Ehdr) - EI_NIDENT) != (sizeof(Elf_Ehdr) - EI_NIDENT))
         return 0;
-    assert(elf_header.e_machine == EM_RISCV);
+    assert(elf_header.e_machine == EXPECT_TYPE);
     return 1;
 }
 

@@ -134,6 +134,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
 #endif
 }
 
+#define WHEN_DEVICE_UPDATE ((1 << 17) - 1) // 65536 inst update device
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
@@ -141,7 +142,7 @@ static void execute(uint64_t n) {
     g_nr_guest_inst ++;
     trace_and_difftest(&s, cpu.pc);
     if (nemu_state.state != NEMU_RUNNING) break;
-    IFDEF(CONFIG_DEVICE, device_update());
+    IFDEF(CONFIG_DEVICE, if((g_nr_guest_inst & WHEN_DEVICE_UPDATE) == 0) device_update());
   }
 }
 
