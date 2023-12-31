@@ -152,8 +152,10 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         if (S_AXI_AWLEN == 8'b0 & S_AXI_WLAST == 1'b1) begin
                             w_state         <= FSM_BR;
                             axi_bvalid      <= 1'b1;
+                            axi_wready      <= 1'b0;
                         end else begin
                             w_state         <= FSM_MW;
+                            axi_wready      <= 1'b1;
                         end
                         axi_awaddr      <= S_AXI_AWADDR;
                         axi_awlen       <= S_AXI_AWLEN;
@@ -162,7 +164,20 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         axi_awready     <= 1'b0;
                         
                         W_Aligned_Address     <= W_Start_Address & ~(W_Number_Bytes - 1);
-                        W_Address_N           <= W_Start_Address & ~(W_Number_Bytes - 1);
+                        case (S_AXI_AWBURST)
+                            2'b00: begin    // FIXED
+                                W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1));
+                            end 
+                            2'b01: begin    // INCR
+                                W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes_R;
+                            end 
+                            2'b10: begin    // WRAP
+                                W_Address_N     <= ((W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes_R >= ((W_Start_Address & ~(W_Total_Bytes - 1)) + W_Total_Bytes)) ? (W_Start_Address & ~(W_Total_Bytes - 1)) : (W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes_R;
+                            end 
+                            default: begin  // Reserved
+                                W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1));
+                            end 
+                        endcase
                         W_Lower_Wrap_Boundary <= W_Start_Address & ~(W_Total_Bytes - 1);
                         W_Upper_Wrap_Boundary <= (W_Start_Address & ~(W_Total_Bytes - 1)) + W_Total_Bytes;
                         W_Number_Bytes_R      <= W_Number_Bytes;
@@ -170,13 +185,13 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         axi_wdata       <= S_AXI_WDATA;
                         axi_wstrb       <= S_AXI_WSTRB;
                         axi_wlast       <= S_AXI_WLAST;
-                        axi_wready      <= 1'b0;
                         
+                        w_cnt           <= w_cnt + 8'b1;
                         paddr_write({32'b0, W_Start_Address & ~(W_Number_Bytes - 1)}, S_AXI_WDATA, S_AXI_WSTRB);
                         //$display("Write: addr = %X, size = %d, strb = %X, data = %X\n", (W_Start_Address & ~(W_Number_Bytes - 1)), S_AXI_AWSIZE, S_AXI_WSTRB, S_AXI_WDATA);
 
                     end else if (S_AXI_AWVALID) begin
-                        w_state         <= FSM_W;
+                        w_state         <= FSM_MW;
                         axi_awaddr      <= S_AXI_AWADDR;
                         axi_awlen       <= S_AXI_AWLEN;
                         axi_awsize      <= S_AXI_AWSIZE;
@@ -193,23 +208,40 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         axi_wdata       <= S_AXI_WDATA;
                         axi_wstrb       <= S_AXI_WSTRB;
                         axi_wlast       <= S_AXI_WLAST;
-                        axi_wready      <= 1'b0;
+                        axi_wready      <= 1'b1;
                     end
                 end
 
-                FSM_W      : begin
+                FSM_MW      : begin
                     if (S_AXI_WVALID) begin
                         if (axi_awlen == w_cnt & S_AXI_WLAST == 1'b1) begin
                             w_state         <= FSM_BR;
                             axi_bvalid      <= 1'b1;
+                            axi_wready      <= 1'b0;
                         end else begin
                             w_state         <= FSM_MW;
+                            axi_bvalid      <= 1'b0;
+                            axi_wready      <= 1'b1;
                         end
                         axi_wdata       <= S_AXI_WDATA;
                         axi_wstrb       <= S_AXI_WSTRB;
                         axi_wlast       <= S_AXI_WLAST;
-                        axi_wready      <= 1'b0;
 
+                        case (axi_awburst)
+                            2'b00: begin    // FIXED
+                                W_Address_N     <= W_Address_N;
+                            end 
+                            2'b01: begin    // INCR
+                                W_Address_N     <= W_Address_N + W_Number_Bytes_R;
+                            end 
+                            2'b10: begin    // WRAP
+                                W_Address_N     <= (W_Address_N + W_Number_Bytes_R >= W_Upper_Wrap_Boundary) ? W_Lower_Wrap_Boundary : W_Address_N + W_Number_Bytes_R;
+                            end 
+                            default: begin  // Reserved
+                                W_Address_N     <= W_Address_N;
+                            end 
+                        endcase
+                        w_cnt           <= w_cnt + 8'b1;
                         paddr_write({32'b0, W_Address_N}, S_AXI_WDATA, S_AXI_WSTRB);
                         //$display("Write: addr = %X, size = %d, strb = %X, data = %X\n", W_Address_N, axi_awsize, S_AXI_WSTRB, S_AXI_WDATA);
                     end
@@ -220,8 +252,10 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         if (axi_awlen == w_cnt & axi_wlast == 1'b1) begin
                             w_state         <= FSM_BR;
                             axi_bvalid      <= 1'b1;
+                            axi_wready      <= 1'b0;
                         end else begin
                             w_state         <= FSM_MW;
+                            axi_wready      <= 1'b1;
                         end
                         axi_awaddr      <= S_AXI_AWADDR;
                         axi_awlen       <= S_AXI_AWLEN;
@@ -230,11 +264,25 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         axi_awready     <= 1'b0;
                         
                         W_Aligned_Address     <= W_Start_Address & ~(W_Number_Bytes - 1);
-                        W_Address_N           <= W_Start_Address & ~(W_Number_Bytes - 1);
+                        case (S_AXI_AWBURST)
+                            2'b00: begin    // FIXED
+                                W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1));
+                            end 
+                            2'b01: begin    // INCR
+                                W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes;
+                            end 
+                            2'b10: begin    // WRAP
+                                W_Address_N     <= ((W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes >= (W_Start_Address & ~(W_Total_Bytes - 1) + W_Total_Bytes)) ? (W_Start_Address & ~(W_Total_Bytes - 1)) : (W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes;
+                            end 
+                            default: begin  // Reserved
+                                W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1));
+                            end 
+                        endcase
                         W_Lower_Wrap_Boundary <= W_Start_Address & ~(W_Total_Bytes - 1);
                         W_Upper_Wrap_Boundary <= W_Start_Address & ~(W_Total_Bytes - 1) + W_Total_Bytes;
                         W_Number_Bytes_R      <= W_Number_Bytes;
 
+                        w_cnt           <= w_cnt + 8'b1;
                         paddr_write({32'b0, W_Start_Address & ~(W_Number_Bytes - 1)}, axi_wdata, axi_wstrb);
                         //$display("Write: addr = %X, size = %d, strb = %X, data = %X\n", (W_Start_Address & ~(W_Number_Bytes - 1)), S_AXI_AWSIZE, axi_wstrb, axi_wdata);
                     end
@@ -248,27 +296,6 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         axi_wready      <= 1'b1;
                         axi_bvalid      <= 1'b0;
                     end
-                end
-
-                FSM_MW    : begin
-                    w_state         <= FSM_W;
-                    w_cnt           <= w_cnt + 8'b1;
-                    axi_wready      <= 1'b1;
-                    case (axi_awburst)
-                        2'b00: begin    // FIXED
-                            W_Address_N     <= W_Address_N;
-                        end 
-                        2'b01: begin    // INCR
-                            W_Address_N     <= W_Address_N + W_Number_Bytes_R;
-                        end 
-                        2'b10: begin    // WRAP
-                            W_Address_N     <= (W_Address_N + W_Number_Bytes_R >= W_Upper_Wrap_Boundary) ? W_Lower_Wrap_Boundary : W_Address_N + W_Number_Bytes_R;
-                        end 
-                        default: begin  // Reserved
-                            W_Address_N     <= W_Address_N;
-                        end 
-                    endcase
-                    axi_wready      <= 1'b1;
                 end
 
                 default     : begin 
@@ -317,7 +344,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
             case(r_state)
                 FSM_IDLE    : begin
                     if (S_AXI_ARVALID) begin
-                        r_state         <= FSM_R;
+                        r_state         <= FSM_MR;
                         axi_araddr      <= S_AXI_ARADDR;
                         axi_arlen       <= S_AXI_ARLEN;
                         axi_arsize      <= S_AXI_ARSIZE;
@@ -325,11 +352,25 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         axi_arready     <= 1'b0;
 
                         R_Aligned_Address     <= R_Start_Address & ~(R_Number_Bytes - 1);
-                        R_Address_N           <= R_Start_Address & ~(R_Number_Bytes - 1);
+                        case (S_AXI_ARBURST)
+                            2'b00: begin    // FIXED
+                                R_Address_N     <= (R_Start_Address & ~(R_Number_Bytes - 1));
+                            end 
+                            2'b01: begin    // INCR
+                                R_Address_N     <= (R_Start_Address & ~(R_Number_Bytes - 1)) + R_Number_Bytes;
+                            end 
+                            2'b10: begin    // WRAP
+                                R_Address_N     <= ((R_Start_Address & ~(R_Number_Bytes - 1)) + R_Number_Bytes >= ((R_Start_Address & ~(R_Total_Bytes - 1)) + R_Total_Bytes)) ? (R_Start_Address & ~(R_Total_Bytes - 1)) : (R_Start_Address & ~(R_Number_Bytes - 1)) + R_Number_Bytes;
+                            end 
+                            default: begin  // Reserved
+                                R_Address_N     <= (R_Start_Address & ~(R_Number_Bytes - 1));
+                            end 
+                        endcase
                         R_Lower_Wrap_Boundary <= R_Start_Address & ~(R_Total_Bytes - 1);
                         R_Upper_Wrap_Boundary <= (R_Start_Address & ~(R_Total_Bytes - 1)) + R_Total_Bytes;
                         R_Number_Bytes_R      <= R_Number_Bytes;
                         
+                        r_cnt           <= r_cnt + 8'b1;
                         paddr_read({32'b0, (R_Start_Address & ~(R_Number_Bytes - 1))}, axi_rdata);
                         //$display("Read : addr = %X, size = %d, cnt = %d\n", (R_Start_Address & ~(R_Number_Bytes - 1)), S_AXI_ARSIZE, r_cnt);
                         axi_rvalid      <= 1'b1;
@@ -339,8 +380,11 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                     end
                 end
 
-                FSM_R      : begin
+                FSM_MR      : begin
                     if (S_AXI_RREADY) begin
+                        if(axi_arlen == r_cnt)   begin 
+                            axi_rlast       <= 1'b1;
+                        end
                         if(axi_rlast) begin
                             r_state         <= FSM_IDLE;
                             r_cnt           <= 8'b0;
@@ -350,7 +394,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         end else begin
                             r_state         <= FSM_MR;
                             r_cnt           <= r_cnt + 8'b1;
-                            axi_rvalid      <= 1'b0;
+                            axi_rvalid      <= 1'b1;
                             case (axi_arburst)
                                 2'b00: begin    // FIXED
                                     R_Address_N     <= R_Address_N;
@@ -365,17 +409,8 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                                     R_Address_N     <= R_Address_N;
                                 end 
                             endcase
+                            paddr_read({32'b0, R_Address_N}, axi_rdata);
                         end
-                    end
-                end
-
-                FSM_MR    : begin
-                    r_state         <= FSM_R;
-                    paddr_read({32'b0, R_Address_N}, axi_rdata);
-                    //$display("Read : addr = %X, size = %d, cnt = %d\n", R_Address_N, S_AXI_ARSIZE, r_cnt);
-                    axi_rvalid      <= 1'b1;
-                    if(axi_arlen == r_cnt)   begin 
-                        axi_rlast       <= 1'b1;
                     end
                 end
 
