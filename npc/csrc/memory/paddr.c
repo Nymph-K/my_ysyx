@@ -83,13 +83,14 @@ void init_mem() {
       (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1);
 }
 
-extern "C" void instruction_fetch(long long  pc, int *inst) {
-    if (likely(in_pmem(pc))){
-      *inst = host_read(guest_to_host(pc), 4);
+extern "C" void inst_fetch(long long raddr, long long *rdata) {
+    paddr_t addr = raddr & ~0x7ull;
+    if (likely(in_pmem(raddr))){
+      *rdata = host_read(guest_to_host(raddr), 8);
     }
     else{
-      out_of_bound(pc);
-      *inst = 0;
+      out_of_bound(raddr);
+      *rdata = 0;
     }
 }
 

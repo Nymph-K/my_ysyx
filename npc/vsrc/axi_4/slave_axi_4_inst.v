@@ -5,10 +5,10 @@
  * @ author         : K
  * @ date modified  : 2023-4-21
 *************************************************************/
-`ifndef S_AXI_4_V
-`define S_AXI_4_V
+`ifndef S_AXI_4_INST_V
+`define S_AXI_4_INST_V
 
-module slave_axi_4 #(
+module slave_axi_4_inst #(
     parameter AXI_DATA_WIDTH = 64,
     parameter AXI_ADDR_WIDTH = 32,
     parameter AXI_STRB_WIDTH = AXI_DATA_WIDTH / 8,
@@ -135,7 +135,7 @@ module slave_axi_4 #(
     reg  [  AXI_ADDR_WIDTH-1:0] W_Lower_Wrap_Boundary ;
     reg  [  AXI_ADDR_WIDTH-1:0] W_Upper_Wrap_Boundary ;
 
-import "DPI-C" function void paddr_read(input longint raddr, output longint mem_r_data);
+import "DPI-C" function void inst_fetch(input longint raddr, output longint mem_r_data);
 import "DPI-C" function void paddr_write(input longint waddr, input longint mem_w_data, input byte wmask);
 
     always @(posedge clk) begin
@@ -169,10 +169,10 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                                 W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1));
                             end 
                             2'b01: begin    // INCR
-                                W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes;
+                                W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes_R;
                             end 
                             2'b10: begin    // WRAP
-                                W_Address_N     <= ((W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes >= ((W_Start_Address & ~(W_Total_Bytes - 1)) + W_Total_Bytes)) ? (W_Start_Address & ~(W_Total_Bytes - 1)) : (W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes;
+                                W_Address_N     <= ((W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes_R >= ((W_Start_Address & ~(W_Total_Bytes - 1)) + W_Total_Bytes)) ? (W_Start_Address & ~(W_Total_Bytes - 1)) : (W_Start_Address & ~(W_Number_Bytes - 1)) + W_Number_Bytes_R;
                             end 
                             default: begin  // Reserved
                                 W_Address_N     <= (W_Start_Address & ~(W_Number_Bytes - 1));
@@ -371,7 +371,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                         R_Number_Bytes_R      <= R_Number_Bytes;
                         
                         r_cnt           <= r_cnt + 8'b1;
-                        paddr_read({32'b0, (R_Start_Address & ~(R_Number_Bytes - 1))}, axi_rdata);
+                        inst_fetch({32'b0, (R_Start_Address & ~(R_Number_Bytes - 1))}, axi_rdata);
                         //$display("Read : addr = %X, size = %d, cnt = %d\n", (R_Start_Address & ~(R_Number_Bytes - 1)), S_AXI_ARSIZE, r_cnt);
                         axi_rvalid      <= 1'b1;
                         if (S_AXI_ARLEN == 8'b0) begin
@@ -409,7 +409,7 @@ import "DPI-C" function void paddr_write(input longint waddr, input longint mem_
                                     R_Address_N     <= R_Address_N;
                                 end 
                             endcase
-                            paddr_read({32'b0, R_Address_N}, axi_rdata);
+                            inst_fetch({32'b0, R_Address_N}, axi_rdata);
                         end
                     end
                 end

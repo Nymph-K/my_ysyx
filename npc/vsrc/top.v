@@ -161,7 +161,7 @@ module top(
         .IFU_AXI_RREADY         (IFU_AXI_RREADY)
     );
     
-    slave_axi_4 u_ifu_slave_axi_4 (
+    slave_axi_4_inst u_ifu_slave_axi_4 (
         .clk(clk),
         .rst(rst),
 

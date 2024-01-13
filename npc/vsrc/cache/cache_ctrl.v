@@ -225,7 +225,7 @@ module cache_ctrl (
     end
 
     assign cpu_r_data      = cpu_r_valid ? cpu_rdata : cpu_rdata_r;
-    assign mem_w_addr      = {tag_[way][21:0], index, offset} & ~32'h07; // 8 Byte align
+    assign mem_w_addr      = {tag_[way][21:0], index, offset_r} & ~32'h07; // 8 Byte align
     assign mem_w_size      = 3'b011;   // 8 Byte
     assign mem_w_burst     = 2'b10;    // WRAP
     assign mem_w_len       = 8'd7;     // 8 times
@@ -399,13 +399,13 @@ module cache_ctrl (
 
                 C_W_MEM: begin // 1 clock delay for sram read
                     r_cnt           <= 8'b0;
-                    if(mem_w_ready) begin
+                    // if(mem_w_valid & mem_w_ready) begin
                         w_cnt <= w_cnt + 1;
                         offset_inc <= offset_inc + 6'd8;
                         if (w_cnt == 8'd7) begin
                             lfsr <= {lfsr[6:0], xor_in};
                         end
-                    end
+                    // end
                     if(w_cnt == 8'd7)
                         mem_w_valid     <= 1'b0;
                     else
