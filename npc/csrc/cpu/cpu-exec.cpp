@@ -137,7 +137,7 @@ static void exec_once(Decode *s) {
 #endif
 }
 
-#define WHEN_DEVICE_UPDATE 4095 // 4096 inst update device
+#define WHEN_DEVICE_UPDATE 4095 // 4096 inst update device if((g_nr_guest_inst & WHEN_DEVICE_UPDATE) == 0)
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
@@ -146,7 +146,7 @@ static void execute(uint64_t n) {
     //IFDEF(CONFIG_DIFFTEST, if(is_interrupt) difftest_skip_ref());
     trace_and_difftest(&s, mycpu->dnpc);
     if (npc_state.state != NPC_RUNNING) break;
-    IFDEF(CONFIG_DEVICE, if((g_nr_guest_inst & WHEN_DEVICE_UPDATE) == 0) device_update());
+    IFDEF(CONFIG_DEVICE, device_update());
   }
 }
 

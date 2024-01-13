@@ -99,7 +99,7 @@ module master_axi_4 #(
     reg                                 axi_wlast;
     reg                                 axi_wvalid;
     //BR
-    reg                                 axi_bready;
+//  reg                                 axi_bready;
     //AR
     reg    [  AXI_ADDR_WIDTH-1:0]       axi_araddr;
     reg    [                 7:0]       axi_arlen;
@@ -109,7 +109,7 @@ module master_axi_4 #(
     //R
     reg                                 axi_rready;
 
-    assign  w_ready             =   M_AXI_WVALID & M_AXI_WREADY;
+    assign  w_ready             =   1;
     assign  r_valid             =   M_AXI_RVALID & M_AXI_RREADY;
     assign  r_data              =   M_AXI_RDATA;
     //AW
@@ -132,7 +132,7 @@ module master_axi_4 #(
     assign  M_AXI_WUSER         =   0;          // meaningless
     assign  M_AXI_WVALID        =   axi_wvalid;
     //BR
-    assign  M_AXI_BREADY        =   axi_bready;
+    assign  M_AXI_BREADY        =   1;
     //AR
     assign  M_AXI_ARID          =   0;
     assign  M_AXI_ARADDR        =   axi_araddr;
@@ -147,7 +147,7 @@ module master_axi_4 #(
     assign  M_AXI_ARUSER        =   0;          // meaningless
     assign  M_AXI_ARVALID       =   axi_arvalid;
     //R
-    assign  M_AXI_RREADY        =   axi_rready;
+    assign  M_AXI_RREADY        =   axi_rready & r_ready;
     
     //-------------------------------------------- Write FSM-Moore ------------------------------------------------
     parameter [2:0]
@@ -169,7 +169,7 @@ module master_axi_4 #(
             axi_awvalid     <= 1'b0;
             axi_wvalid      <= 1'b0;
             axi_wlast       <= 1'b0;
-            axi_bready      <= 1'b0;
+            // axi_bready      <= 1'b1;
         end else begin
             case(w_state)
                 FSM_IDLE    : begin
@@ -183,12 +183,8 @@ module master_axi_4 #(
                         axi_wstrb       <= w_strb;
                         axi_awvalid     <= 1'b1;
                         axi_wvalid      <= 1'b1;
-                        if (w_len == 8'b0) begin
-                            axi_wlast       <= 1'b1;
-                            axi_bready      <= 1'b1;
-                        end else begin
-                            axi_wlast       <= 1'b0;
-                        end
+                        axi_wlast       <= w_len == 0;
+                        // axi_bready      <= 1'b1;
                     end
                 end
 
@@ -196,19 +192,25 @@ module master_axi_4 #(
                     if (M_AXI_AWREADY & M_AXI_WREADY) begin
                         if (axi_wlast) begin
                             w_state         <= FSM_BR;
-                            w_cnt           <= 8'b0;
+                            axi_wlast       <= 1'b0;
                         end else begin
                             w_state         <= FSM_MW;
-                            w_cnt           <= w_cnt + 1;
+                            axi_wlast       <= (axi_awlen == (w_cnt + 1));
                         end
                         axi_awvalid     <= 1'b0;
-                        axi_wvalid      <= 1'b0;
+                        w_cnt           <= w_cnt + 1;
+                        axi_wvalid      <= ~axi_wlast;
+                        axi_wdata       <= w_data;
+                        axi_wstrb       <= w_strb;
                     end else if (M_AXI_AWREADY) begin
                         w_state         <= FSM_W;
                         axi_awvalid     <= 1'b0;
                     end else if (M_AXI_WREADY) begin
                         w_state         <= FSM_AW;
-                        axi_wvalid      <= 1'b0;
+                        w_cnt           <= w_cnt + 1;
+                        axi_wvalid      <= ~axi_wlast;
+                        axi_wdata       <= w_data;
+                        axi_wstrb       <= w_strb;
                     end
                 end
 
@@ -216,12 +218,15 @@ module master_axi_4 #(
                     if (M_AXI_WREADY) begin
                         if (axi_wlast) begin
                             w_state         <= FSM_BR;
-                            w_cnt           <= 8'b0;
+                            axi_wlast       <= 1'b0;
                         end else begin
                             w_state         <= FSM_MW;
-                            w_cnt           <= w_cnt + 1;
+                            axi_wlast       <= (axi_awlen == (w_cnt + 1));
                         end
-                        axi_wvalid      <= 1'b0;
+                        w_cnt           <= w_cnt + 1;
+                        axi_wvalid      <= ~axi_wlast;
+                        axi_wdata       <= w_data;
+                        axi_wstrb       <= w_strb;
                     end
                 end
 
@@ -229,40 +234,37 @@ module master_axi_4 #(
                     if (M_AXI_AWREADY) begin
                         if (axi_wlast) begin
                             w_state         <= FSM_BR;
-                            w_cnt           <= 8'b0;
+                            axi_wlast       <= 1'b0;
                         end else begin
                             w_state         <= FSM_MW;
-                            w_cnt           <= w_cnt + 1;
+                            axi_wlast       <= (axi_awlen == (w_cnt + 1));
                         end
                         axi_awvalid     <= 1'b0;
+                    end
+                end
+
+                FSM_MW    : begin
+                    if (M_AXI_WREADY) begin
+                        if (axi_wlast) begin
+                            w_state         <= FSM_BR;
+                            axi_wlast       <= 1'b0;
+                        end else begin
+                            w_state         <= FSM_MW;
+                            axi_wlast       <= (axi_awlen == (w_cnt + 1));
+                        end
+                        w_cnt           <= w_cnt + 1;
+                        axi_wvalid      <= ~axi_wlast;
+                        axi_wdata       <= w_data;
+                        axi_wstrb       <= w_strb;
                     end
                 end
 
                 FSM_BR : begin
                     if (M_AXI_BVALID) begin
                         w_state         <= FSM_IDLE;
-                        axi_wlast       <= 1'b0;
-                        axi_bready      <= 1'b0;
+                        w_cnt           <= 8'b0;
+                        // axi_bready      <= 1'b1;
                     end
-                end
-
-                FSM_MW    : begin
-                    if(w_valid)   begin 
-                        w_state         <= FSM_W;
-                        axi_wdata       <= w_data;
-                        axi_wstrb       <= w_strb;
-                        axi_wvalid      <= 1'b1;
-                        if (axi_awlen == w_cnt) begin
-                            axi_wlast       <= 1'b1;
-                            axi_bready      <= 1'b1;
-                        end else begin
-                            axi_wlast       <= 1'b0;
-                        end
-                    end
-                end
-
-                FSM_WD     : begin 
-                        w_state         <= FSM_IDLE;
                 end
 
                 default     : begin 
@@ -271,7 +273,7 @@ module master_axi_4 #(
                     axi_awvalid     <= 1'b0;
                     axi_wvalid      <= 1'b0;
                     axi_wlast       <= 1'b0;
-                    axi_bready      <= 1'b0;
+                    // axi_bready      <= 1'b1;
                 end
 
             endcase
@@ -288,12 +290,12 @@ module master_axi_4 #(
         FSM_RD          =   3'b100 ;    // read done
 
     reg [2 : 0] r_state;
-    reg [7 : 0] r_cnt;
+    // reg [7 : 0] r_cnt;
 
     always @(posedge clk) begin
         if (rst) begin
             r_state         <= FSM_IDLE;
-            r_cnt           <= 8'b0;
+            // r_cnt           <= 8'b0;
             axi_arvalid     <= 1'b0;
             axi_rready      <= 1'b0;
         end else begin
@@ -321,25 +323,18 @@ module master_axi_4 #(
                     if (M_AXI_RVALID) begin
                         if (M_AXI_RLAST) begin
                             r_state         <= FSM_IDLE;
-                            r_cnt           <= 8'b0;
+                            // r_cnt           <= 8'b0;
                         end else begin
-                            r_state         <= FSM_MR;
-                            r_cnt           <= r_cnt + 1;
+                            r_state         <= FSM_R;
+                            // r_cnt           <= r_cnt + 1;
                         end
-                        axi_rready      <= 1'b0;
-                    end
-                end
-
-                FSM_MR    : begin
-                    if(r_ready)   begin
-                        r_state         <= FSM_R;
-                        axi_rready      <= 1'b1;
+                        axi_rready      <= ~M_AXI_RLAST;
                     end
                 end
 
                 default     : begin 
                     r_state         <= FSM_IDLE;
-                    r_cnt           <= 8'b0;
+                    // r_cnt           <= 8'b0;
                     axi_arvalid     <= 1'b0;
                     axi_rready      <= 1'b0;
                 end

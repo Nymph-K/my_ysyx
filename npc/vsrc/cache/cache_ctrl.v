@@ -397,7 +397,7 @@ module cache_ctrl (
                     mem_w_valid     <= 1'b0;
                 end
 
-                C_W_MEM: begin
+                C_W_MEM: begin // 1 clock delay for sram read
                     r_cnt           <= 8'b0;
                     if(mem_w_ready) begin
                         w_cnt <= w_cnt + 1;
@@ -406,7 +406,7 @@ module cache_ctrl (
                             lfsr <= {lfsr[6:0], xor_in};
                         end
                     end
-                    if(mem_w_valid & mem_w_ready)
+                    if(w_cnt == 8'd7)
                         mem_w_valid     <= 1'b0;
                     else
                         mem_w_valid     <= 1'b1;
