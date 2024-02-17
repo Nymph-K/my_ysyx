@@ -128,17 +128,20 @@ module top(
         .IFU_AXI_AWUSER         (IFU_AXI_AWUSER),
         .IFU_AXI_AWVALID        (IFU_AXI_AWVALID),
         .IFU_AXI_AWREADY        (IFU_AXI_AWREADY),
+
         .IFU_AXI_WDATA          (IFU_AXI_WDATA),
         .IFU_AXI_WSTRB          (IFU_AXI_WSTRB),
         .IFU_AXI_WLAST          (IFU_AXI_WLAST),
         .IFU_AXI_WUSER          (IFU_AXI_WUSER),
         .IFU_AXI_WVALID         (IFU_AXI_WVALID),
         .IFU_AXI_WREADY         (IFU_AXI_WREADY),
+
         .IFU_AXI_BID            (IFU_AXI_BID),
         .IFU_AXI_BRESP          (IFU_AXI_BRESP),
         .IFU_AXI_BUSER          (IFU_AXI_BUSER),
         .IFU_AXI_BVALID         (IFU_AXI_BVALID),
         .IFU_AXI_BREADY         (IFU_AXI_BREADY),
+
         .IFU_AXI_ARID           (IFU_AXI_ARID),
         .IFU_AXI_ARADDR         (IFU_AXI_ARADDR),
         .IFU_AXI_ARLEN          (IFU_AXI_ARLEN),
@@ -152,6 +155,7 @@ module top(
         .IFU_AXI_ARUSER         (IFU_AXI_ARUSER),
         .IFU_AXI_ARVALID        (IFU_AXI_ARVALID),
         .IFU_AXI_ARREADY        (IFU_AXI_ARREADY),
+
         .IFU_AXI_RID            (IFU_AXI_RID),
         .IFU_AXI_RDATA          (IFU_AXI_RDATA),
         .IFU_AXI_RRESP          (IFU_AXI_RRESP),
@@ -159,56 +163,6 @@ module top(
         .IFU_AXI_RUSER          (IFU_AXI_RUSER),
         .IFU_AXI_RVALID         (IFU_AXI_RVALID),
         .IFU_AXI_RREADY         (IFU_AXI_RREADY)
-    );
-    
-    slave_axi_4_inst u_ifu_slave_axi_4 (
-        .clk(clk),
-        .rst(rst),
-
-        .S_AXI_AWID         (IFU_AXI_AWID),
-        .S_AXI_AWADDR       (IFU_AXI_AWADDR),
-        .S_AXI_AWLEN        (IFU_AXI_AWLEN),
-        .S_AXI_AWSIZE       (IFU_AXI_AWSIZE),
-        .S_AXI_AWBURST      (IFU_AXI_AWBURST),
-        .S_AXI_AWLOCK       (IFU_AXI_AWLOCK),
-        .S_AXI_AWCACHE      (IFU_AXI_AWCACHE),
-        .S_AXI_AWPROT       (IFU_AXI_AWPROT),
-        .S_AXI_AWQOS        (IFU_AXI_AWQOS),
-        .S_AXI_AWREGION     (IFU_AXI_AWREGION),
-        .S_AXI_AWUSER       (IFU_AXI_AWUSER),
-        .S_AXI_AWVALID      (IFU_AXI_AWVALID),
-        .S_AXI_AWREADY      (IFU_AXI_AWREADY),
-        .S_AXI_WDATA        (IFU_AXI_WDATA),
-        .S_AXI_WSTRB        (IFU_AXI_WSTRB),
-        .S_AXI_WLAST        (IFU_AXI_WLAST),
-        .S_AXI_WUSER        (IFU_AXI_WUSER),
-        .S_AXI_WVALID       (IFU_AXI_WVALID),
-        .S_AXI_WREADY       (IFU_AXI_WREADY),
-        .S_AXI_BID          (IFU_AXI_BID),
-        .S_AXI_BRESP        (IFU_AXI_BRESP),
-        .S_AXI_BUSER        (IFU_AXI_BUSER),
-        .S_AXI_BVALID       (IFU_AXI_BVALID),
-        .S_AXI_BREADY       (IFU_AXI_BREADY),
-        .S_AXI_ARID         (IFU_AXI_ARID),
-        .S_AXI_ARADDR       (IFU_AXI_ARADDR),
-        .S_AXI_ARLEN        (IFU_AXI_ARLEN),
-        .S_AXI_ARSIZE       (IFU_AXI_ARSIZE),
-        .S_AXI_ARBURST      (IFU_AXI_ARBURST),
-        .S_AXI_ARLOCK       (IFU_AXI_ARLOCK),
-        .S_AXI_ARCACHE      (IFU_AXI_ARCACHE),
-        .S_AXI_ARPROT       (IFU_AXI_ARPROT),
-        .S_AXI_ARQOS        (IFU_AXI_ARQOS),
-        .S_AXI_ARREGION     (IFU_AXI_ARREGION),
-        .S_AXI_ARUSER       (IFU_AXI_ARUSER),
-        .S_AXI_ARVALID      (IFU_AXI_ARVALID),
-        .S_AXI_ARREADY      (IFU_AXI_ARREADY),
-        .S_AXI_RID          (IFU_AXI_RID),
-        .S_AXI_RDATA        (IFU_AXI_RDATA),
-        .S_AXI_RRESP        (IFU_AXI_RRESP),
-        .S_AXI_RLAST        (IFU_AXI_RLAST),
-        .S_AXI_RUSER        (IFU_AXI_RUSER),
-        .S_AXI_RVALID       (IFU_AXI_RVALID),
-        .S_AXI_RREADY       (IFU_AXI_RREADY)
     );
     
     /********************* idu *********************/
@@ -783,8 +737,99 @@ module top(
         .LSU_AXI_RVALID         (LSU_AXI_RVALID),
         .LSU_AXI_RREADY         (LSU_AXI_RREADY)
     );
+
+    //AR
+    wire [ 3:0]               S_AXI_ARID;
+    wire [31:0]               S_AXI_ARADDR;
+    wire [ 7:0]               S_AXI_ARLEN;
+    wire [ 2:0]               S_AXI_ARSIZE;
+    wire [ 1:0]               S_AXI_ARBURST;
+    wire                      S_AXI_ARLOCK;
+    wire [ 3:0]               S_AXI_ARCACHE;
+    wire [ 2:0]               S_AXI_ARPROT;
+    wire [ 3:0]               S_AXI_ARQOS;
+    wire [ 3:0]               S_AXI_ARREGION;
+    wire                      S_AXI_ARUSER;
+    wire                      S_AXI_ARVALID;
+    wire                      S_AXI_ARREADY;
+    //R
+    wire [ 3:0]               S_AXI_RID;
+    wire [63:0]               S_AXI_RDATA;
+    wire [ 1:0]               S_AXI_RRESP;
+    wire                      S_AXI_RLAST;
+    wire                      S_AXI_RUSER;
+    wire                      S_AXI_RVALID;
+    wire                      S_AXI_RREADY;
+
+    arbiter_axi_4_r u_arbiter_axi_4_r (
+        .clk                    (clk),
+        .rst                    (rst),
+
+        .M0_AXI_ARID            (LSU_AXI_ARID     ),
+        .M0_AXI_ARADDR          (LSU_AXI_ARADDR   ),
+        .M0_AXI_ARLEN           (LSU_AXI_ARLEN    ),
+        .M0_AXI_ARSIZE          (LSU_AXI_ARSIZE   ),
+        .M0_AXI_ARBURST         (LSU_AXI_ARBURST  ),
+        .M0_AXI_ARLOCK          (LSU_AXI_ARLOCK   ),
+        .M0_AXI_ARCACHE         (LSU_AXI_ARCACHE  ),
+        .M0_AXI_ARPROT          (LSU_AXI_ARPROT   ),
+        .M0_AXI_ARQOS           (LSU_AXI_ARQOS    ),
+        .M0_AXI_ARREGION        (LSU_AXI_ARREGION ),
+        .M0_AXI_ARUSER          (LSU_AXI_ARUSER   ),
+        .M0_AXI_ARVALID         (LSU_AXI_ARVALID  ),
+        .M0_AXI_ARREADY         (LSU_AXI_ARREADY  ),
+        .M0_AXI_RID             (LSU_AXI_RID      ),
+        .M0_AXI_RDATA           (LSU_AXI_RDATA    ),
+        .M0_AXI_RRESP           (LSU_AXI_RRESP    ),
+        .M0_AXI_RLAST           (LSU_AXI_RLAST    ),
+        .M0_AXI_RUSER           (LSU_AXI_RUSER    ),
+        .M0_AXI_RVALID          (LSU_AXI_RVALID   ),
+        .M0_AXI_RREADY          (LSU_AXI_RREADY   ),
+
+        .M1_AXI_ARID            (IFU_AXI_ARID     ),
+        .M1_AXI_ARADDR          (IFU_AXI_ARADDR   ),
+        .M1_AXI_ARLEN           (IFU_AXI_ARLEN    ),
+        .M1_AXI_ARSIZE          (IFU_AXI_ARSIZE   ),
+        .M1_AXI_ARBURST         (IFU_AXI_ARBURST  ),
+        .M1_AXI_ARLOCK          (IFU_AXI_ARLOCK   ),
+        .M1_AXI_ARCACHE         (IFU_AXI_ARCACHE  ),
+        .M1_AXI_ARPROT          (IFU_AXI_ARPROT   ),
+        .M1_AXI_ARQOS           (IFU_AXI_ARQOS    ),
+        .M1_AXI_ARREGION        (IFU_AXI_ARREGION ),
+        .M1_AXI_ARUSER          (IFU_AXI_ARUSER   ),
+        .M1_AXI_ARVALID         (IFU_AXI_ARVALID  ),
+        .M1_AXI_ARREADY         (IFU_AXI_ARREADY  ),
+        .M1_AXI_RID             (IFU_AXI_RID      ),
+        .M1_AXI_RDATA           (IFU_AXI_RDATA    ),
+        .M1_AXI_RRESP           (IFU_AXI_RRESP    ),
+        .M1_AXI_RLAST           (IFU_AXI_RLAST    ),
+        .M1_AXI_RUSER           (IFU_AXI_RUSER    ),
+        .M1_AXI_RVALID          (IFU_AXI_RVALID   ),
+        .M1_AXI_RREADY          (IFU_AXI_RREADY   ),
+
+        .S_AXI_ARID             (S_AXI_ARID    ),
+        .S_AXI_ARADDR           (S_AXI_ARADDR  ),
+        .S_AXI_ARLEN            (S_AXI_ARLEN   ),
+        .S_AXI_ARSIZE           (S_AXI_ARSIZE  ),
+        .S_AXI_ARBURST          (S_AXI_ARBURST ),
+        .S_AXI_ARLOCK           (S_AXI_ARLOCK  ),
+        .S_AXI_ARCACHE          (S_AXI_ARCACHE ),
+        .S_AXI_ARPROT           (S_AXI_ARPROT  ),
+        .S_AXI_ARQOS            (S_AXI_ARQOS   ),
+        .S_AXI_ARREGION         (S_AXI_ARREGION),
+        .S_AXI_ARUSER           (S_AXI_ARUSER  ),
+        .S_AXI_ARVALID          (S_AXI_ARVALID ),
+        .S_AXI_ARREADY          (S_AXI_ARREADY ),
+        .S_AXI_RID              (S_AXI_RID     ),
+        .S_AXI_RDATA            (S_AXI_RDATA   ),
+        .S_AXI_RRESP            (S_AXI_RRESP   ),
+        .S_AXI_RLAST            (S_AXI_RLAST   ),
+        .S_AXI_RUSER            (S_AXI_RUSER   ),
+        .S_AXI_RVALID           (S_AXI_RVALID  ),
+        .S_AXI_RREADY           (S_AXI_RREADY  )
+    );
     
-    slave_axi_4 u_lsu_slave_axi_4 (
+    slave_axi_4 u_slave_axi_4 (
         .clk(clk),
         .rst(rst),
 
@@ -801,37 +846,41 @@ module top(
         .S_AXI_AWUSER       (LSU_AXI_AWUSER),
         .S_AXI_AWVALID      (LSU_AXI_AWVALID),
         .S_AXI_AWREADY      (LSU_AXI_AWREADY),
+
         .S_AXI_WDATA        (LSU_AXI_WDATA),
         .S_AXI_WSTRB        (LSU_AXI_WSTRB),
         .S_AXI_WLAST        (LSU_AXI_WLAST),
         .S_AXI_WUSER        (LSU_AXI_WUSER),
         .S_AXI_WVALID       (LSU_AXI_WVALID),
         .S_AXI_WREADY       (LSU_AXI_WREADY),
+
         .S_AXI_BID          (LSU_AXI_BID),
         .S_AXI_BRESP        (LSU_AXI_BRESP),
         .S_AXI_BUSER        (LSU_AXI_BUSER),
         .S_AXI_BVALID       (LSU_AXI_BVALID),
         .S_AXI_BREADY       (LSU_AXI_BREADY),
-        .S_AXI_ARID         (LSU_AXI_ARID),
-        .S_AXI_ARADDR       (LSU_AXI_ARADDR),
-        .S_AXI_ARLEN        (LSU_AXI_ARLEN),
-        .S_AXI_ARSIZE       (LSU_AXI_ARSIZE),
-        .S_AXI_ARBURST      (LSU_AXI_ARBURST),
-        .S_AXI_ARLOCK       (LSU_AXI_ARLOCK),
-        .S_AXI_ARCACHE      (LSU_AXI_ARCACHE),
-        .S_AXI_ARPROT       (LSU_AXI_ARPROT),
-        .S_AXI_ARQOS        (LSU_AXI_ARQOS),
-        .S_AXI_ARREGION     (LSU_AXI_ARREGION),
-        .S_AXI_ARUSER       (LSU_AXI_ARUSER),
-        .S_AXI_ARVALID      (LSU_AXI_ARVALID),
-        .S_AXI_ARREADY      (LSU_AXI_ARREADY),
-        .S_AXI_RID          (LSU_AXI_RID),
-        .S_AXI_RDATA        (LSU_AXI_RDATA),
-        .S_AXI_RRESP        (LSU_AXI_RRESP),
-        .S_AXI_RLAST        (LSU_AXI_RLAST),
-        .S_AXI_RUSER        (LSU_AXI_RUSER),
-        .S_AXI_RVALID       (LSU_AXI_RVALID),
-        .S_AXI_RREADY       (LSU_AXI_RREADY)
+
+        .S_AXI_ARID         (S_AXI_ARID),
+        .S_AXI_ARADDR       (S_AXI_ARADDR),
+        .S_AXI_ARLEN        (S_AXI_ARLEN),
+        .S_AXI_ARSIZE       (S_AXI_ARSIZE),
+        .S_AXI_ARBURST      (S_AXI_ARBURST),
+        .S_AXI_ARLOCK       (S_AXI_ARLOCK),
+        .S_AXI_ARCACHE      (S_AXI_ARCACHE),
+        .S_AXI_ARPROT       (S_AXI_ARPROT),
+        .S_AXI_ARQOS        (S_AXI_ARQOS),
+        .S_AXI_ARREGION     (S_AXI_ARREGION),
+        .S_AXI_ARUSER       (S_AXI_ARUSER),
+        .S_AXI_ARVALID      (S_AXI_ARVALID),
+        .S_AXI_ARREADY      (S_AXI_ARREADY),
+
+        .S_AXI_RID          (S_AXI_RID),
+        .S_AXI_RDATA        (S_AXI_RDATA),
+        .S_AXI_RRESP        (S_AXI_RRESP),
+        .S_AXI_RLAST        (S_AXI_RLAST),
+        .S_AXI_RUSER        (S_AXI_RUSER),
+        .S_AXI_RVALID       (S_AXI_RVALID),
+        .S_AXI_RREADY       (S_AXI_RREADY)
     );
 
     /********************* mem_wb_reg *********************/
